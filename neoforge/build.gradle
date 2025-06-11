@@ -43,7 +43,7 @@ remapJar {
     inputFile.set shadowJar.archiveFile
     dependsOn shadowJar
     archiveClassifier.set(null)
-    atAccessWideners.add("mvs.accesswidener") // this is a path inside the mod jar
+    atAccessWideners.add("moogs_structures.accesswidener") // this is a path inside the mod jar
 }
 
 jar {
@@ -70,19 +70,19 @@ publishMods {
     changelog = changelogtext
     type = STABLE
 
-    displayName = "MVS ${project.version} [NEOFORGE]"
+    displayName = "MoogsStructureLib ${project.version} [NEOFORGE]"
 
     modLoaders.add("neoforge")
 
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
-        projectId = "OQAgZMH1"
+        projectId = ""
         minecraftVersions.add("1.21.5")
     }
 
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-        projectId = "656977"
+        projectId = ""
         minecraftVersions.add("1.21.5")
         serverRequired = true
     }

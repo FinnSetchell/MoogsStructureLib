@@ -87,19 +87,19 @@ publishMods {
     changelog = changelogtext
     type = STABLE
 
-    displayName = "MVS ${project.version} [FABRIC]"
+    displayName = "MoogsStructureLib ${project.version} [FABRIC]"
 
     modLoaders.add("fabric")
 
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
-        projectId = "OQAgZMH1"
+        projectId = ""
         minecraftVersions.add("1.21.5")
     }
 
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-        projectId = "656977"
+        projectId = ""
         minecraftVersions.add("1.21.5")
         serverRequired = true
     }

@@ -1,27 +1,27 @@
 {
     "schemaVersion": 1,
-    "id": "mvs",
+    "id": "moogs_structures",
     "version": "${version}-fabric",
-    "name": "Moog's Voyager Structures",
-    "description": "80+ structures made with vanilla blocks and entities bringing life to your world! Discover loot, enemies, & villagers along the way!",
+    "name": "Moog's Structure Lib",
+    "description": "A library mod for generating structures",
     "authors": [
         "FinnDog"
     ],
     "contact": {
-        "homepage": "https://www.curseforge.com/minecraft/mc-mods/moogs-voyager-structures",
-        "sources": "https://github.com/FinnSetchell/MoogsVoyagerStructures"
+        "homepage": "https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib",
+        "sources": "https://github.com/FinnSetchell/MoogsStructureLib"
     },
     "license": "GNU Lesser General Public License v3.0",
     "icon": "icon.png",
     "environment": "*",
     "entrypoints": {
         "main": [
-            "com.finndog.mvs.fabric.MVSFabric"
+            "com.finndog.moogs_structures.fabric.MoogsStructuresFabric"
         ]
     },
     "mixins": [
-        "mvs-fabric.mixins.json",
-        "mvs-common.mixins.json"
+        "moogs_structures-fabric.mixins.json",
+        "moogs_structures-common.mixins.json"
     ],
     "depends": {
         "fabricloader": "*",
