@@ -14,8 +14,7 @@
         "structures.StructureProcessorAccessor",
         "structures.StructureTemplateManagerAccessor",
         "structures.StructureTemplateMixin",
-        "structures.TemplateAccessor",
-        "world.WorldGenRegionAccessor"
+        "structures.TemplateAccessor"
     ],
     "client": [
     ],

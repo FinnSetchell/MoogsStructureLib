@@ -1,0 +1,30 @@
+modLoader="javafml" #mandatory
+loaderVersion="[2,)" #mandatory
+issueTrackerURL="https://github.com/FinnSetchell/MoogsStructureLib/issues" #optional
+license="GNU Lesser General Public License v3.0"
+
+[[mods]] #mandatory
+modId="moogs_structures" #mandatory
+logoFile= "assets/moogs_structures/icon.png"
+logoBlur=false
+version="${version}" #mandatory
+displayName="Moog's Structure Lib" #mandatory
+displayURL="https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib"
+authors="FinnDog"
+credits="Thanks to TelepathicGrunt for their structure mod template and rs!"
+description = '''
+Moogs Structure Lib is a library mod used to generate the structures from the
+moog structure mods. Feel free to use it for your own projects and mods.
+Join our community here: https://discord.gg/S5nffJbuvA
+''' #mandatory (Supports multiline text)
+
+[[mixins]]
+    config = "moogs_structures-neoforge.mixins.json"
+
+[[mixins]]
+    config = "moogs_structures-common.mixins.json"
+
+[[dependencies.moogs_structures]]
+    modId="minecraft"
+    type="required"
+    versionRange="[1.20.5,)"
