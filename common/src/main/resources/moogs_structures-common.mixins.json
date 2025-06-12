@@ -2,7 +2,7 @@
     "required": true,
     "minVersion": "0.8",
     "package": "com.finndog.moogs_structures.mixins",
-    "compatibilityLevel": "JAVA_21",
+    "compatibilityLevel": "JAVA_17",
     "mixins": [
         "resources.NamespaceResourceManagerAccessor",
         "structures.ListPoolElementAccessor",
@@ -13,7 +13,9 @@
         "structures.StructurePoolAccessor",
         "structures.StructureProcessorAccessor",
         "structures.StructureTemplateManagerAccessor",
-        "structures.TemplateAccessor"
+        "structures.StructureTemplateMixin",
+        "structures.TemplateAccessor",
+        "world.WorldGenRegionAccessor"
     ],
     "client": [
     ],

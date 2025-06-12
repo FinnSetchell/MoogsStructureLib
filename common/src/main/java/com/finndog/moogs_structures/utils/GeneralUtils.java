@@ -5,17 +5,16 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.core.*;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.FrontAndTop;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -25,9 +24,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.NoiseColumn;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.JigsawBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -79,21 +76,21 @@ public final class GeneralUtils {
 
     private static final Map<BlockState, Boolean> IS_FULLCUBE_MAP = new ConcurrentHashMap<>();
 
-    public static boolean isFullCube(BlockState state) {
+    public static boolean isFullCube(BlockGetter world, BlockPos pos, BlockState state) {
         if(state == null) return false;
-        return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape()));
+        return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape(world, pos)));
     }
 
     //////////////////////////////////////////////
 
-    public static ItemStack enchantRandomly(RegistryAccess registryAccess, RandomSource random, ItemStack itemToEnchant, float chance) {
+    public static ItemStack enchantRandomly(RandomSource random, ItemStack itemToEnchant, float chance) {
         if(random.nextFloat() < chance) {
-            List<Holder.Reference<Enchantment>> list = registryAccess.lookupOrThrow(Registries.ENCHANTMENT).listElements()
-                    .filter(holder -> holder.value().canEnchant(itemToEnchant) && holder.is(EnchantmentTags.ON_MOB_SPAWN_EQUIPMENT)).toList();
+            List<Enchantment> list = BuiltInRegistries.ENCHANTMENT.stream().filter(Enchantment::isDiscoverable)
+                    .filter((enchantmentToCheck) -> enchantmentToCheck.canEnchant(itemToEnchant)).toList();
             if(!list.isEmpty()) {
-                Holder.Reference<Enchantment> enchantment = list.get(random.nextInt(list.size()));
+                Enchantment enchantment = list.get(random.nextInt(list.size()));
                 // bias towards weaker enchantments
-                int enchantmentLevel = random.nextInt(Mth.nextInt(random, enchantment.value().getMinLevel(), enchantment.value().getMaxLevel()) + 1);
+                int enchantmentLevel = random.nextInt(Mth.nextInt(random, enchantment.getMinLevel(), enchantment.getMaxLevel()) + 1);
                 itemToEnchant.enchant(enchantment, enchantmentLevel);
             }
         }
@@ -158,7 +155,7 @@ public final class GeneralUtils {
         ChunkAccess currentChunk = worldView.getChunk(mutable);
         BlockState currentState = currentChunk.getBlockState(mutable);
 
-        while(mutable.getY() >= worldView.getMinY() && isReplaceableByStructures(currentState)) {
+        while(mutable.getY() >= worldView.getMinBuildHeight() && isReplaceableByStructures(currentState)) {
             mutable.move(Direction.DOWN);
             currentState = currentChunk.getBlockState(mutable);
         }
@@ -187,28 +184,20 @@ public final class GeneralUtils {
     //////////////////////////////////////////////
 
     // More optimized with checking if the jigsaw blocks can connect
-    public static boolean canJigsawsAttach(StructureTemplate.JigsawBlockInfo jigsaw1, StructureTemplate.JigsawBlockInfo jigsaw2) {
-        FrontAndTop prop1 = jigsaw1.info().state().getValue(JigsawBlock.ORIENTATION);
-        FrontAndTop prop2 = jigsaw2.info().state().getValue(JigsawBlock.ORIENTATION);
+    public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
+        FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
+        FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
+        String joint = jigsaw1.nbt().getString("joint");
+        if(joint.isEmpty()) {
+            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
+        }
 
+        boolean isRollable = joint.equals("rollable");
         return prop1.front() == prop2.front().getOpposite() &&
-                (prop1.top() == prop2.top() || isRollableJoint(jigsaw1, prop1)) &&
-                getStringMicroOptimised(jigsaw1.info().nbt(), "target").equals(getStringMicroOptimised(jigsaw2.info().nbt(), "name"));
+                (isRollable || prop1.top() == prop2.top()) &&
+                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
     }
 
-    private static boolean isRollableJoint(StructureTemplate.JigsawBlockInfo jigsaw1, FrontAndTop prop1) {
-        String joint = getStringMicroOptimised(jigsaw1.info().nbt(), "joint");
-        if(!joint.equals("rollable") && !joint.equals("aligned")) {
-            return !prop1.front().getAxis().isHorizontal();
-        }
-        else {
-            return joint.equals("rollable");
-        }
-    }
-
-    public static String getStringMicroOptimised(CompoundTag tag, String key) {
-        return tag.get(key) instanceof StringTag stringTag ? stringTag.toString() : "";
-    }
     //////////////////////////////////////////////
 
     /**
@@ -223,7 +212,7 @@ public final class GeneralUtils {
         // Finds all JSON files paths within the pool_additions folder. NOTE: this is just the path rn. Not the actual files yet.
         for (Map.Entry<ResourceLocation, List<Resource>> resourceStackEntry : resourceManager.listResourceStacks(dataType, (fileString) -> fileString.toString().endsWith(".json")).entrySet()) {
             String identifierPath = resourceStackEntry.getKey().getPath();
-            ResourceLocation fileID = ResourceLocation.fromNamespaceAndPath(
+            ResourceLocation fileID = new ResourceLocation(
                     resourceStackEntry.getKey().getNamespace(),
                     identifierPath.substring(dataTypeLength, identifierPath.length() - fileSuffixLength));
 
@@ -266,4 +255,49 @@ public final class GeneralUtils {
         return map;
     }
 
+    ////////////////////////////
+
+    public static boolean isInvalidLootTableFound(MinecraftServer minecraftServer, Map.Entry<ResourceLocation, ResourceLocation> entry) {
+        boolean invalidLootTableFound = false;
+        if(minecraftServer.getLootData().getLootTable(entry.getKey()) == LootTable.EMPTY) {
+            MoogsStructuresCommon.LOGGER.error("Unable to find loot table key: {}", entry.getKey());
+            invalidLootTableFound = true;
+        }
+        if(minecraftServer.getLootData().getLootTable(entry.getValue()) == LootTable.EMPTY) {
+            MoogsStructuresCommon.LOGGER.error("Unable to find loot table value: {}", entry.getValue());
+            invalidLootTableFound = true;
+        }
+        return invalidLootTableFound;
+    }
+
+    public static boolean isMissingLootImporting(MinecraftServer minecraftServer, Set<ResourceLocation> tableKeys) {
+        AtomicBoolean invalidLootTableFound = new AtomicBoolean(false);
+        minecraftServer.getLootData().getKeys(LootDataType.TABLE).forEach(rl -> {
+            if(rl.getNamespace().equals(MoogsStructuresCommon.MODID) && !tableKeys.contains(rl)) {
+                if(rl.getPath().contains("mansions") && rl.getPath().contains("storage")) {
+                    return;
+                }
+
+                if(rl.getPath().contains("monuments")) {
+                    return;
+                }
+
+                if(rl.getPath().contains("dispensers/temples/wasteland_lava")) {
+                    return;
+                }
+
+                if(rl.getPath().contains("lucky_pool")) {
+                    return;
+                }
+
+                if(rl.getPath().contains("archaeology")) {
+                    return;
+                }
+
+                MoogsStructuresCommon.LOGGER.error("No loot importing found for: {}", rl);
+                invalidLootTableFound.set(true);
+            }
+        });
+        return invalidLootTableFound.get();
+    }
 }

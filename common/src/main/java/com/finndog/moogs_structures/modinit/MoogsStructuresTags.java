@@ -10,6 +10,6 @@ public final class MoogsStructuresTags {
     public static void initTags() {}
 
     public static TagKey<Structure> LARGER_LOCATE_SEARCH = TagKey.create(Registries.STRUCTURE,
-            ResourceLocation.fromNamespaceAndPath(MoogsStructuresCommon.MODID, "larger_locate_search"));
+            new ResourceLocation(MoogsStructuresCommon.MODID, "larger_locate_search"));
 
 }

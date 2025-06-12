@@ -1,55 +1,56 @@
-package com.finndog.moogs_structures.modinit.registry.fabric;
+package com.finndog.moogs_structures.modinit.registry.forge;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
-import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.registries.IForgeRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Supplier;
 
-public class CustomRegistry<T> implements CustomRegistryLookup<T> {
+public class ForgeCustomRegistry<T> implements CustomRegistryLookup<T> {
 
-    private final Registry<T> registry;
+    private final Supplier<IForgeRegistry<T>> registry;
 
-    public CustomRegistry(Registry<T> registry) {
+    public ForgeCustomRegistry(Supplier<IForgeRegistry<T>> registry) {
         this.registry = registry;
     }
 
     @Override
     public boolean containsKey(ResourceLocation id) {
-        return registry.containsKey(id);
+        return registry.get().containsKey(id);
     }
 
     @Override
     public boolean containsValue(T value) {
-        return registry.getKey(value) != null;
+        return registry.get().containsValue(value);
     }
 
     @Override
     public @Nullable T get(ResourceLocation id) {
-        return registry.get(id);
+        return registry.get().getValue(id);
     }
 
     @Override
     public @Nullable ResourceLocation getKey(T value) {
-        return registry.getKey(value);
+        return registry.get().getKey(value);
     }
 
     @Override
     public Collection<T> getValues() {
-        return registry.stream().toList();
+        return registry.get().getValues();
     }
 
     @Override
     public Collection<ResourceLocation> getKeys() {
-        return registry.keySet();
+        return registry.get().getKeys();
     }
 
     @NotNull
     @Override
     public Iterator<T> iterator() {
-        return registry.iterator();
+        return registry.get().iterator();
     }
 }

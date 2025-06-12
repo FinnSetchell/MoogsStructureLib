@@ -1,7 +1,7 @@
 package com.finndog.moogs_structures.world.placements;
 
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
-import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.ConstantInt;
@@ -10,7 +10,7 @@ import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.levelgen.placement.RepeatingPlacement;
 
 public class UnlimitedCountPlacement extends RepeatingPlacement {
-    public static final MapCodec<UnlimitedCountPlacement> CODEC = IntProvider.NON_NEGATIVE_CODEC.fieldOf("count").xmap(UnlimitedCountPlacement::new, countPlacement -> countPlacement.count);
+    public static final Codec<UnlimitedCountPlacement> CODEC = IntProvider.NON_NEGATIVE_CODEC.fieldOf("count").xmap(UnlimitedCountPlacement::new, countPlacement -> countPlacement.count).codec();
     private final IntProvider count;
 
     private UnlimitedCountPlacement(IntProvider intProvider) {

@@ -1,11 +1,9 @@
 package com.finndog.moogs_structures.world.structures.pieces;
 
 import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
-import com.finndog.moogs_structures.mixins.structures.TemplateAccessor;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
@@ -23,23 +21,24 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElementType;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
-import net.minecraft.world.level.levelgen.structure.templatesystem.*;
+import net.minecraft.world.level.levelgen.structure.templatesystem.BlockIgnoreProcessor;
+import net.minecraft.world.level.levelgen.structure.templatesystem.JigsawReplacementProcessor;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorList;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 
 public class MirroringSingleJigsawPiece extends SinglePoolElement {
-    public static final MapCodec<MirroringSingleJigsawPiece> CODEC = RecordCodecBuilder.mapCodec((jigsawPieceInstance) ->
+    public static final Codec<MirroringSingleJigsawPiece> CODEC = RecordCodecBuilder.create((jigsawPieceInstance) ->
             jigsawPieceInstance.group(
-                            templateCodec(),
-                            processorsCodec(),
-                            projectionCodec(),
-                            mirrorCodec(),
-                            overrideLiquidSettingsCodec())
-                    .apply(jigsawPieceInstance, MirroringSingleJigsawPiece::new));
+                    templateCodec(),
+                    processorsCodec(),
+                    projectionCodec(),
+                    mirrorCodec())
+            .apply(jigsawPieceInstance, MirroringSingleJigsawPiece::new));
 
     protected static <E extends MirroringSingleJigsawPiece> RecordCodecBuilder<E, Mirror> mirrorCodec() {
         return Codec.STRING.fieldOf("mirror")
@@ -49,12 +48,12 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement {
 
     protected final Mirror mirror;
 
-    public MirroringSingleJigsawPiece(SinglePoolElement singleJigsawPiece, Mirror mirror, Optional<LiquidSettings> liquidSettings) {
-        this(((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getTemplate(), ((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getProcessors(), singleJigsawPiece.getProjection(), mirror, liquidSettings);
+    public MirroringSingleJigsawPiece(SinglePoolElement singleJigsawPiece, Mirror mirror) {
+        this(((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getTemplate(), ((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getProcessors(), singleJigsawPiece.getProjection(), mirror);
     }
 
-    protected MirroringSingleJigsawPiece(Either<ResourceLocation, StructureTemplate> locationTemplateEither, Holder<StructureProcessorList> processorListSupplier, StructureTemplatePool.Projection placementBehaviour, Mirror mirror, Optional<LiquidSettings> liquidSettings) {
-        super(locationTemplateEither, processorListSupplier, placementBehaviour, liquidSettings);
+    protected MirroringSingleJigsawPiece(Either<ResourceLocation, StructureTemplate> locationTemplateEither, Holder<StructureProcessorList> processorListSupplier, StructureTemplatePool.Projection placementBehaviour, Mirror mirror) {
+        super(locationTemplateEither, processorListSupplier, placementBehaviour);
         this.mirror = mirror;
     }
 
@@ -63,30 +62,12 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement {
     }
 
     @Override
-    public List<StructureTemplate.JigsawBlockInfo> getShuffledJigsawBlocks(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation, RandomSource random) {
+    public List<StructureTemplate.StructureBlockInfo> getShuffledJigsawBlocks(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation, RandomSource random) {
         StructureTemplate template = this.getTemplate(templateManager);
-        ObjectArrayList<StructureTemplate.JigsawBlockInfo> list = getJigsaws(template, blockPos, (new StructurePlaceSettings()).setRotation(rotation).setMirror(mirror));
+        ObjectArrayList<StructureTemplate.StructureBlockInfo> list = template.filterBlocks(blockPos, (new StructurePlaceSettings()).setRotation(rotation).setMirror(mirror), Blocks.JIGSAW, true);
         Util.shuffle(list, random);
         return list;
     }
-
-    private ObjectArrayList<StructureTemplate.JigsawBlockInfo> getJigsaws(StructureTemplate template, BlockPos blockPos, StructurePlaceSettings structurePlaceSettings) {
-        if (((TemplateAccessor)template).moogs_structures_getPalettes().isEmpty()) {
-            return new ObjectArrayList<>();
-        }
-        else {
-            List<StructureTemplate.JigsawBlockInfo> list = structurePlaceSettings.getRandomPalette(((TemplateAccessor)template).moogs_structures_getPalettes(), blockPos).jigsaws();
-            ObjectArrayList<StructureTemplate.JigsawBlockInfo> list2 = new ObjectArrayList<>(list.size());
-
-            for (StructureTemplate.JigsawBlockInfo jigsawBlockInfo : list) {
-                StructureTemplate.StructureBlockInfo structureBlockInfo = jigsawBlockInfo.info();
-                list2.add(jigsawBlockInfo.withInfo(new StructureTemplate.StructureBlockInfo(StructureTemplate.calculateRelativePosition(structurePlaceSettings, structureBlockInfo.pos()).offset(blockPos), structureBlockInfo.state().rotate(structurePlaceSettings.getRotation()), structureBlockInfo.nbt())));
-            }
-
-            return list2;
-        }
-    }
-
 
     @Override
     public BoundingBox getBoundingBox(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation) {
@@ -95,20 +76,9 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement {
     }
 
     @Override
-    public boolean place(StructureTemplateManager templateManager,
-                         WorldGenLevel worldGenLevel,
-                         StructureManager StructureTemplateManager,
-                         ChunkGenerator chunkGenerator,
-                         BlockPos blockPos,
-                         BlockPos blockPos1,
-                         Rotation rotation,
-                         BoundingBox mutableBoundingBox,
-                         RandomSource random,
-                         LiquidSettings liquidSettings,
-                         boolean doNotReplaceJigsaw)
-    {
+    public boolean place(StructureTemplateManager templateManager, WorldGenLevel worldGenLevel, StructureManager StructureTemplateManager, ChunkGenerator chunkGenerator, BlockPos blockPos, BlockPos blockPos1, Rotation rotation, BoundingBox mutableBoundingBox, RandomSource random, boolean doNotReplaceJigsaw) {
         StructureTemplate template = this.getTemplate(templateManager);
-        StructurePlaceSettings placementsettings = this.getSettings(rotation, mutableBoundingBox, liquidSettings, doNotReplaceJigsaw);
+        StructurePlaceSettings placementsettings = this.getSettings(rotation, mutableBoundingBox, doNotReplaceJigsaw);
         if (!template.placeInWorld(worldGenLevel, blockPos, blockPos1, placementsettings, random, 18)) {
             return false;
         } else {
@@ -121,7 +91,7 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement {
     }
 
     @Override
-    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox mutableBoundingBox, LiquidSettings liquidSettings, boolean doNotReplaceJigsaw) {
+    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox mutableBoundingBox, boolean doNotReplaceJigsaw) {
         StructurePlaceSettings placementsettings = new StructurePlaceSettings();
         placementsettings.setBoundingBox(mutableBoundingBox);
         placementsettings.setRotation(rotation);
@@ -129,7 +99,6 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement {
         placementsettings.setIgnoreEntities(false);
         placementsettings.addProcessor(BlockIgnoreProcessor.STRUCTURE_BLOCK);
         placementsettings.setFinalizeEntities(true);
-        placementsettings.setLiquidSettings(this.overrideLiquidSettings.orElse(liquidSettings));
         if (!doNotReplaceJigsaw) {
             placementsettings.addProcessor(JigsawReplacementProcessor.INSTANCE);
         }
