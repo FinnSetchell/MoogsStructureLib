@@ -2,7 +2,6 @@ package com.finndog.moogs_structures.world.structures.pieces;
 
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
 import com.mojang.datafixers.util.Either;
-import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;

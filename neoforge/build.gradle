@@ -65,25 +65,25 @@ components.java {
 File changeLog = rootProject.file("CHANGELOG.md")
 String changelogtext = changeLog.exists() ? changeLog.text : ""
 
-publishMods {
-    file = remapJar.archiveFile
-    changelog = changelogtext
-    type = STABLE
-
-    displayName = "MoogsStructureLib ${project.version} [NEOFORGE]"
-
-    modLoaders.add("neoforge")
-
-    modrinth {
-        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
-        projectId = ""
-        minecraftVersions.add("1.21.5")
-    }
-
-    curseforge {
-        accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-        projectId = ""
-        minecraftVersions.add("1.21.5")
-        serverRequired = true
-    }
-}
+//publishMods {
+//    file = remapJar.archiveFile
+//    changelog = changelogtext
+//    type = STABLE
+//
+//    displayName = "MoogsStructureLib ${project.version} [NEOFORGE]"
+//
+//    modLoaders.add("neoforge")
+//
+//    modrinth {
+//        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
+//        projectId = ""
+//        minecraftVersions.add("1.21.5")
+//    }
+//
+//    curseforge {
+//        accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
+//        projectId = ""
+//        minecraftVersions.add("1.21.5")
+//        serverRequired = true
+//    }
+//}

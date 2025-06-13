@@ -6,16 +6,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.*;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -25,9 +20,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.NoiseColumn;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.JigsawBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -36,8 +29,6 @@ import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.level.storage.loot.LootDataType;
-import net.minecraft.world.level.storage.loot.LootTable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,9 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class GeneralUtils {
     private GeneralUtils() {}
@@ -79,17 +68,17 @@ public final class GeneralUtils {
 
     private static final Map<BlockState, Boolean> IS_FULLCUBE_MAP = new ConcurrentHashMap<>();
 
-    public static boolean isFullCube(BlockState state) {
+    public static boolean isFullCube(BlockGetter world, BlockPos pos, BlockState state) {
         if(state == null) return false;
-        return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape()));
+        return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape(world, pos)));
     }
 
     //////////////////////////////////////////////
 
     public static ItemStack enchantRandomly(RegistryAccess registryAccess, RandomSource random, ItemStack itemToEnchant, float chance) {
         if(random.nextFloat() < chance) {
-            List<Holder.Reference<Enchantment>> list = registryAccess.lookupOrThrow(Registries.ENCHANTMENT).listElements()
-                    .filter(holder -> holder.value().canEnchant(itemToEnchant) && holder.is(EnchantmentTags.ON_MOB_SPAWN_EQUIPMENT)).toList();
+            List<Holder.Reference<Enchantment>> list = registryAccess.registryOrThrow(Registries.ENCHANTMENT).holders()
+                    .filter(holder -> holder.value().canEnchant(itemToEnchant)).toList();
             if(!list.isEmpty()) {
                 Holder.Reference<Enchantment> enchantment = list.get(random.nextInt(list.size()));
                 // bias towards weaker enchantments
@@ -158,7 +147,7 @@ public final class GeneralUtils {
         ChunkAccess currentChunk = worldView.getChunk(mutable);
         BlockState currentState = currentChunk.getBlockState(mutable);
 
-        while(mutable.getY() >= worldView.getMinY() && isReplaceableByStructures(currentState)) {
+        while(mutable.getY() >= worldView.getMinBuildHeight() && isReplaceableByStructures(currentState)) {
             mutable.move(Direction.DOWN);
             currentState = currentChunk.getBlockState(mutable);
         }
@@ -187,28 +176,20 @@ public final class GeneralUtils {
     //////////////////////////////////////////////
 
     // More optimized with checking if the jigsaw blocks can connect
-    public static boolean canJigsawsAttach(StructureTemplate.JigsawBlockInfo jigsaw1, StructureTemplate.JigsawBlockInfo jigsaw2) {
-        FrontAndTop prop1 = jigsaw1.info().state().getValue(JigsawBlock.ORIENTATION);
-        FrontAndTop prop2 = jigsaw2.info().state().getValue(JigsawBlock.ORIENTATION);
+    public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
+        FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
+        FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
+        String joint = jigsaw1.nbt().getString("joint");
+        if(joint.isEmpty()) {
+            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
+        }
 
+        boolean isRollable = joint.equals("rollable");
         return prop1.front() == prop2.front().getOpposite() &&
-                (prop1.top() == prop2.top() || isRollableJoint(jigsaw1, prop1)) &&
-                getStringMicroOptimised(jigsaw1.info().nbt(), "target").equals(getStringMicroOptimised(jigsaw2.info().nbt(), "name"));
+                (isRollable || prop1.top() == prop2.top()) &&
+                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
     }
 
-    private static boolean isRollableJoint(StructureTemplate.JigsawBlockInfo jigsaw1, FrontAndTop prop1) {
-        String joint = getStringMicroOptimised(jigsaw1.info().nbt(), "joint");
-        if(!joint.equals("rollable") && !joint.equals("aligned")) {
-            return !prop1.front().getAxis().isHorizontal();
-        }
-        else {
-            return joint.equals("rollable");
-        }
-    }
-
-    public static String getStringMicroOptimised(CompoundTag tag, String key) {
-        return tag.get(key) instanceof StringTag stringTag ? stringTag.toString() : "";
-    }
     //////////////////////////////////////////////
 
     /**
