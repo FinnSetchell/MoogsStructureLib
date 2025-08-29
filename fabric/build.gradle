@@ -76,3 +76,36 @@ publishing {
         // Add repositories to publish to here.
     }
 }
+
+// Publish to CurseForge and Modrinth
+File changeLog = rootProject.file("CHANGELOG.md")
+String changelogtext = changeLog.exists() ? changeLog.text : ""
+
+publishMods {
+    file = remapJar.archiveFile
+    changelog = changelogtext
+    type = STABLE
+
+    displayName = "Moog's Structure Lib ${project.version} [FABRIC]"
+
+    modLoaders.add("fabric")
+
+    modrinth {
+        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
+        projectId = "1oUDhxuy"
+        minecraftVersionRange {
+            start = "1.20"
+            end = "1.20.4"
+        }
+    }
+
+    curseforge {
+        accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
+        projectId = "1337167"
+        minecraftVersionRange {
+            start = "1.20"
+            end = "1.20.4"
+        }
+        serverRequired = true
+    }
+}
