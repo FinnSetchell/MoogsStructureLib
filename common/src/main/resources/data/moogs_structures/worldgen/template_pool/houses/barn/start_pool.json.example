@@ -1,0 +1,33 @@
+{
+  // Barn start pool configuration for Moog's Structure Lib
+  // Template pools define the structure pieces and their generation rules
+  // More info: https://minecraft.gamepedia.com/Custom_world_generation#JSON_format_8
+
+  // Pool identifier - must match the reference in the structure definition
+  "name": "moogs_structures:houses/barn/start_pool",
+
+  // Fallback pool if this pool fails to generate (empty = no fallback)
+  "fallback": "minecraft:empty",
+
+  // Structure elements - each element has a chance to be selected based on weight
+  "elements": [
+    {
+      // Weight determines selection probability (higher = more likely)
+      "weight": 1,
+      "element": {
+        // Path to the NBT structure file (relative to data/structures/)
+        // This points to barn.nbt in the structures folder
+        "location": "moogs_structures:barn",
+
+        // Block processors for dynamic block replacement (empty = no processing)
+        "processors": "minecraft:empty",
+
+        // Projection type: 'rigid' keeps structure shape, 'terrain_matching' adapts to terrain
+        "projection": "rigid",
+
+        // Element type: 'single_pool_element' is the standard for modern Jigsaw structures
+        "element_type": "minecraft:single_pool_element"
+      }
+    }
+  ]
+}
