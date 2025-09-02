@@ -8,6 +8,9 @@ architectury {
     fabric()
 }
 
+// Configure JAR naming to include Minecraft version
+archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
+
 loom {
     accessWidenerPath = project(":common").loom.accessWidenerPath
 }
