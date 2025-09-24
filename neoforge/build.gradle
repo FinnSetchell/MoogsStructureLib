@@ -8,6 +8,9 @@ architectury {
     neoForge()
 }
 
+// Configure JAR naming to include Minecraft version
+archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
+
 configurations {
     common
     shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
@@ -42,7 +45,7 @@ shadowJar {
 remapJar {
     inputFile.set shadowJar.archiveFile
     dependsOn shadowJar
-    archiveClassifier.set(null)
+    archiveClassifier.set("neoforge")
     atAccessWideners.add("moogs_structures.accesswidener") // this is a path inside the mod jar
 }
 
@@ -65,25 +68,31 @@ components.java {
 File changeLog = rootProject.file("CHANGELOG.md")
 String changelogtext = changeLog.exists() ? changeLog.text : ""
 
-//publishMods {
-//    file = remapJar.archiveFile
-//    changelog = changelogtext
-//    type = STABLE
-//
-//    displayName = "MoogsStructureLib ${project.version} [NEOFORGE]"
-//
-//    modLoaders.add("neoforge")
-//
-//    modrinth {
-//        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
-//        projectId = ""
-//        minecraftVersions.add("1.21.5")
-//    }
-//
-//    curseforge {
-//        accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-//        projectId = ""
-//        minecraftVersions.add("1.21.5")
-//        serverRequired = true
-//    }
-//}
+publishMods {
+    file = remapJar.archiveFile
+    changelog = changelogtext
+    type = STABLE
+    modLoaders.add("neoforge")
+
+    displayName = "MoogsStructureLib ${project.version} [NEOFORGE]"
+
+    modrinth {
+        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
+        projectId = ""
+        minecraftVersionRange {
+            start = "1.21"
+            end = "1.21.1"
+        }
+    }
+
+    curseforge {
+        accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
+        projectId = ""
+        serverRequired = true
+        minecraftVersionRange {
+            start = "1.21"
+            end = "1.21.1"
+        }
+    }
+
+}
