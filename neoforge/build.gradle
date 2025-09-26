@@ -8,6 +8,9 @@ architectury {
     neoForge()
 }
 
+// Configure JAR naming to include Minecraft version
+archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
+
 configurations {
     common
     shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
@@ -42,8 +45,8 @@ shadowJar {
 remapJar {
     inputFile.set shadowJar.archiveFile
     dependsOn shadowJar
-    archiveClassifier.set(null)
-    atAccessWideners.add("mvs.accesswidener") // this is a path inside the mod jar
+    archiveClassifier.set("neoforge")
+    atAccessWideners.add("moogs_structures.accesswidener") // this is a path inside the mod jar
 }
 
 jar {
@@ -69,21 +72,27 @@ publishMods {
     file = remapJar.archiveFile
     changelog = changelogtext
     type = STABLE
-
-    displayName = "MVS ${project.version} [NEOFORGE]"
-
     modLoaders.add("neoforge")
+
+    displayName = "MoogsStructureLib ${project.version} [NEOFORGE]"
 
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
-        projectId = "OQAgZMH1"
-        minecraftVersions.add("1.21.5")
+        projectId = ""
+        minecraftVersionRange {
+            start = "1.21"
+            end = "1.21.1"
+        }
     }
 
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-        projectId = "656977"
-        minecraftVersions.add("1.21.5")
+        projectId = ""
         serverRequired = true
+        minecraftVersionRange {
+            start = "1.21"
+            end = "1.21.1"
+        }
     }
+
 }

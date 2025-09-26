@@ -1,39 +1,31 @@
 modLoader="javafml"
-loaderVersion="[4,)"
-issueTrackerURL="https://github.com/FinnSetchell/MoogsVoyagerStructures/issues" #optional
-license="https://github.com/FinnSetchell/MoogsVoyagerStructures/blob/1.20-MultiLoader/LICENSE"
+loaderVersion="[2,)"
+issueTrackerURL="https://github.com/FinnSetchell/MoogsStructureLib/issues" #optional
+license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 
 [[mods]]
-    modId="mvs"
-    logoFile= "assets/mvs/icon.png"
+    modId="moogs_structures"
+    logoFile= "assets/moogs_structures/icon.png"
     logoBlur=false
     version="${version}"
-    displayName="Moog's Voyager Structures"
-    displayURL="https://www.curseforge.com/minecraft/mc-mods/moogs-voyager-structures"
+    displayName="Moog's Structure Lib"
+    displayURL="https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib"
     authors="FinnDog"
-    credits="Thanks to Olver, the main builder as well as TelepathicGrunt for their structure mod template and rs"
+    credits="Thanks to TelepathicGrunt for their structure mod template and rs"
     description='''
-    Moogs Voyager Structures brings life, fun and variety to your Minecraft world!
-    Explore awesome new structures made with vanilla blocks and entities, and discover loot,
-    enemies, and villagers along the way. This mod is compatible with any modpack and keeps
-    the vanilla feel of the game!
+    Moogs Structure Lib is a library mod used to generate the structures from the
+    moog structure mods. Feel free to use it for your own projects and mods.
     '''
 
 [[mixins]]
-    config = "mvs-neoforge.mixins.json"
+    config = "moogs_structures-neoforge.mixins.json"
 
 [[mixins]]
-    config = "mvs-common.mixins.json"
+    config = "moogs_structures-common.mixins.json"
 
-[[dependencies.mvs]]
+[[dependencies.moogs_structures]]
     modId="minecraft"
     mandatory = true
-    versionRange="[1.21.5,)"
+    versionRange="[1.21.1,)"
     ordering = "NONE"
     side = "BOTH"
-
-
-[[dependencies.mvs]]
-    modId="neoforge"
-    type="required"
-    versionRange="[21.4.86-beta,)"
