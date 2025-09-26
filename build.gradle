@@ -29,8 +29,6 @@ allprojects {
     apply plugin: "maven-publish"
 
     archivesBaseName = rootProject.archives_base_name
-    // Final artifact will be: <archivesBaseName>-<version>-<classifier>.jar
-    // We want: mvs-1.0.0-1.21.5-1.21.8-<platform>.jar
     version = "${rootProject.mod_version}-${rootProject.minecraft_version_range}"
     group = rootProject.maven_group
 
