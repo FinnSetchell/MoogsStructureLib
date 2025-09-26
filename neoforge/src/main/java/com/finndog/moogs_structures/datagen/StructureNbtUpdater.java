@@ -12,12 +12,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.MultiPackResourceManager;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.util.datafix.DataFixers;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
+import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -32,27 +31,19 @@ public class StructureNbtUpdater implements DataProvider {
     private final String basePath;
     private final String modid;
     private final PackOutput output;
-    private final MultiPackResourceManager resources;
+    private final ResourceManager resourceManager;
 
-    public StructureNbtUpdater(String basePath, String modid, ExistingFileHelper helper, PackOutput output) {
+    public StructureNbtUpdater(String basePath, String modid, PackOutput output, ResourceManager resourceManager) {
         this.basePath = basePath;
         this.modid = modid;
         this.output = output;
-
-        try {
-            Field serverData = ExistingFileHelper.class.getDeclaredField("serverData");
-            serverData.setAccessible(true);
-            resources = (MultiPackResourceManager)serverData.get(helper);
-        }
-        catch (NoSuchFieldException|IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        this.resourceManager = resourceManager;
     }
 
     @Override
     public @NotNull CompletableFuture<?> run(@Nonnull CachedOutput cache) {
         try {
-            for (var entry : resources.listResources(basePath, $ -> true).entrySet()) {
+            for (var entry : resourceManager.listResources(basePath, $ -> true).entrySet()) {
                 if (entry.getKey().getNamespace().equals(modid)) {
                     process(entry.getKey(), entry.getValue(), cache);
                 }
@@ -86,11 +77,12 @@ public class StructureNbtUpdater implements DataProvider {
     }
 
     private static CompoundTag updateNBT(CompoundTag nbt) {
+        final int dataVersion = nbt.getIntOr("DataVersion", 0);
         final CompoundTag updatedNBT = DataFixTypes.STRUCTURE.updateToCurrentVersion(
-            DataFixers.getDataFixer(), nbt, nbt.getInt("DataVersion")
+            DataFixers.getDataFixer(), nbt, dataVersion
         );
         StructureTemplate template = new StructureTemplate();
-        template.load(BuiltInRegistries.BLOCK.asLookup(), updatedNBT);
+        template.load(BuiltInRegistries.BLOCK, updatedNBT);
         return template.save(new CompoundTag());
     }
 

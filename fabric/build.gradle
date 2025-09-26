@@ -8,8 +8,8 @@ architectury {
     fabric()
 }
 
-// Configure JAR naming to include Minecraft version
-archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
+// Keep base name simple; version now carries mod version and MC range
+archivesBaseName = "${rootProject.archives_base_name}"
 
 loom {
     accessWidenerPath = project(":common").loom.accessWidenerPath
@@ -81,20 +81,20 @@ publishMods {
 
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
-        projectId = ""
+        projectId = "1oUDhxuy"
         minecraftVersionRange {
-            start = "1.21"
-            end = "1.21.1"
+            start = "1.21.5"
+                end = "1.21.8"
         }
     }
 
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-        projectId = ""
+        projectId = "1337167"
         serverRequired = true
         minecraftVersionRange {
-            start = "1.21"
-            end = "1.21.1"
+            start = "1.21.5"
+                end = "1.21.8"
         }
     }
 
