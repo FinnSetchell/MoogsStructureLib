@@ -8,8 +8,8 @@ architectury {
     neoForge()
 }
 
-// Configure JAR naming to include Minecraft version
-archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
+// Keep base name simple; version now carries mod version and MC range
+archivesBaseName = "${rootProject.archives_base_name}"
 
 configurations {
     common
@@ -74,7 +74,7 @@ publishMods {
     type = STABLE
     modLoaders.add("neoforge")
 
-    displayName = "MoogsStructureLib ${project.version} [NEOFORGE]"
+    displayName = "Moog's Structure Lib ${project.version} [NEOFORGE]"
 
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
