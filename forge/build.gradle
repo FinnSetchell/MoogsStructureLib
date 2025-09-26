@@ -8,8 +8,8 @@ architectury {
     forge()
 }
 
-// Configure JAR naming to include Minecraft version
-archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
+// Keep base name simple; version now carries mod version and MC range
+archivesBaseName = "${rootProject.archives_base_name}"
 
 loom {
     accessWidenerPath = project(":common").loom.accessWidenerPath
