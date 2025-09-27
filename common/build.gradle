@@ -2,9 +2,6 @@ architectury {
     common(rootProject.enabled_platforms.split(","))
 }
 
-// Configure JAR naming to include Minecraft version
-archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version}"
-
 loom {
     accessWidenerPath = file("src/main/resources/moogs_structures.accesswidener")
 }
