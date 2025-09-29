@@ -3,9 +3,9 @@ package com.finndog.moogs_structures.modinit.registry.neoforge;
 import com.finndog.moogs_structures.modinit.registry.RegistryEntries;
 import com.finndog.moogs_structures.modinit.registry.RegistryEntry;
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
+import com.finndog.moogs_structures.neoforge.MoogsStructuresNeoforge;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.Collection;
@@ -36,6 +36,6 @@ public class NeoForgeResourcefulRegistry<T> implements ResourcefulRegistry<T> {
 
     @Override
     public void init() {
-        register.register(FMLJavaModLoadingContext.get().getModEventBus());
+        register.register(MoogsStructuresNeoforge.modEventBusTempHolder);
     }
 }

@@ -20,10 +20,14 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 @Mod(MoogsStructuresCommon.MODID)
 public class MoogsStructuresNeoforge {
 
+    public static IEventBus modEventBusTempHolder = null;
+
     public MoogsStructuresNeoforge(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(EventPriority.NORMAL, ResourcefulRegistriesImpl::onRegisterForgeRegistries);
 
+        modEventBusTempHolder = modEventBus;
         MoogsStructuresCommon.init();
+        modEventBusTempHolder = null;
 
         modEventBus.addListener(MoogsStructuresNeoforge::onSetup);
 

@@ -46,7 +46,7 @@ remapJar {
     injectAccessWidener = true
     input.set shadowJar.archiveFile
     dependsOn shadowJar
-    archiveClassifier.set(null)
+    archiveClassifier.set("fabric")
 }
 
 jar {
@@ -94,7 +94,7 @@ publishMods {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
         projectId = "1oUDhxuy"
         minecraftVersionRange {
-            start = "1.20.4"
+            start = "1.20.5"
             end = "1.20.6"
         }
     }
@@ -104,7 +104,7 @@ publishMods {
         projectId = "1337167"
         serverRequired = true
         minecraftVersionRange {
-            start = "1.20.4"
+            start = "1.20.5"
             end = "1.20.6"
         }
     }
