@@ -77,7 +77,7 @@ public class PieceLimitedJigsawManager {
             BiConsumer<StructurePiecesBuilder, List<PoolElementStructurePiece>> structureBoundsAdjuster
     ) {
         // Get jigsaw pool registry
-        Registry<StructureTemplatePool> jigsawPoolRegistry = context.registryAccess().registryOrThrow(Registries.TEMPLATE_POOL);
+        Registry<StructureTemplatePool> jigsawPoolRegistry = context.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL);
 
         // Get a random orientation for the starting piece
         WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
@@ -202,13 +202,13 @@ public class PieceLimitedJigsawManager {
             structureBoundsAdjuster.accept(structurePiecesBuilder, components);
 
             // Do not generate if out of bounds
-            if(structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxBuildHeight()) {
+            if(structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxY()) {
                 structurePiecesBuilder.clear();
             }
         }));
     }
 
-    private static boolean doesNotHaveAllRequiredPieces(List<? extends StructurePiece> components, 
+    private static boolean doesNotHaveAllRequiredPieces(List<? extends StructurePiece> components,
                                                         Map<ResourceLocation, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces,
                                                         Map<ResourceLocation, Integer> counter
     ) {
@@ -278,9 +278,9 @@ public class PieceLimitedJigsawManager {
             this.maximumPieceCounts.forEach((key, value) -> this.currentPieceCounts.putIfAbsent(key, 0));
         }
 
-        public void generatePiece(PoolElementStructurePiece piece, 
-                                  MutableObject<BoxOctree> boxOctree, 
-                                  int minY, 
+        public void generatePiece(PoolElementStructurePiece piece,
+                                  MutableObject<BoxOctree> boxOctree,
+                                  int minY,
                                   int depth,
                                   boolean doBoundaryAdjustments,
                                   LevelHeightAccessor heightLimitView
@@ -294,16 +294,16 @@ public class PieceLimitedJigsawManager {
             MutableObject<BoxOctree> parentOctree = new MutableObject<>();
 
             // Get list of all jigsaw blocks in this piece
-            List<StructureTemplate.StructureBlockInfo> pieceJigsawBlocks = pieceBlueprint.getShuffledJigsawBlocks(context.structureTemplateManager(), piecePos, pieceRotation, this.random);
+            List<StructureTemplate.JigsawBlockInfo> pieceJigsawBlocks = pieceBlueprint.getShuffledJigsawBlocks(context.structureTemplateManager(), piecePos, pieceRotation, this.random);
 
-            for (StructureTemplate.StructureBlockInfo jigsawBlock : pieceJigsawBlocks) {
+            for (StructureTemplate.JigsawBlockInfo jigsawBlock : pieceJigsawBlocks) {
                 // Gather jigsaw block information
-                Direction direction = JigsawBlock.getFrontFacing(jigsawBlock.state());
-                BlockPos jigsawBlockPos = jigsawBlock.pos();
+                Direction direction = JigsawBlock.getFrontFacing(jigsawBlock.info().state());
+                BlockPos jigsawBlockPos = jigsawBlock.info().pos();
                 BlockPos jigsawBlockTargetPos = jigsawBlockPos.relative(direction);
 
                 // Get the jigsaw block's piece pool
-                ResourceLocation jigsawBlockPool = ResourceLocation.tryParse(jigsawBlock.nbt().getString("pool"));
+                ResourceLocation jigsawBlockPool = ResourceLocation.tryParse(String.valueOf(jigsawBlock.info().nbt().getString("pool")));
                 Optional<StructureTemplatePool> poolOptional = this.poolRegistry.getOptional(jigsawBlockPool);
 
                 // Only continue if we are using the jigsaw pattern registry and if it is not empty
@@ -355,7 +355,7 @@ public class PieceLimitedJigsawManager {
         private StructurePoolElement processList(
                 List<Pair<StructurePoolElement, Integer>> candidatePieces,
                 boolean doBoundaryAdjustments,
-                StructureTemplate.StructureBlockInfo jigsawBlock,
+                StructureTemplate.JigsawBlockInfo jigsawBlock,
                 BlockPos jigsawBlockTargetPos,
                 int pieceMinY,
                 BlockPos jigsawBlockPos,
@@ -444,18 +444,18 @@ public class PieceLimitedJigsawManager {
 
                 // Try different rotations to see which sides of the piece are fit to be the receiving end
                 for (Rotation rotation : Rotation.getShuffled(this.random)) {
-                    List<StructureTemplate.StructureBlockInfo> candidateJigsawBlocks = candidatePiece.getShuffledJigsawBlocks(context.structureTemplateManager(), BlockPos.ZERO, rotation, this.random);
+                    List<StructureTemplate.JigsawBlockInfo> candidateJigsawBlocks = candidatePiece.getShuffledJigsawBlocks(context.structureTemplateManager(), BlockPos.ZERO, rotation, this.random);
                     BoundingBox tempCandidateBoundingBox = candidatePiece.getBoundingBox(context.structureTemplateManager(), BlockPos.ZERO, rotation);
 
                     // Some sort of logic for setting the candidateHeightAdjustments var if doBoundaryAdjustments.
                     int candidateHeightAdjustments;
                     if (doBoundaryAdjustments && tempCandidateBoundingBox.getYSpan() <= 16) {
                         candidateHeightAdjustments = candidateJigsawBlocks.stream().mapToInt((pieceCandidateJigsawBlock) -> {
-                            if (!tempCandidateBoundingBox.isInside(pieceCandidateJigsawBlock.pos().relative(JigsawBlock.getFrontFacing(pieceCandidateJigsawBlock.state())))) {
+                            if (!tempCandidateBoundingBox.isInside(pieceCandidateJigsawBlock.info().pos().relative(JigsawBlock.getFrontFacing(pieceCandidateJigsawBlock.info().state())))) {
                                 return 0;
                             }
                             else {
-                                ResourceLocation candidateTargetPool = ResourceLocation.tryParse(pieceCandidateJigsawBlock.nbt().getString("pool"));
+                                ResourceLocation candidateTargetPool = ResourceLocation.tryParse(String.valueOf(pieceCandidateJigsawBlock.info().nbt().getString("pool")));
                                 Optional<StructureTemplatePool> candidateTargetPoolOptional = this.poolRegistry.getOptional(candidateTargetPool);
                                 if (candidateTargetPoolOptional.isEmpty()) {
                                     MoogsStructuresCommon.LOGGER.warn("Moog's Structure Lib: Non-existent child pool attempted to be spawned: {} which is being called from {}. Let Moog's Structure Lib dev (FinnDog) know about this log entry.", candidateTargetPool, candidatePiece instanceof SinglePoolElement ? ((SinglePoolElementAccessor) candidatePiece).moogs_structures_getTemplate().left().get() : "not a SinglePoolElement class");
@@ -465,15 +465,15 @@ public class PieceLimitedJigsawManager {
                                 return Math.max(tallestCandidateTargetPoolPieceHeight, tallestCandidateTargetFallbackPieceHeight);
                             }
                         }).max().orElse(0);
-                    } 
+                    }
                     else {
                         candidateHeightAdjustments = 0;
                     }
 
                     // Check for each of the candidate's jigsaw blocks for a match
-                    for (StructureTemplate.StructureBlockInfo candidateJigsawBlock : candidateJigsawBlocks) {
-                        if (GeneralUtils.canJigsawsAttach(jigsawBlock, candidateJigsawBlock)) {
-                            BlockPos candidateJigsawBlockPos = candidateJigsawBlock.pos();
+                    for (StructureTemplate.JigsawBlockInfo candidateJigsawBlock : candidateJigsawBlocks) {
+                        if (GeneralUtils.canJigsawsAttach(jigsawBlock.info(), candidateJigsawBlock.info())) {
+                            BlockPos candidateJigsawBlockPos = candidateJigsawBlock.info().pos();
                             BlockPos candidateJigsawBlockRelativePos = new BlockPos(jigsawBlockTargetPos.getX() - candidateJigsawBlockPos.getX(), jigsawBlockTargetPos.getY() - candidateJigsawBlockPos.getY(), jigsawBlockTargetPos.getZ() - candidateJigsawBlockPos.getZ());
 
                             // Get the bounding box for the piece, offset by the relative position difference
@@ -487,7 +487,7 @@ public class PieceLimitedJigsawManager {
                             // Determine how much the candidate jigsaw block is off in the y direction.
                             // This will be needed to offset the candidate piece so that the jigsaw blocks line up properly.
                             int candidateJigsawBlockRelativeY = candidateJigsawBlockPos.getY();
-                            int candidateJigsawYOffsetNeeded = jigsawBlockRelativeY - candidateJigsawBlockRelativeY + JigsawBlock.getFrontFacing(jigsawBlock.state()).getStepY();
+                            int candidateJigsawYOffsetNeeded = jigsawBlockRelativeY - candidateJigsawBlockRelativeY + JigsawBlock.getFrontFacing(jigsawBlock.info().state()).getStepY();
 
                             // Determine how much we need to offset the candidate piece itself in order to have the jigsaw blocks aligned.
                             // Depends on if the placement of both pieces is rigid or not

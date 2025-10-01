@@ -35,11 +35,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import net.minecraft.core.Holder.Reference;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class GeneralUtils {
@@ -70,20 +68,22 @@ public final class GeneralUtils {
 
     public static boolean isFullCube(BlockGetter world, BlockPos pos, BlockState state) {
         if(state == null) return false;
-        return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape(world, pos)));
+        return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape()));
     }
 
     //////////////////////////////////////////////
 
     public static ItemStack enchantRandomly(RegistryAccess registryAccess, RandomSource random, ItemStack itemToEnchant, float chance) {
+        Registry<Enchantment> enchReg = registryAccess.lookupOrThrow(Registries.ENCHANTMENT);
         if(random.nextFloat() < chance) {
-            List<Holder.Reference<Enchantment>> list = registryAccess.registryOrThrow(Registries.ENCHANTMENT).holders()
-                    .filter(holder -> holder.value().canEnchant(itemToEnchant)).toList();
+            List<Enchantment> list = registryAccess.lookupOrThrow(Registries.ENCHANTMENT).stream()
+                    .filter(holder -> holder.canEnchant(itemToEnchant)).toList();
             if(!list.isEmpty()) {
-                Holder.Reference<Enchantment> enchantment = list.get(random.nextInt(list.size()));
-                // bias towards weaker enchantments
-                int enchantmentLevel = random.nextInt(Mth.nextInt(random, enchantment.value().getMinLevel(), enchantment.value().getMaxLevel()) + 1);
-                itemToEnchant.enchant(enchantment, enchantmentLevel);
+                Optional<Reference<Enchantment>> enchantment = enchReg.get(enchReg.getKey(list.get(random.nextInt(list.size()))));
+                enchantment.ifPresent(val -> {
+                    int enchantmentLevel = random.nextInt(Mth.nextInt(random, val.value().getMinLevel(), val.value().getMaxLevel()) + 1);
+                    itemToEnchant.enchant(val, enchantmentLevel);
+                });
             }
         }
 
@@ -147,7 +147,7 @@ public final class GeneralUtils {
         ChunkAccess currentChunk = worldView.getChunk(mutable);
         BlockState currentState = currentChunk.getBlockState(mutable);
 
-        while(mutable.getY() >= worldView.getMinBuildHeight() && isReplaceableByStructures(currentState)) {
+        while(mutable.getY() >= worldView.getMinY() && isReplaceableByStructures(currentState)) {
             mutable.move(Direction.DOWN);
             currentState = currentChunk.getBlockState(mutable);
         }
@@ -179,7 +179,7 @@ public final class GeneralUtils {
     public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
         FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
-        String joint = jigsaw1.nbt().getString("joint");
+        String joint = String.valueOf(jigsaw1.nbt().getString("joint"));
         if(joint.isEmpty()) {
             joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
         }
