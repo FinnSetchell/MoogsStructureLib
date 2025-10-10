@@ -33,4 +33,4 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 [[dependencies.moogs_structures]]
     modId="neoforge"
     type="required"
-    versionRange="[21.2.1-beta,)"
+    versionRange="[21.4.86-beta,)"
