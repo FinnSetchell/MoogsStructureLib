@@ -13,8 +13,11 @@ import net.neoforged.neoforge.data.event.GatherDataEvent;
 public class StructureNbtUpdaterDatagen {
 
     @SubscribeEvent
-    public static void gatherData(GatherDataEvent.Server event) {
-        ResourceManager resourceManager = event.getResourceManager(PackType.SERVER_DATA);
+    public static void gatherData(GatherDataEvent event) {
+        if (!event.includeServer()) {
+            return;
+        }
+        ResourceManager resourceManager = (ResourceManager) event.getExistingFileHelper();
         DataGenerator gen = event.getGenerator();
         final var output = gen.getPackOutput();
         gen.addProvider(true, new StructureNbtUpdater("structure", MoogsStructuresCommon.MODID, resourceManager, output));

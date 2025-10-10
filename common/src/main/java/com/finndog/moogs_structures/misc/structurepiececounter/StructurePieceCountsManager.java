@@ -6,7 +6,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 import net.minecraft.MethodsReturnNonnullByDefault;
-import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -28,7 +27,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
     private final Map<ResourceLocation, Map<ResourceLocation, Integer>> cachedMaxCountPiecesMap = new HashMap<>();
 
     public StructurePieceCountsManager() {
-        super(ExtraCodecs.JSON, FileToIdConverter.json("moogs_structures_pieces_spawn_counts"));
+        super(ExtraCodecs.JSON, "moogs_structures_pieces_spawn_counts");
     }
 
     @MethodsReturnNonnullByDefault

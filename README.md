@@ -1,7 +1,25 @@
-# Moog's Structure Library
+![Banner](https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_header.webp)
 
-<p align="center">
-  <a href="https://ko-fi.com/D1D8LKA5N"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi"></a>
-  <br>
-  <a href="https://discord.com/invite/S5nffJbuvA"><img src="https://img.shields.io/discord/869218732650688543?color=3e72b3&label=DISCORD&style=for-the-badge" alt="Discord"></a>
-</p>
+[![Discord](https://img.shields.io/discord/869218732650688543?color=3c3040&label=DISCORD&style=for-the-badge)](https://discord.com/invite/S5nffJbuvA)
+
+[![My projects](https://img.shields.io/badge/CurseForge-projects-3c3040?style=for-the-badge&logo=curseforge)](https://www.curseforge.com/members/finndog_123/projects)
+
+[![My projects](https://img.shields.io/badge/Modrinth-projects-3c3040?style=for-the-badge&logo=modrinth)](https://modrinth.com/user/FinnSetchell)
+
+![Overview](https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_overview.webp)
+
+This Mod works for Forge, Fabric and NeoForge! It can also be installed server-side only. Forge support was dropped after 1.20.4
+
+### ABOUT
+
+Moog's Structure Lib is a powerful library mod that provides flexible, data-driven structure generation systems for other mods to build upon.
+
+### FOR MOD DEVELOPERS
+
+Simply add it as a dependency and use the provided structure types and placement systems. The mod includes a complete barn structure example that demonstrates how to use all the features.
+
+![banner](https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_discord.webp)
+
+The best and fastest way to get replies is to join our [Discord server](https://discord.gg/S5nffJbuvA).
+
+![BHsponser](https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_promo.webp)
