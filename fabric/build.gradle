@@ -83,7 +83,7 @@ publishMods {
         projectId = "1oUDhxuy"
         minecraftVersionRange {
             start = "1.21.5"
-                end = "1.21.8"
+                end = "1.21.10"
         }
     }
 
@@ -93,7 +93,7 @@ publishMods {
         serverRequired = true
         minecraftVersionRange {
             start = "1.21.5"
-                end = "1.21.8"
+                end = "1.21.10"
         }
     }
 
