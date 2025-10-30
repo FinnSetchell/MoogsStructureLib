@@ -1,11 +1,5 @@
 
 # Changelog
 
-### Added
-- 
-
 ### Changed
-- 
-
-### Fixed
-- 
+- compressed and removed duplicate icon.png
