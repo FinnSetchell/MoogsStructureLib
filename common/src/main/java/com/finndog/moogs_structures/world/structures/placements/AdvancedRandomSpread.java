@@ -18,8 +18,11 @@ import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadType;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacementType;
+import net.minecraft.resources.ResourceLocation;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     public static final MapCodec<AdvancedRandomSpread> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
@@ -136,6 +139,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     }
 
     public record SuperExclusionZone(HolderSet<StructureSet> otherSet, int chunkCount, Optional<Integer> allowedChunkCount) {
+        private static final ThreadLocal<Set<ResourceLocation>> EVALUATING_SETS = ThreadLocal.withInitial(HashSet::new);
+
         public static final Codec<SuperExclusionZone> CODEC = RecordCodecBuilder.create(builder -> builder.group(
                 RegistryCodecs.homogeneousList(Registries.STRUCTURE_SET, StructureSet.DIRECT_CODEC).fieldOf("other_set").forGetter(SuperExclusionZone::otherSet),
                 Codec.intRange(1, Integer.MAX_VALUE).fieldOf("chunk_count").forGetter(SuperExclusionZone::chunkCount),
@@ -143,17 +148,44 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         ).apply(builder, SuperExclusionZone::new));
 
         boolean isPlacementForbidden(ChunkGeneratorStructureState chunkGeneratorStructureState, int l, int j) {
+            Set<ResourceLocation> evaluating = EVALUATING_SETS.get();
+            
             for (Holder<StructureSet> holder : this.otherSet) {
-                if (chunkGeneratorStructureState.hasStructureChunkInRange(holder, l, j, this.chunkCount)) {
-                    return true;
+                ResourceLocation setId = holder.unwrapKey().map(key -> key.location()).orElse(null);
+                if (setId == null) continue;
+                
+                // Check if we're already evaluating this structure set (circular dependency detected)
+                if (evaluating.contains(setId)) {
+                    continue;
+                }
+                
+                evaluating.add(setId);
+                try {
+                    if (chunkGeneratorStructureState.hasStructureChunkInRange(holder, l, j, this.chunkCount)) {
+                        return true;
+                    }
+                } finally {
+                    evaluating.remove(setId);
                 }
             }
 
             if (this.allowedChunkCount.isPresent() && this.allowedChunkCount.get() > this.chunkCount) {
                 boolean isAnyInRange = false;
                 for (Holder<StructureSet> holder : this.otherSet) {
-                    if (chunkGeneratorStructureState.hasStructureChunkInRange(holder, l, j, this.allowedChunkCount.get())) {
-                        isAnyInRange = true;
+                    ResourceLocation setId = holder.unwrapKey().map(key -> key.location()).orElse(null);
+                    if (setId == null) continue;
+                    
+                    if (evaluating.contains(setId)) {
+                        continue;
+                    }
+                    
+                    evaluating.add(setId);
+                    try {
+                        if (chunkGeneratorStructureState.hasStructureChunkInRange(holder, l, j, this.allowedChunkCount.get())) {
+                            isAnyInRange = true;
+                        }
+                    } finally {
+                        evaluating.remove(setId);
                     }
                 }
                 if (!isAnyInRange) {
