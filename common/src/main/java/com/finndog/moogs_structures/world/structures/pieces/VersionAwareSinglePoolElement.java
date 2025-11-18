@@ -15,7 +15,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElementType;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
-import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,15 +38,13 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
                     ResourceLocation.CODEC.optionalFieldOf("location").forGetter(VersionAwareSinglePoolElement::singleLocation),
                     VERSION_ENTRIES_CODEC.optionalFieldOf("locations").forGetter(VersionAwareSinglePoolElement::versionEntriesOptional),
                     processorsCodec(),
-                    projectionCodec(),
-                    overrideLiquidSettingsCodec()
-            ).apply(instance, (singleLocation, versionEntries, processors, projection, overrideLiquidSettings) ->
+                    projectionCodec()
+            ).apply(instance, (singleLocation, versionEntries, processors, projection) ->
                     new VersionAwareSinglePoolElement(
                             singleLocation.orElse(null),
                             versionEntries.map(List::copyOf).orElse(List.of()),
                             processors,
-                            projection,
-                            overrideLiquidSettings.orElse(null)
+                            projection
                     )));
 
     @Nullable
@@ -59,12 +56,10 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
     private VersionAwareSinglePoolElement(@Nullable ResourceLocation singleLocation,
                                           List<VersionEntry> versionEntries,
                                           Holder<StructureProcessorList> processors,
-                                          StructureTemplatePool.Projection projection,
-                                          @Nullable LiquidSettings overrideLiquidSettings) {
+                                          StructureTemplatePool.Projection projection) {
         super(Either.left(resolveTargetLocation(singleLocation, versionEntries)),
                 processors,
-                projection,
-                Optional.ofNullable(overrideLiquidSettings));
+                projection);
         this.singleLocation = singleLocation;
         this.versionEntries = List.copyOf(versionEntries);
         ResourceLocation fallback = computeDefaultLocation(singleLocation, this.versionEntries);
