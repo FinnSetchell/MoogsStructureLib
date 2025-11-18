@@ -40,7 +40,7 @@ public final class VersionResolver {
 
             Optional<VersionEntry> result = parsedEntry.result();
             if (result.isEmpty()) {
-                String errorMessage = parsedEntry.error().map(DataResult.Error::message).orElse("Unknown version range error");
+                String errorMessage = parsedEntry.error().map(errorResult -> errorResult.message()).orElse("Unknown version range error");
                 return DataResult.error(() -> errorMessage);
             }
             entries.add(result.get());
@@ -87,14 +87,14 @@ public final class VersionResolver {
 
             Optional<VersionNumber> min = minResult.result();
             if (min.isEmpty()) {
-                String errorMessage = minResult.error().map(DataResult.Error::message)
+                String errorMessage = minResult.error().map(errorResult -> errorResult.message())
                         .orElse("Failed to parse minimum version for range '" + raw + "'");
                 return DataResult.error(() -> errorMessage);
             }
 
             Optional<VersionNumber> max = maxResult.result();
             if (max.isEmpty()) {
-                String errorMessage = maxResult.error().map(DataResult.Error::message)
+                String errorMessage = maxResult.error().map(errorResult -> errorResult.message())
                         .orElse("Failed to parse maximum version for range '" + raw + "'");
                 return DataResult.error(() -> errorMessage);
             }

@@ -33,7 +33,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
             Codec.unboundedMap(Codec.STRING, ResourceLocation.CODEC)
                     .flatXmap(VersionResolver::parseVersionMap, VersionResolver::encodeVersionEntries);
 
-    public static final MapCodec<VersionAwareSinglePoolElement> CODEC = RecordCodecBuilder.mapCodec(instance ->
+    public static final MapCodec<VersionAwareSinglePoolElement> MAP_CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
                     ResourceLocation.CODEC.optionalFieldOf("location").forGetter(VersionAwareSinglePoolElement::singleLocation),
                     VERSION_ENTRIES_CODEC.optionalFieldOf("locations").forGetter(VersionAwareSinglePoolElement::versionEntriesOptional),
@@ -46,6 +46,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
                             processors,
                             projection
                     )));
+    public static final Codec<VersionAwareSinglePoolElement> CODEC = MAP_CODEC.codec();
 
     @Nullable
     private final ResourceLocation singleLocation;
