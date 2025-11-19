@@ -80,8 +80,8 @@ publishMods {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
         projectId = "1oUDhxuy"
         minecraftVersionRange {
-            start = "1.21"
-            end = "1.21.1"
+            start = "1.21.2"
+            end = "1.21.3"
         }
     }
 
@@ -90,8 +90,8 @@ publishMods {
         projectId = "1337167"
         serverRequired = true
         minecraftVersionRange {
-            start = "1.21"
-            end = "1.21.1"
+            start = "1.21.2"
+            end = "1.21.3"
         }
     }
 
