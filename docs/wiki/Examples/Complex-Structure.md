@@ -454,15 +454,15 @@ Ruined cathedrals spawn 1/3 as often as regular cathedrals.
 
 Now that you understand complex structures:
 
-1. **[Advanced Topics](../Advanced-Topics.md)** - More advanced features
-2. **[Structure Files](../Structure-Files.md)** - Complete reference
-3. **[Template Pools](../Template-Pools.md)** - Advanced pool techniques
+1. **[Advanced Topics](Advanced-Topics)** - More advanced features
+2. **[Structure Files](Structure-Files)** - Complete reference
+3. **[Template Pools](Template-Pools)** - Advanced pool techniques
 
 ---
 
 **See Also:**
-- [Structure Files](../Structure-Files.md) - All structure options
-- [Template Pools](../Template-Pools.md) - Jigsaw connections
-- [Placement Systems](../Placement-Systems.md) - Rare structure placement
-- [Advanced Topics](../Advanced-Topics.md) - Advanced features
+- [Structure Files](Structure-Files) - All structure options
+- [Template Pools](Template-Pools) - Jigsaw connections
+- [Placement Systems](Placement-Systems) - Rare structure placement
+- [Advanced Topics](Advanced-Topics) - Advanced features
 

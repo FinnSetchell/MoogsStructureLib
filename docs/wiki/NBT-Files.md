@@ -160,7 +160,7 @@ In your NBT files, place **Jigsaw Blocks** to define connection points:
 
 ## Version-Aware Structures
 
-For structures that need different NBT files per Minecraft version, use version-aware pool elements. See [Advanced Topics](Advanced-Topics.md) for details.
+For structures that need different NBT files per Minecraft version, use version-aware pool elements. See [Advanced Topics](Advanced-Topics) for details.
 
 ## Common Issues
 
@@ -192,5 +192,5 @@ For structures that need different NBT files per Minecraft version, use version-
 
 ---
 
-**Next:** Learn about [Advanced Topics](Advanced-Topics.md) including version-aware structures!
+**Next:** Learn about [Advanced Topics](Advanced-Topics) including version-aware structures!
 

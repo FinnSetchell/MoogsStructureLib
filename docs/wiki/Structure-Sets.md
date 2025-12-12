@@ -67,7 +67,7 @@ Selection weight if multiple structures are in the set. Higher weights are more 
 
 Defines how structures are placed in the world. For Moogs Structure Lib, use `moogs_structures:advanced_random_spread`.
 
-See [Placement Systems](Placement-Systems.md) for complete placement documentation.
+See [Placement Systems](Placement-Systems) for complete placement documentation.
 
 ## Simple Example: Cart
 
@@ -374,5 +374,5 @@ Then reference it in exclusion zones:
 
 ---
 
-**Next:** Learn about [Placement Systems](Placement-Systems.md) for advanced placement options!
+**Next:** Learn about [Placement Systems](Placement-Systems) for advanced placement options!
 

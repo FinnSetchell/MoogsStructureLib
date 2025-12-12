@@ -321,14 +321,14 @@ For expanding Nether structures:
 
 Now that you understand Nether structures:
 
-1. **[Complex Structure Example](Complex-Structure.md)** - Large expanding structures
-2. **[Advanced Topics](../Advanced-Topics.md)** - More advanced features
-3. **[Structure Files](../Structure-Files.md)** - Complete reference
+1. **[Complex Structure Example](Complex-Structure)** - Large expanding structures
+2. **[Advanced Topics](Advanced-Topics)** - More advanced features
+3. **[Structure Files](Structure-Files)** - Complete reference
 
 ---
 
 **See Also:**
-- [Structure Files](../Structure-Files.md) - Nether-specific fields
-- [Template Pools](../Template-Pools.md) - Pool system (same for Nether)
-- [Placement Systems](../Placement-Systems.md) - Placement configuration
+- [Structure Files](Structure-Files) - Nether-specific fields
+- [Template Pools](Template-Pools) - Pool system (same for Nether)
+- [Placement Systems](Placement-Systems) - Placement configuration
 

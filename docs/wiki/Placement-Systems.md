@@ -403,5 +403,5 @@ Prevents overlap with tagged structures.
 
 ---
 
-**Next:** Learn about [NBT Files](NBT-Files.md) to understand where structure files go!
+**Next:** Learn about [NBT Files](NBT-Files) to understand where structure files go!
 

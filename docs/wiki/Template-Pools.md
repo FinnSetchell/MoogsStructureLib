@@ -366,7 +366,7 @@ For structures that need different NBT files per Minecraft version, use:
 }
 ```
 
-See [Advanced Topics](Advanced-Topics.md) for more details.
+See [Advanced Topics](Advanced-Topics) for more details.
 
 ## Pool Naming Conventions
 
@@ -447,5 +447,5 @@ Some variants more common than others:
 
 ---
 
-**Next:** Learn about [Structure Sets](Structure-Sets.md) to configure where structures spawn!
+**Next:** Learn about [Structure Sets](Structure-Sets) to configure where structures spawn!
 

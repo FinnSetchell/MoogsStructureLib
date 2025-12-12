@@ -234,14 +234,14 @@ To make carts more/less common:
 
 Now that you understand simple structures:
 
-1. **[Jigsaw Structure Example](Jigsaw-Structure.md)** - Learn about connecting multiple pieces
-2. **[Nether Structure Example](Nether-Structure.md)** - Create Nether-specific structures
-3. **[Complex Structure Example](Complex-Structure.md)** - Build large, expanding structures
+1. **[Jigsaw Structure Example](Jigsaw-Structure)** - Learn about connecting multiple pieces
+2. **[Nether Structure Example](Nether-Structure)** - Create Nether-specific structures
+3. **[Complex Structure Example](Complex-Structure)** - Build large, expanding structures
 
 ---
 
 **See Also:**
-- [Getting Started](../Getting-Started.md) - Basics overview
-- [Structure Files](../Structure-Files.md) - Complete structure reference
-- [Template Pools](../Template-Pools.md) - Pool system details
+- [Getting Started](Getting-Started) - Basics overview
+- [Structure Files](Structure-Files) - Complete structure reference
+- [Template Pools](Template-Pools) - Pool system details
 

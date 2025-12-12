@@ -18,6 +18,12 @@ Moog's Structure Lib is a powerful library mod that provides flexible, data-driv
 
 Simply add it as a dependency and use the provided structure types and placement systems. The mod includes a complete barn structure example that demonstrates how to use all the features.
 
+### DOCUMENTATION
+
+**📚 [Complete Wiki Documentation](https://github.com/FinnSetchell/MoogsStructureLib/wiki)**
+
+The wiki includes step-by-step guides, complete JSON references, real examples from MoogsVoyagerStructures, and troubleshooting tips.
+
 ![banner](https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_discord.webp)
 
 The best and fastest way to get replies is to join our [Discord server](https://discord.gg/S5nffJbuvA).

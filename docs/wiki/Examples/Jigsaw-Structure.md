@@ -323,14 +323,14 @@ To allow barn expansion:
 
 Now that you understand jigsaw structures:
 
-1. **[Nether Structure Example](Nether-Structure.md)** - Nether-specific features
-2. **[Complex Structure Example](Complex-Structure.md)** - Large expanding structures
-3. **[Advanced Topics](../Advanced-Topics.md)** - Advanced features
+1. **[Nether Structure Example](Nether-Structure)** - Nether-specific features
+2. **[Complex Structure Example](Complex-Structure)** - Large expanding structures
+3. **[Advanced Topics](Advanced-Topics)** - Advanced features
 
 ---
 
 **See Also:**
-- [Template Pools](../Template-Pools.md) - Jigsaw connections explained
-- [Structure Files](../Structure-Files.md) - Terrain checks and options
-- [Placement Systems](../Placement-Systems.md) - Exclusion zones
+- [Template Pools](Template-Pools) - Jigsaw connections explained
+- [Structure Files](Structure-Files) - Terrain checks and options
+- [Placement Systems](Placement-Systems) - Exclusion zones
 

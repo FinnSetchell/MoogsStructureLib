@@ -169,14 +169,14 @@ Here's how these files work together:
 
 Now that you understand the basics:
 
-1. **[Structure Files](Structure-Files.md)** - Learn all available options for structure JSON files
-2. **[Template Pools](Template-Pools.md)** - Understand how pools work and connect structures
-3. **[Structure Sets](Structure-Sets.md)** - Configure where structures spawn
-4. **[Placement Systems](Placement-Systems.md)** - Advanced placement options
-5. **[NBT Files](NBT-Files.md)** - How to create and organize structure files
+1. **[Structure Files](Structure-Files)** - Learn all available options for structure JSON files
+2. **[Template Pools](Template-Pools)** - Understand how pools work and connect structures
+3. **[Structure Sets](Structure-Sets)** - Configure where structures spawn
+4. **[Placement Systems](Placement-Systems)** - Advanced placement options
+5. **[NBT Files](NBT-Files)** - How to create and organize structure files
 
 Or jump straight to examples:
-- **[Simple Structure Example](Examples/Simple-Structure.md)** - Detailed walkthrough of the Cart structure
+- **[Simple Structure Example](Simple-Structure)** - Detailed walkthrough of the Cart structure
 
 ## Common Mistakes to Avoid
 
@@ -186,5 +186,5 @@ Or jump straight to examples:
 
 ---
 
-Ready to dive deeper? Check out the [Structure Files](Structure-Files.md) page for a complete reference!
+Ready to dive deeper? Check out the [Structure Files](Structure-Files) page for a complete reference!
 

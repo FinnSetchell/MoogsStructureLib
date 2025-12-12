@@ -428,7 +428,7 @@ Nether structures use special structure type:
 ---
 
 **See Also:**
-- [Structure Files](Structure-Files.md) - Complete structure JSON reference
-- [Template Pools](Template-Pools.md) - Pool system details
-- [Placement Systems](Placement-Systems.md) - Placement configuration
+- [Structure Files](Structure-Files) - Complete structure JSON reference
+- [Template Pools](Template-Pools) - Pool system details
+- [Placement Systems](Placement-Systems) - Placement configuration
 

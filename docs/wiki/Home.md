@@ -22,23 +22,23 @@ Moogs Structure Lib is a library mod that provides flexible, data-driven structu
 ## Quick Navigation
 
 ### Getting Started
-- **[Getting Started](Getting-Started.md)** - Start here! Learn the basics and create your first structure.
+- **[Getting Started](Getting-Started)** - Start here! Learn the basics and create your first structure.
 
 ### Core Concepts
-- **[Structure Files](Structure-Files.md)** - Complete reference for structure JSON files
-- **[Template Pools](Template-Pools.md)** - Understanding how template pools work
-- **[Structure Sets](Structure-Sets.md)** - Grouping structures with placement rules
-- **[Placement Systems](Placement-Systems.md)** - Advanced placement configuration
-- **[NBT Files](NBT-Files.md)** - Where and how to place your structure files
+- **[Structure Files](Structure-Files)** - Complete reference for structure JSON files
+- **[Template Pools](Template-Pools)** - Understanding how template pools work
+- **[Structure Sets](Structure-Sets)** - Grouping structures with placement rules
+- **[Placement Systems](Placement-Systems)** - Advanced placement configuration
+- **[NBT Files](NBT-Files)** - Where and how to place your structure files
 
 ### Advanced Topics
-- **[Advanced Topics](Advanced-Topics.md)** - Advanced features and placement modifiers
+- **[Advanced Topics](Advanced-Topics)** - Advanced features and placement modifiers
 
 ### Examples
-- **[Simple Structure Example](Examples/Simple-Structure.md)** - Cart structure walkthrough
-- **[Jigsaw Structure Example](Examples/Jigsaw-Structure.md)** - Barn structure with jigsaw connections
-- **[Nether Structure Example](Examples/Nether-Structure.md)** - Nether Devil structure
-- **[Complex Structure Example](Examples/Complex-Structure.md)** - Large structures like Cathedral
+- **[Simple Structure Example](Simple-Structure)** - Cart structure walkthrough
+- **[Jigsaw Structure Example](Jigsaw-Structure)** - Barn structure with jigsaw connections
+- **[Nether Structure Example](Nether-Structure)** - Nether Devil structure
+- **[Complex Structure Example](Complex-Structure)** - Large structures like Cathedral
 
 ## Structure Generation Overview
 
@@ -61,5 +61,5 @@ Throughout this wiki, we use examples from **[MoogsVoyagerStructures](https://gi
 
 ---
 
-**Ready to start?** Head over to [Getting Started](Getting-Started.md) to create your first structure!
+**Ready to start?** Head over to [Getting Started](Getting-Started) to create your first structure!
 

@@ -427,5 +427,5 @@ Always use:
 
 ---
 
-**Next:** Learn about [Template Pools](Template-Pools.md) to understand how structure pieces connect!
+**Next:** Learn about [Template Pools](Template-Pools) to understand how structure pieces connect!
 
