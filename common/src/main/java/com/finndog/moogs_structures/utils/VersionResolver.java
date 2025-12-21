@@ -2,7 +2,7 @@ package com.finndog.moogs_structures.utils;
 
 import com.mojang.serialization.DataResult;
 import net.minecraft.SharedConstants;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,7 +18,7 @@ import java.util.StringJoiner;
  */
 public final class VersionResolver {
 
-    private static final String CURRENT_VERSION_STRING = SharedConstants.VERSION_STRING;
+    private static final String CURRENT_VERSION_STRING = SharedConstants.getCurrentVersion().id();
     private static final VersionNumber CURRENT_VERSION = VersionNumber.parseInternal(CURRENT_VERSION_STRING);
 
     private VersionResolver() {
@@ -32,9 +32,9 @@ public final class VersionResolver {
         return CURRENT_VERSION_STRING;
     }
 
-    public static DataResult<List<VersionEntry>> parseVersionMap(Map<String, ResourceLocation> raw) {
+    public static DataResult<List<VersionEntry>> parseVersionMap(Map<String, Identifier> raw) {
         List<VersionEntry> entries = new ArrayList<>();
-        for (Map.Entry<String, ResourceLocation> entry : raw.entrySet()) {
+        for (Map.Entry<String, Identifier> entry : raw.entrySet()) {
             DataResult<VersionEntry> parsedEntry = parseRange(entry.getKey())
                     .map(range -> new VersionEntry(entry.getKey(), range, entry.getValue()));
 
@@ -48,8 +48,8 @@ public final class VersionResolver {
         return DataResult.success(List.copyOf(entries));
     }
 
-    public static DataResult<Map<String, ResourceLocation>> encodeVersionEntries(List<VersionEntry> entries) {
-        LinkedHashMap<String, ResourceLocation> map = new LinkedHashMap<>();
+    public static DataResult<Map<String, Identifier>> encodeVersionEntries(List<VersionEntry> entries) {
+        LinkedHashMap<String, Identifier> map = new LinkedHashMap<>();
         for (VersionEntry entry : entries) {
             map.put(entry.rawRange(), entry.location());
         }
@@ -131,7 +131,7 @@ public final class VersionResolver {
         return DataResult.success(new VersionNumber(List.copyOf(numbers)));
     }
 
-    public record VersionEntry(String rawRange, VersionRange range, ResourceLocation location) {
+    public record VersionEntry(String rawRange, VersionRange range, Identifier location) {
     }
 
     public record VersionRange(VersionNumber minInclusive, VersionNumber maxInclusive) {

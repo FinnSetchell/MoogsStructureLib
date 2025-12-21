@@ -13,7 +13,7 @@ import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.Pools;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.block.JigsawBlock;
@@ -53,13 +53,13 @@ public class PieceLimitedJigsawManager {
             Structure.GenerationContext context,
             Holder<StructureTemplatePool> startPoolHolder,
             int size,
-            ResourceLocation structureID,
+            Identifier structureID,
             BlockPos startPos,
             boolean doBoundaryAdjustments,
             Optional<Heightmap.Types> heightmapType,
             int maxY,
             int minY,
-            Set<ResourceLocation> poolsThatIgnoreBounds,
+            Set<Identifier> poolsThatIgnoreBounds,
             Optional<Integer> maxDistanceFromCenter,
             Optional<GenericJigsawStructure.BURYING_TYPE> buryingType,
             LiquidSettings liquidSettings,
@@ -77,7 +77,7 @@ public class PieceLimitedJigsawManager {
         // Get starting pool
         StructureTemplatePool startPool = startPoolHolder.value();
         if (startPool.size() == 0) {
-            ResourceLocation startKey = startPoolHolder.unwrapKey().map(ResourceKey::location).orElse(structureID);
+            Identifier startKey = startPoolHolder.unwrapKey().map(ResourceKey::identifier).orElse(structureID);
             MoogsStructuresCommon.LOGGER.warn("Moog's Structure Lib: Empty or nonexistent start pool in structure: {}  Crash is imminent", startKey);
             throw new RuntimeException("Moog's Structure Lib: Empty or nonexistent start pool in structure: " + startKey + " Crash is imminent");
         }
@@ -129,14 +129,14 @@ public class PieceLimitedJigsawManager {
                     List<PoolElementStructurePiece> components = new ArrayList<>();
                     components.add(startPiece);
 
-                    Map<ResourceLocation, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces =
+                    Map<Identifier, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces =
                             StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER.getRequirePieces(structureID);
                     boolean runOnce = requiredPieces == null || requiredPieces.isEmpty();
-                    Map<ResourceLocation, Integer> currentPieceCounter = new HashMap<>();
+                    Map<Identifier, Integer> currentPieceCounter = new HashMap<>();
 
                     for (int attempts = 0; runOnce || doesNotHaveAllRequiredPieces(components, requiredPieces, currentPieceCounter); attempts++) {
                         if (attempts == 100) {
-                            ResourceLocation startKey = startPoolHolder.unwrapKey().map(ResourceKey::location).orElse(structureID);
+                            Identifier startKey = startPoolHolder.unwrapKey().map(ResourceKey::identifier).orElse(structureID);
                             MoogsStructuresCommon.LOGGER.error("""
                                     
                                     -------------------------------------------------------------------
@@ -217,15 +217,15 @@ public class PieceLimitedJigsawManager {
     }
 
     private static boolean doesNotHaveAllRequiredPieces(List<? extends StructurePiece> components,
-                                                        Map<ResourceLocation, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces,
-                                                        Map<ResourceLocation, Integer> counter) {
+                                                        Map<Identifier, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces,
+                                                        Map<Identifier, Integer> counter) {
         counter.clear();
         requiredPieces.forEach((key, value) -> counter.put(key, value.getRequiredAmount()));
         for (Object piece : components) {
             if (piece instanceof PoolElementStructurePiece p) {
                 StructurePoolElement poolElement = p.getElement();
                 if (poolElement instanceof SinglePoolElement spe) {
-                    ResourceLocation pieceID = ((SinglePoolElementAccessor) poolElement).moogs_structures_getTemplate().left().orElse(null);
+                    Identifier pieceID = ((SinglePoolElementAccessor) poolElement).moogs_structures_getTemplate().left().orElse(null);
                     if (pieceID != null && counter.containsKey(pieceID)) {
                         counter.put(pieceID, counter.get(pieceID) - 1);
                     }
@@ -243,24 +243,24 @@ public class PieceLimitedJigsawManager {
         private final List<? super PoolElementStructurePiece> structurePieces;
         private final RandomSource random;
         public final Deque<Entry> availablePieces = Queues.newArrayDeque();
-        private final Map<ResourceLocation, Integer> currentPieceCounts;
-        private final Map<ResourceLocation, Integer> maximumPieceCounts;
-        private final Map<ResourceLocation, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces;
+        private final Map<Identifier, Integer> currentPieceCounts;
+        private final Map<Identifier, Integer> maximumPieceCounts;
+        private final Map<Identifier, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces;
         private final int maxY;
         private final int minY;
-        private final Set<ResourceLocation> poolsThatIgnoreBounds;
+        private final Set<Identifier> poolsThatIgnoreBounds;
         private final LiquidSettings liquidSettings;
 
-        public Assembler(ResourceLocation structureID,
+        public Assembler(Identifier structureID,
                          HolderGetter<StructureTemplatePool> poolLookup,
                          int maxDepth,
                          Structure.GenerationContext context,
                          List<? super PoolElementStructurePiece> structurePieces,
                          RandomSource random,
-                         Map<ResourceLocation, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces,
+                         Map<Identifier, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces,
                          int maxY,
                          int minY,
-                         Set<ResourceLocation> poolsThatIgnoreBounds,
+                         Set<Identifier> poolsThatIgnoreBounds,
                          LiquidSettings liquidSettings) {
             this.poolLookup = poolLookup;
             this.maxDepth = maxDepth;
@@ -310,7 +310,7 @@ public class PieceLimitedJigsawManager {
                 // Get the jigsaw block's piece pool
                 // Resolve pool from NBT via HolderGetter
                 String poolStr = jigsawBlock.info().nbt().getString("pool").get();
-                ResourceLocation poolId = ResourceLocation.tryParse(poolStr);
+                Identifier poolId = Identifier.tryParse(poolStr);
                 if (poolId == null) {
                     MoogsStructuresCommon.LOGGER.warn("Invalid pool id in jigsaw NBT: '{}'", poolStr);
                     continue;
@@ -333,7 +333,7 @@ public class PieceLimitedJigsawManager {
                 StructureTemplatePool pool = optPoolRef.get().value();
 
                 boolean isEmptyPool = pool.size() == 0;
-                boolean isExplicitEmpty = poolKey.location().equals(Pools.EMPTY.location());
+                boolean isExplicitEmpty = poolKey.identifier().equals(Pools.EMPTY.identifier());
                 if (isEmptyPool && !isExplicitEmpty) {
                     MoogsStructuresCommon.LOGGER.warn(
                             "Moog's Structure Lib: Empty pool {} called from {}",
@@ -389,8 +389,8 @@ public class PieceLimitedJigsawManager {
                 // Process the fallback pieces in the event none of the pool pieces work
                 boolean ignoreBounds = false;
                 if (poolsThatIgnoreBounds != null) {
-                    ResourceLocation fallbackPoolId = jigsawBlockFallback.unwrapKey()
-                            .map(ResourceKey::location)
+                    Identifier fallbackPoolId = jigsawBlockFallback.unwrapKey()
+                            .map(ResourceKey::identifier)
                             .orElse(null);
                     if (fallbackPoolId != null) {
                         ignoreBounds = poolsThatIgnoreBounds.contains(fallbackPoolId);
@@ -453,7 +453,7 @@ public class PieceLimitedJigsawManager {
                 Pair<StructurePoolElement, Integer> chosenPiecePair = null;
                 // Condition 2
 
-                Optional<ResourceLocation> pieceNeededToSpawn = this.requiredPieces.keySet().stream().filter(key -> {
+                Optional<Identifier> pieceNeededToSpawn = this.requiredPieces.keySet().stream().filter(key -> {
                     int currentCount = this.currentPieceCounts.get(key);
                     StructurePieceCountsManager.RequiredPieceNeeds needs = this.requiredPieces.get(key);
                     int requireCount = needs == null ? 0 : needs.getRequiredAmount();
@@ -501,7 +501,7 @@ public class PieceLimitedJigsawManager {
 
                 // Before performing any logic, check to ensure we haven't reached the max number of instances of this piece.
                 // This logic is my own additional logic - vanilla does not offer this behavior.
-                ResourceLocation pieceName = null;
+                Identifier pieceName = null;
                 if (candidatePiece instanceof SinglePoolElement) {
                     pieceName = ((SinglePoolElementAccessor) candidatePiece).moogs_structures_getTemplate().left().orElse(null);
                     if (pieceName != null
@@ -529,7 +529,7 @@ public class PieceLimitedJigsawManager {
                                 return 0;
                             } else {
                                 String tgt = pieceCandidateJigsawBlock.info().nbt().getString("pool").get();
-                                ResourceLocation targetPoolId = ResourceLocation.tryParse(tgt);
+                                Identifier targetPoolId = Identifier.tryParse(tgt);
                                 if (targetPoolId == null) return 0;
                                 ResourceKey<StructureTemplatePool> targetKey =
                                         ResourceKey.create(Registries.TEMPLATE_POOL, targetPoolId);

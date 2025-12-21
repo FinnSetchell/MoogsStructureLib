@@ -7,7 +7,7 @@ import com.google.gson.JsonParseException;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.BlockTags;
@@ -197,14 +197,14 @@ public final class GeneralUtils {
      *
      * @return - A map of paths (identifiers) to a list of all JSON elements found under it from all datapacks.
      */
-    public static Map<ResourceLocation, List<JsonElement>> getAllDatapacksJSONElement(ResourceManager resourceManager, Gson gson, String dataType, int fileSuffixLength) {
-        Map<ResourceLocation, List<JsonElement>> map = new HashMap<>();
+    public static Map<Identifier, List<JsonElement>> getAllDatapacksJSONElement(ResourceManager resourceManager, Gson gson, String dataType, int fileSuffixLength) {
+        Map<Identifier, List<JsonElement>> map = new HashMap<>();
         int dataTypeLength = dataType.length() + 1;
 
         // Finds all JSON files paths within the pool_additions folder. NOTE: this is just the path rn. Not the actual files yet.
-        for (Map.Entry<ResourceLocation, List<Resource>> resourceStackEntry : resourceManager.listResourceStacks(dataType, (fileString) -> fileString.toString().endsWith(".json")).entrySet()) {
+        for (Map.Entry<Identifier, List<Resource>> resourceStackEntry : resourceManager.listResourceStacks(dataType, (fileString) -> fileString.toString().endsWith(".json")).entrySet()) {
             String identifierPath = resourceStackEntry.getKey().getPath();
-            ResourceLocation fileID = ResourceLocation.fromNamespaceAndPath(
+            Identifier fileID = Identifier.fromNamespaceAndPath(
                     resourceStackEntry.getKey().getNamespace(),
                     identifierPath.substring(dataTypeLength, identifierPath.length() - fileSuffixLength));
 

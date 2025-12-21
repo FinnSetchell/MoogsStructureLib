@@ -2,7 +2,7 @@ package com.finndog.moogs_structures.modinit.registry.neoforge;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
 import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,12 +19,12 @@ public class NeoForgeCustomRegistry<T, K extends T> implements CustomRegistryLoo
     }
 
     @Override
-    public boolean containsKey(ResourceLocation id) {
+    public boolean containsKey(Identifier id) {
         return registry.containsKey(id);
     }
 
     @Override
-    public @Nullable T get(ResourceLocation id) {
+    public @Nullable T get(Identifier id) {
         return registry.get(id).map(net.minecraft.core.Holder.Reference::value).orElse(null);
     }
 
@@ -34,12 +34,12 @@ public class NeoForgeCustomRegistry<T, K extends T> implements CustomRegistryLoo
     }
 
     @Override
-    public Collection<ResourceLocation> getKeys() {
+    public Collection<Identifier> getKeys() {
         return registry.keySet();
     }
 
     @Override
-    public @Nullable ResourceLocation getKey(Object value) {
+    public @Nullable Identifier getKey(Object value) {
         return registry.getKey((T) value);
     }
 

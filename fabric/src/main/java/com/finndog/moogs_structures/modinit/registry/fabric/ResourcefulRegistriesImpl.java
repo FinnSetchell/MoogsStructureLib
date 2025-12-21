@@ -17,7 +17,7 @@ public class ResourcefulRegistriesImpl {
     }
 
     public static <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
-        FabricRegistryBuilder<T, MappedRegistry<T>> registry = FabricRegistryBuilder.createSimple(null, key.location());
+        FabricRegistryBuilder<T, MappedRegistry<T>> registry = FabricRegistryBuilder.createSimple(null, key.identifier());
         if (sync) registry.attribute(RegistryAttribute.SYNCED);
         if (allowModification) registry.attribute(RegistryAttribute.MODDED);
         MappedRegistry<T> builtRegistry = registry.buildAndRegister();

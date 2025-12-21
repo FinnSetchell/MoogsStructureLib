@@ -4,7 +4,7 @@ import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.util.List;
@@ -22,15 +22,15 @@ public final class StructurePieceCountsAdditionsMerger {
      * Call this at end of StructurePieceCountsManager's apply to make sure we merge in all found counts additions into the parsed based counts.
      */
     static void performCountsAdditionsDetectionAndMerger(ResourceManager resourceManager) {
-        Map<ResourceLocation, List<JsonElement>> countsAdditionJSON = GeneralUtils.getAllDatapacksJSONElement(resourceManager, GSON, DATA_TYPE, FILE_SUFFIX_LENGTH);
+        Map<Identifier, List<JsonElement>> countsAdditionJSON = GeneralUtils.getAllDatapacksJSONElement(resourceManager, GSON, DATA_TYPE, FILE_SUFFIX_LENGTH);
         parseCountsAndBeginMerger(countsAdditionJSON);
     }
 
     /**
      * Will iterate over all of our found counts additions and parse our JSON objects to shove the final product into StructurePiecesCountsManager
      */
-    private static void parseCountsAndBeginMerger(Map<ResourceLocation, List<JsonElement>> countsAdditionJSON) {
-        for (Map.Entry<ResourceLocation, List<JsonElement>> entry : countsAdditionJSON.entrySet()) {
+    private static void parseCountsAndBeginMerger(Map<Identifier, List<JsonElement>> countsAdditionJSON) {
+        for (Map.Entry<Identifier, List<JsonElement>> entry : countsAdditionJSON.entrySet()) {
             StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER.parseAndAddCountsJSONObj(entry.getKey(), entry.getValue());
         }
     }
