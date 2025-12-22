@@ -344,7 +344,7 @@ For large expanding structures like mineshafts:
   "terrain_height_radius_check": 1,
   "allowed_terrain_height_range": 2,
   "liquid_settings": "ignore_waterlogging",
-  "dimension_padding": 10,
+  // Note: dimension_padding is not currently implemented in MSL structures
   "biomes": "#mvs:has_structure/taiga_biomes",
   "step": "underground_structures",
   "terrain_adaptation": "none",
@@ -358,7 +358,7 @@ For large expanding structures like mineshafts:
 **Key settings:**
 - High `size` (10) for expansion
 - `max_distance_from_center` to limit growth
-- `dimension_padding` to prevent overlap
+- Use exclusion zones in structure sets to prevent overlap
 - `step: "underground_structures"` for underground
 - `terrain_adaptation: "none"` for precise placement
 

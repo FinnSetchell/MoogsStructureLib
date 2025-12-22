@@ -191,12 +191,14 @@ How the structure should be buried/positioned relative to terrain. Options:
 Useful for structures that should be partially buried or adapt to terrain.
 
 ### `liquid_settings`
-**Type:** String  
+**Type:** String (LiquidSettings)  
 **Example:** `"ignore_waterlogging"`
 
-How to handle liquids in the structure. Options:
-- `"ignore_waterlogging"` - Ignores waterlogging (default)
-- Other options depend on Minecraft version
+How to handle liquids in the structure. This is a vanilla Minecraft feature. Common options:
+- `"apply_waterlogging"` - Waterlog blocks placed inside water (vanilla default)
+- `"ignore_waterlogging"` - Keep the `waterlogged` block state as is
+
+**Note:** The exact string values may vary by Minecraft version. Check Minecraft documentation for the correct LiquidSettings values for your version.
 
 ### `terrain_adaptation`
 **Type:** String  
@@ -213,7 +215,7 @@ How the structure adapts to terrain. Common values:
 **Type:** Integer  
 **Example:** `10`
 
-Padding around the structure in blocks. Prevents other structures from spawning too close.
+**Note:** This is a vanilla Minecraft feature. Moogs Structure Lib structures extend vanilla Structure, but `dimension_padding` is not currently implemented in the MSL structure codec. This field may not work as expected. Use exclusion zones in structure sets instead for preventing structure overlap.
 
 ## Nether-Specific Fields
 
@@ -369,7 +371,6 @@ Y offset when placing on ledges. Adjusts structure position relative to found la
   "terrain_height_radius_check": 1,
   "allowed_terrain_height_range": 2,
   "liquid_settings": "ignore_waterlogging",
-  "dimension_padding": 10,
   "biomes": "#mvs:has_structure/taiga_biomes",
   "step": "underground_structures",
   "terrain_adaptation": "none",

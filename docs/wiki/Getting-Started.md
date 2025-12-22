@@ -5,7 +5,7 @@ This guide will walk you through the basics of creating structures with Moogs St
 ## Prerequisites
 
 **Minecraft 1.21 or higher** is required
-Moogs Structure Lib supports Minecraft 1.20 through 1.21.10. This wiki will walk through how to use the lib in 1.21+ however most of the steps are the same for 1.20-1.20.6. Feel free to look at the data for our mods like MVS to figure out how to use the lib with older mc versions.
+Moogs Structure Lib supports Minecraft 1.20 through 1.21.11. This wiki will walk through how to use the lib in 1.21+ however most of the steps are the same for 1.20-1.20.6. Feel free to look at the data for our mods like MVS to figure out how to use the lib with older mc versions.
 
 For mod development, add Moogs Structure Lib as a dependency in your `fabric.mod.json` or `mods.toml`.
 
