@@ -7,10 +7,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
@@ -50,7 +50,7 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement {
         this(((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getTemplate(), ((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getProcessors(), singleJigsawPiece.getProjection(), mirror, liquidSettings);
     }
 
-    protected MirroringSingleJigsawPiece(Either<ResourceLocation, StructureTemplate> locationTemplateEither, Holder<StructureProcessorList> processorListSupplier, StructureTemplatePool.Projection placementBehaviour, Mirror mirror, Optional<LiquidSettings> liquidSettings) {
+    protected MirroringSingleJigsawPiece(Either<Identifier, StructureTemplate> locationTemplateEither, Holder<StructureProcessorList> processorListSupplier, StructureTemplatePool.Projection placementBehaviour, Mirror mirror, Optional<LiquidSettings> liquidSettings) {
         super(locationTemplateEither, processorListSupplier, placementBehaviour, liquidSettings);
         this.mirror = mirror;
     }

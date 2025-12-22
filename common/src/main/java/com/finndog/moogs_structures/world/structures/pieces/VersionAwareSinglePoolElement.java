@@ -11,7 +11,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElementType;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
@@ -31,12 +31,12 @@ import java.util.stream.Collectors;
 public class VersionAwareSinglePoolElement extends SinglePoolElement {
 
     private static final Codec<List<VersionEntry>> VERSION_ENTRIES_CODEC =
-            Codec.unboundedMap(Codec.STRING, ResourceLocation.CODEC)
+            Codec.unboundedMap(Codec.STRING, Identifier.CODEC)
                     .flatXmap(VersionResolver::parseVersionMap, VersionResolver::encodeVersionEntries);
 
     public static final MapCodec<VersionAwareSinglePoolElement> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
-                    ResourceLocation.CODEC.optionalFieldOf("location").forGetter(VersionAwareSinglePoolElement::singleLocation),
+                    Identifier.CODEC.optionalFieldOf("location").forGetter(VersionAwareSinglePoolElement::singleLocation),
                     VERSION_ENTRIES_CODEC.optionalFieldOf("locations").forGetter(VersionAwareSinglePoolElement::versionEntriesOptional),
                     processorsCodec(),
                     projectionCodec(),
@@ -51,12 +51,12 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
                     )));
 
     @Nullable
-    private final ResourceLocation singleLocation;
+    private final Identifier singleLocation;
     private final List<VersionEntry> versionEntries;
-    private final ResourceLocation defaultLocation;
+    private final Identifier defaultLocation;
     private final String versionEntriesDescription;
 
-    private VersionAwareSinglePoolElement(@Nullable ResourceLocation singleLocation,
+    private VersionAwareSinglePoolElement(@Nullable Identifier singleLocation,
                                           List<VersionEntry> versionEntries,
                                           Holder<StructureProcessorList> processors,
                                           StructureTemplatePool.Projection projection,
@@ -67,7 +67,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
                 Optional.ofNullable(overrideLiquidSettings));
         this.singleLocation = singleLocation;
         this.versionEntries = List.copyOf(versionEntries);
-        ResourceLocation fallback = computeDefaultLocation(singleLocation, this.versionEntries);
+        Identifier fallback = computeDefaultLocation(singleLocation, this.versionEntries);
         if (fallback == null) {
             throw new IllegalArgumentException("Version-aware single pool element requires at least one template location");
         }
@@ -77,7 +77,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
     }
 
     @Nullable
-    private static ResourceLocation computeDefaultLocation(@Nullable ResourceLocation singleLocation, List<VersionEntry> entries) {
+    private static Identifier computeDefaultLocation(@Nullable Identifier singleLocation, List<VersionEntry> entries) {
         if (singleLocation != null) {
             return singleLocation;
         }
@@ -87,14 +87,14 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
                 .orElse(null);
     }
 
-    private static ResourceLocation resolveTargetLocation(@Nullable ResourceLocation singleLocation,
+    private static Identifier resolveTargetLocation(@Nullable Identifier singleLocation,
                                                           List<VersionEntry> entries) {
-        ResourceLocation fallback = computeDefaultLocation(singleLocation, entries);
+        Identifier fallback = computeDefaultLocation(singleLocation, entries);
         if (fallback == null) {
             throw new IllegalArgumentException("Version-aware single pool element requires at least one template location");
         }
         VersionNumber current = VersionResolver.getCurrentVersion();
-        ResourceLocation target = VersionResolver.resolve(entries, current)
+        Identifier target = VersionResolver.resolve(entries, current)
                 .map(VersionEntry::location)
                 .orElse(fallback);
         if (DebugFlags.isEnabled()) {
@@ -129,7 +129,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
             return;
         }
 
-        ResourceLocation fallback = this.template.left().orElse(this.defaultLocation);
+        Identifier fallback = this.template.left().orElse(this.defaultLocation);
         MoogsStructuresCommon.LOGGER.warn(
                 "Moog's Structure Lib: No version mapping matched runtime version {}. Falling back to template {}. Defined mappings: [{}]",
                 VersionResolver.getCurrentVersionString(),
@@ -141,7 +141,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
         return this.versionEntries.isEmpty() ? Optional.empty() : Optional.of(this.versionEntries);
     }
 
-    private Optional<ResourceLocation> singleLocation() {
+    private Optional<Identifier> singleLocation() {
         return Optional.ofNullable(this.singleLocation);
     }
 
@@ -152,7 +152,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
 
     @Override
     public @NotNull String toString() {
-        ResourceLocation resolved = this.template.left().orElse(this.defaultLocation);
+        Identifier resolved = this.template.left().orElse(this.defaultLocation);
         if (this.versionEntriesDescription.isEmpty()) {
             return "VersionAwareSingle[" + resolved + "]";
         }

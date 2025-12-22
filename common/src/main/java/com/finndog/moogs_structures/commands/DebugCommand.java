@@ -6,6 +6,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permissions;
 
 public final class DebugCommand {
 
@@ -15,7 +16,7 @@ public final class DebugCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal(MoogsStructuresCommon.MODID)
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
                         .then(
                                 Commands.literal("debug")
                                         .executes(context -> toggle(context.getSource()))

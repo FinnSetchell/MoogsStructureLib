@@ -6,9 +6,9 @@ import com.google.gson.reflect.TypeToken;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.Dynamic;
-import net.minecraft.MethodsReturnNonnullByDefault;
+import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import net.minecraft.resources.FileToIdConverter;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -30,19 +30,19 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
 
     public static final StructurePieceCountsManager STRUCTURE_PIECE_COUNTS_MANAGER = new StructurePieceCountsManager();
 
-    private Map<ResourceLocation, List<StructurePieceCountsObj>> structureToPieceCountsObjs = new HashMap<>();
-    private final Map<ResourceLocation, Map<ResourceLocation, RequiredPieceNeeds>> cachedRequirePiecesMap = new HashMap<>();
-    private final Map<ResourceLocation, Map<ResourceLocation, Integer>> cachedMaxCountPiecesMap = new HashMap<>();
+    private Map<Identifier, List<StructurePieceCountsObj>> structureToPieceCountsObjs = new HashMap<>();
+    private final Map<Identifier, Map<Identifier, RequiredPieceNeeds>> cachedRequirePiecesMap = new HashMap<>();
+    private final Map<Identifier, Map<Identifier, Integer>> cachedMaxCountPiecesMap = new HashMap<>();
 
     public StructurePieceCountsManager() {
         super(JSON_ELEMENT_CODEC, FILES);
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> prepared,
+    protected void apply(Map<Identifier, JsonElement> prepared,
                          ResourceManager resourceManager,
                          ProfilerFiller profiler) {
-        Map<ResourceLocation, List<StructurePieceCountsObj>> mapBuilder = new HashMap<>();
+        Map<Identifier, List<StructurePieceCountsObj>> mapBuilder = new HashMap<>();
 
         prepared.forEach((fileId, jsonElement) -> {
             try {
@@ -63,7 +63,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
     }
 
     @MethodsReturnNonnullByDefault
-    private List<StructurePieceCountsObj> getStructurePieceCountsObjs(ResourceLocation fileIdentifier, JsonElement jsonElement) throws Exception {
+    private List<StructurePieceCountsObj> getStructurePieceCountsObjs(Identifier fileIdentifier, JsonElement jsonElement) throws Exception {
         List<StructurePieceCountsObj> piecesSpawnCounts =
                 GSON.fromJson(jsonElement.getAsJsonObject().get("pieces_spawn_counts"),
                         new TypeToken<List<StructurePieceCountsObj>>() {}.getType());
@@ -80,7 +80,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
         return piecesSpawnCounts;
     }
 
-    public void parseAndAddCountsJSONObj(ResourceLocation structureRL, List<JsonElement> jsonElements) {
+    public void parseAndAddCountsJSONObj(Identifier structureRL, List<JsonElement> jsonElements) {
         jsonElements.forEach(jsonElement -> {
             try {
                 this.structureToPieceCountsObjs
@@ -96,17 +96,17 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
     }
 
     @Nullable
-    public Map<ResourceLocation, RequiredPieceNeeds> getRequirePieces(ResourceLocation structureRL) {
+    public Map<Identifier, RequiredPieceNeeds> getRequirePieces(Identifier structureRL) {
         if (!this.structureToPieceCountsObjs.containsKey(structureRL)) return null;
         if (cachedRequirePiecesMap.containsKey(structureRL)) return cachedRequirePiecesMap.get(structureRL);
 
-        Map<ResourceLocation, RequiredPieceNeeds> requirePiecesMap = new HashMap<>();
+        Map<Identifier, RequiredPieceNeeds> requirePiecesMap = new HashMap<>();
         List<StructurePieceCountsObj> list = this.structureToPieceCountsObjs.get(structureRL);
         if (list != null) {
             for (StructurePieceCountsObj entry : list) {
                 if (entry.alwaysSpawnThisMany != null) {
                     requirePiecesMap.put(
-                            ResourceLocation.tryParse(entry.nbtPieceName),
+                            Identifier.tryParse(entry.nbtPieceName),
                             new RequiredPieceNeeds(entry.alwaysSpawnThisMany,
                                     entry.minimumDistanceFromCenterPiece != null ? entry.minimumDistanceFromCenterPiece : 0)
                     );
@@ -118,15 +118,15 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
     }
 
     @MethodsReturnNonnullByDefault
-    public Map<ResourceLocation, Integer> getMaximumCountForPieces(ResourceLocation structureRL) {
+    public Map<Identifier, Integer> getMaximumCountForPieces(Identifier structureRL) {
         if (cachedMaxCountPiecesMap.containsKey(structureRL)) return cachedMaxCountPiecesMap.get(structureRL);
 
-        Map<ResourceLocation, Integer> maxCountPiecesMap = new HashMap<>();
+        Map<Identifier, Integer> maxCountPiecesMap = new HashMap<>();
         List<StructurePieceCountsObj> list = this.structureToPieceCountsObjs.get(structureRL);
         if (list != null) {
             for (StructurePieceCountsObj entry : list) {
                 if (entry.neverSpawnMoreThanThisMany != null) {
-                    maxCountPiecesMap.put(ResourceLocation.tryParse(entry.nbtPieceName), entry.neverSpawnMoreThanThisMany);
+                    maxCountPiecesMap.put(Identifier.tryParse(entry.nbtPieceName), entry.neverSpawnMoreThanThisMany);
                 }
             }
         }

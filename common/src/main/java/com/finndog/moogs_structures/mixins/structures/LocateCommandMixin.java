@@ -5,7 +5,7 @@ import com.google.common.base.Stopwatch;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.ResourceOrTagKeyArgument;
 import net.minecraft.core.BlockPos;
