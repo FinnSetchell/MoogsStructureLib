@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[2,)"
+loaderVersion="${neoforge_loader_version_range}"
 issueTrackerURL="https://github.com/FinnSetchell/MoogsStructureLib/issues"
 license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 
@@ -26,6 +26,6 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 [[dependencies.moogs_structures]]
     modId="minecraft"
     mandatory = true
-    versionRange="[1.21.11]"
+    versionRange="[${minecraft_version}]"
     ordering = "NONE"
     side = "BOTH"

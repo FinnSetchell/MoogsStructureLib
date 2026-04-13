@@ -1,87 +1,82 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "7.1.2"
-    id "me.modmuss50.mod-publish-plugin" version "0.8.4"
-}
-
-architectury {
-    platformSetupLoomIde()
-    fabric()
-}
-
-archivesBaseName = "${rootProject.archives_base_name}"
-
-loom {
-    accessWidenerPath = project(":common").loom.accessWidenerPath
-}
-
-configurations {
-    common
-    shadowCommon // Don't use shadow from the shadow plugin since it *excludes* files.
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentFabric.extendsFrom common
+    id 'multiloader-loader'
+    id 'net.fabricmc.fabric-loom'
+    id 'me.modmuss50.mod-publish-plugin'
 }
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
-
-    common(project(path: ":common", configuration: "namedElements")) { transitive false }
-    shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 }
 
-processResources {
-    inputs.property "version", project.version
-
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
+loom {
+    def aw = project(':common').file("src/main/resources/${mod_id}.accesswidener")
+    if (aw.exists()) {
+        accessWidenerPath.set(aw)
+    }
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client')
+            ideConfigGenerated(true)
+            runDir('runs/client')
+        }
+        server {
+            server()
+            setConfigName('Fabric Server')
+            ideConfigGenerated(true)
+            runDir('runs/server')
+        }
     }
 }
 
-shadowJar {
-    exclude "architectury.common.json"
-    configurations = [project.configurations.shadowCommon]
-    archiveClassifier.set("dev-shadow")
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
 }
-
-remapJar {
-    injectAccessWidener = true
-    input.set shadowJar.archiveFile
-    dependsOn shadowJar
-    archiveClassifier.set("fabric")
-}
-
-jar {
-    archiveClassifier.set("dev")
-}
-
-sourcesJar {
-    def commonSources = project(":common").sourcesJar
-    dependsOn commonSources
-    from commonSources.archiveFile.map { zipTree(it) }
-}
-
-components.java {
-    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
-        skip()
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'fabric')
+            }
+        }
     }
 }
 
 File changeLog = rootProject.file("CHANGELOG.md")
-String changelogtext = changeLog.exists() ? changeLog.text : ""
+String changelogtext = ""
+if (changeLog.exists()) {
+    def sections = changeLog.text.split(/(?m)^## /)
+    changelogtext = sections.length > 1 ? "## " + sections[1].trim() : changeLog.text
+}
 
 publishMods {
-    file = remapJar.archiveFile
+    file = tasks.jar.archiveFile
     type = STABLE
     modLoaders.add("fabric")
     changelog = changelogtext
 
     displayName = "Moog's Structure Lib ${project.version} [FABRIC]"
 
+    github {
+        accessToken = providers.environmentVariable("GITHUB_TOKEN")
+        repository = "FinnSetchell/MoogsStructureLib"
+        commitish = "26.1.x"
+        tagName = providers.environmentVariable("GITHUB_REF_NAME").orElse("v${project.version}")
+        displayName = "Moog's Structure Lib ${project.version} [FABRIC]"
+    }
+
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
         projectId = "1oUDhxuy"
-        minecraftVersions.add("1.21.11")
+        minecraftVersions.add("${minecraft_version}")
     }
 
     curseforge {
@@ -89,7 +84,7 @@ publishMods {
         projectId = "1337167"
         projectSlug = "moogs-structure-lib"
         serverRequired = true
-        minecraftVersions.add("1.21.11")
+        minecraftVersions.add("${minecraft_version}")
     }
 
     discord {
@@ -106,7 +101,7 @@ publishMods {
             def mcVersion = rootProject.findProperty('minecraft_version') ?: '1.21.11'
 
             """## 🎉 **${modName} ${project.version}** has been released!
-            
+
 **Moog's Structure Lib ${project.version} [FABRIC]**
 Minecraft Version - ${mcVersion}
 
@@ -121,5 +116,4 @@ ${changelogBody}
             color = (rootProject.findProperty('discordEmbedColor') ?: '#9033af')
         }
     }
-
 }

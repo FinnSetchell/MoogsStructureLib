@@ -1,74 +1,73 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "7.1.2"
-    id "me.modmuss50.mod-publish-plugin" version "0.8.4"
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev'
+    id 'me.modmuss50.mod-publish-plugin'
 }
 
-architectury {
-    platformSetupLoomIde()
-    neoForge()
-}
-
-archivesBaseName = "${rootProject.archives_base_name}"
-
-configurations {
-    common
-    shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentNeoForge.extendsFrom common
-}
-
-dependencies {
-    neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"
-
-    common(project(path: ":common", configuration: "namedElements")) { transitive false }
-    shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive = false }
-}
-
-processResources {
-    inputs.property "version", project.version
-
-    filesMatching("META-INF/neoforge.mods.toml") {
-        expand "version": project.version
+neoForge {
+    version = neo_version
+    // Automatically enable AccessTransformers if the file exists
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+    runs {
+        configureEach {
+            systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
+            ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
+        }
+        client {
+            client()
+            gameDirectory = this.mkdir(this.file("runs/client"))
+        }
+        data {
+            clientData()
+            gameDirectory = this.mkdir(this.file("runs/data"))
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+        server {
+            server()
+            this.file("runs/server").createParentDirectories()
+            gameDirectory = this.mkdir(this.file("runs/server"))
+        }
+    }
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
     }
 }
 
-shadowJar {
-    exclude "fabric.mod.json"
-    exclude "architectury.common.json"
+sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-    configurations = [project.configurations.shadowCommon]
-    archiveClassifier.set("dev-shadow")
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'neoforge')
+        }
+    }
 }
-
-remapJar {
-    inputFile.set shadowJar.archiveFile
-    dependsOn shadowJar
-    archiveClassifier.set("neoforge")
-    atAccessWideners.add("moogs_structures.accesswidener") // this is a path inside the mod jar
-}
-
-jar {
-    archiveClassifier.set("dev")
-}
-
-sourcesJar {
-    def commonSources = project(":common").sourcesJar
-    dependsOn commonSources
-    from commonSources.archiveFile.map { zipTree(it) }
-}
-
-components.java {
-    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
-        skip()
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName, it.getTaskName(null, 'jarJar')].each { variant ->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'neoforge')
+            }
+        }
     }
 }
 
 File changeLog = rootProject.file("CHANGELOG.md")
-String changelogtext = changeLog.exists() ? changeLog.text : ""
+String changelogtext = ""
+if (changeLog.exists()) {
+    def sections = changeLog.text.split(/(?m)^## /)
+    changelogtext = sections.length > 1 ? "## " + sections[1].trim() : changeLog.text
+}
 
 publishMods {
-    file = remapJar.archiveFile
+    file = tasks.jar.archiveFile
     changelog = changelogtext
     type = STABLE
     modLoaders.add("neoforge")
@@ -76,14 +75,20 @@ publishMods {
     displayName = "Moog's Structure Lib ${project.version} [NEOFORGE]"
 
     maxRetries = 3
-
-    // When dry run is enabled the release assets will be saved to the build directory for testing.
     dryRun = false
+
+    github {
+        accessToken = providers.environmentVariable("GITHUB_TOKEN")
+        repository = "FinnSetchell/MoogsStructureLib"
+        commitish = "26.1.x"
+        tagName = providers.environmentVariable("GITHUB_REF_NAME").orElse("v${project.version}")
+        displayName = "Moog's Structure Lib ${project.version} [NEOFORGE]"
+    }
 
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
         projectId = "1oUDhxuy"
-        minecraftVersions.add("1.21.11")
+        minecraftVersions.add("${minecraft_version}")
     }
 
     curseforge {
@@ -91,7 +96,7 @@ publishMods {
         projectId = "1337167"
         projectSlug = "moogs-structure-lib"
         serverRequired = true
-        minecraftVersions.add("1.21.11")
+        minecraftVersions.add("${minecraft_version}")
     }
 
     discord {
@@ -108,7 +113,7 @@ publishMods {
             def mcVersion = rootProject.findProperty('minecraft_version') ?: '1.21.11'
 
             """## 🎉 **${modName} ${project.version}** has been released!
-            
+
 **Moog's Structure Lib ${project.version} [NEOFORGE]**
 Minecraft Version - ${mcVersion}
 
