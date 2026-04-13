@@ -1,6 +1,7 @@
 package com.finndog.moogs_structures.modinit.registry.neoforge;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
+import com.finndog.moogs_structures.modinit.registry.IResourcefulRegistriesProvider;
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
@@ -12,16 +13,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class ResourcefulRegistriesImpl {
+public class ResourcefulRegistriesImpl implements IResourcefulRegistriesProvider {
 
     private static final List<CustomRegistryInfo<?, ?>> CUSTOM_REGISTRIES = new ArrayList<>();
 
-    public static <T> ResourcefulRegistry<T> create(Registry<T> registry, String id) {
+    @Override
+    public <T> ResourcefulRegistry<T> create(Registry<T> registry, String id) {
         return new NeoForgeResourcefulRegistry<>(registry, id);
     }
 
-    public static <T, R extends T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
-        CustomRegistryInfo<T, R> info = new CustomRegistryInfo<>(new LateSupplier<>(), key, save, sync, allowModification);
+    @Override
+    public <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
+        CustomRegistryInfo<T, ?> info = new CustomRegistryInfo<>(new LateSupplier<>(), key, save, sync, allowModification);
         CUSTOM_REGISTRIES.add(info);
         return Pair.of(info.lookup(), new NeoForgeResourcefulRegistry<>(key, modId));
     }

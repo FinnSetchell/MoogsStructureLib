@@ -127,7 +127,7 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         }
 
         ChunkPos chunkpos = this.getPotentialStructureChunk(chunkGeneratorStructureState.getLevelSeed(), x, z);
-        return chunkpos.x == x && chunkpos.z == z;
+        return chunkpos.x() == x && chunkpos.z() == z;
     }
 
     @Override

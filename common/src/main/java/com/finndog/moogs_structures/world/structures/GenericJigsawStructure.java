@@ -132,8 +132,8 @@ public class GenericJigsawStructure extends Structure {
             }
             sectionY = QuartPos.fromBlock(sectionY);
 
-            for (int curChunkX = chunkPos.x - validBiomeRange; curChunkX <= chunkPos.x + validBiomeRange; curChunkX++) {
-                for (int curChunkZ = chunkPos.z - validBiomeRange; curChunkZ <= chunkPos.z + validBiomeRange; curChunkZ++) {
+            for (int curChunkX = chunkPos.x() - validBiomeRange; curChunkX <= chunkPos.x() + validBiomeRange; curChunkX++) {
+                for (int curChunkZ = chunkPos.z() - validBiomeRange; curChunkZ <= chunkPos.z() + validBiomeRange; curChunkZ++) {
                     Holder<Biome> biome = context.biomeSource().getNoiseBiome(QuartPos.fromSection(curChunkX), sectionY, QuartPos.fromSection(curChunkZ), context.randomState().sampler());
                     if (!context.validBiome().test(biome)) {
                         return false;
@@ -160,8 +160,8 @@ public class GenericJigsawStructure extends Structure {
             int minTerrainHeight = Integer.MAX_VALUE;
             int terrainCheckRange = this.terrainHeightCheckRadius.get();
 
-            for (int curChunkX = chunkPos.x - terrainCheckRange; curChunkX <= chunkPos.x + terrainCheckRange; curChunkX++) {
-                for (int curChunkZ = chunkPos.z - terrainCheckRange; curChunkZ <= chunkPos.z + terrainCheckRange; curChunkZ++) {
+            for (int curChunkX = chunkPos.x() - terrainCheckRange; curChunkX <= chunkPos.x() + terrainCheckRange; curChunkX++) {
+                for (int curChunkZ = chunkPos.z() - terrainCheckRange; curChunkZ <= chunkPos.z() + terrainCheckRange; curChunkZ++) {
                     int height = context.chunkGenerator().getBaseHeight((curChunkX << 4) + 7, (curChunkZ << 4) + 7, this.projectStartToHeightmap.orElse(Heightmap.Types.WORLD_SURFACE_WG), context.heightAccessor(), context.randomState());
                     maxTerrainHeight = Math.max(maxTerrainHeight, height);
                     minTerrainHeight = Math.min(minTerrainHeight, height);
@@ -366,7 +366,7 @@ public class GenericJigsawStructure extends Structure {
         }
 
         WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
-        random.setLargeFeatureSeed(context.seed(), context.chunkPos().x, context.chunkPos().z);
+        random.setLargeFeatureSeed(context.seed(), context.chunkPos().x(), context.chunkPos().z());
         int heightDiff = highestLandPos - box.minY();
         for(StructurePiece structurePiece : pieces) {
             structurePiece.move(0, heightDiff + offsetY, 0);

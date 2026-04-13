@@ -1,6 +1,7 @@
 package com.finndog.moogs_structures.modinit.registry.fabric;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
+import com.finndog.moogs_structures.modinit.registry.IResourcefulRegistriesProvider;
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
@@ -11,16 +12,19 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.function.Supplier;
 
-public class ResourcefulRegistriesImpl {
-    public static <T> ResourcefulRegistry<T> create(Registry<T> registry, String id) {
+public class ResourcefulRegistriesImpl implements IResourcefulRegistriesProvider {
+
+    @Override
+    public <T> ResourcefulRegistry<T> create(Registry<T> registry, String id) {
         return new CustomResourcefulRegistry<>(registry, id);
     }
 
-    public static <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
-        FabricRegistryBuilder<T, MappedRegistry<T>> registry = FabricRegistryBuilder.createSimple(null, key.identifier());
-        if (sync) registry.attribute(RegistryAttribute.SYNCED);
-        if (allowModification) registry.attribute(RegistryAttribute.MODDED);
-        MappedRegistry<T> builtRegistry = registry.buildAndRegister();
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
+        FabricRegistryBuilder<T, MappedRegistry<T>> registryBuilder = FabricRegistryBuilder.create((ResourceKey<Registry<T>>) (ResourceKey<?>) key);
+        if (sync) registryBuilder.attribute(RegistryAttribute.SYNCED);
+        MappedRegistry<T> builtRegistry = registryBuilder.buildAndRegister();
         CustomRegistry<T> customRegistry = new CustomRegistry<>(builtRegistry);
         return Pair.of(() -> customRegistry, new CustomResourcefulRegistry<>(builtRegistry, modId));
     }
