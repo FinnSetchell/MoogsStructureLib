@@ -88,7 +88,7 @@ publishMods {
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
         projectId = "1oUDhxuy"
-        minecraftVersions.add("${minecraft_version}")
+        minecraftVersions.addAll("26.1.0", "26.1.1", "26.1.2")
     }
 
     curseforge {
@@ -96,7 +96,7 @@ publishMods {
         projectId = "1337167"
         projectSlug = "moogs-structure-lib"
         serverRequired = true
-        minecraftVersions.add("${minecraft_version}")
+        minecraftVersions.addAll("26.1.0", "26.1.1", "26.1.2")
     }
 
     discord {

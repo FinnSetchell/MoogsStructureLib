@@ -35,3 +35,5 @@ deps/
 
 # development notes (local only)
 DEVELOPMENT_NOTES.md
+/fabric/runs/*
+/neoforge/runs/*
