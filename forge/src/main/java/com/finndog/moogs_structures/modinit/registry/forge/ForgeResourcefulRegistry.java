@@ -1,5 +1,6 @@
 package com.finndog.moogs_structures.modinit.registry.forge;
 
+import com.finndog.moogs_structures.MoogsStructuresForge;
 import com.finndog.moogs_structures.modinit.registry.RegistryEntries;
 import com.finndog.moogs_structures.modinit.registry.RegistryEntry;
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
