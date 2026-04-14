@@ -8,6 +8,12 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    modLocalRuntime "curse.maven:moogs-voyager-structures-656977:${mvs_file}"
+    modLocalRuntime "curse.maven:mtr-moogs-temples-reimagined-1339737:${mtr_file}"
+    modLocalRuntime "curse.maven:mss-moogs-soaring-structures-1040210:${mss_file}"
+    modLocalRuntime "curse.maven:moogs-end-structures-892382:${mes_file}"
+    modLocalRuntime "curse.maven:mns-moogs-nether-structures-967466:${mns_file}"
 }
 
 loom {
