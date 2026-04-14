@@ -1,0 +1,100 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.minecraftforge.gradle' version '[6.0.46,6.2)'
+    id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
+    id 'idea'
+}
+
+base {
+    archivesName = "${mod_id}-forge-${minecraft_version}"
+}
+
+mixin {
+    config("moogs_structures-common.mixins.json")
+    config("moogs_structures-forge.mixins.json")
+}
+
+jar {
+    manifest {
+        attributes["MixinConfigs"] = "moogs_structures-common.mixins.json,moogs_structures-forge.mixins.json"
+    }
+}
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+
+    copyIdeResources = true
+
+    reobf = false // Forge 1.20.6+ uses official mappings at runtime
+
+    def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformer = at
+    }
+
+    runs {
+        client {
+            workingDirectory file('runs/client')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            taskName 'Client'
+            mods {
+                modClientRun {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory file('runs/server')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            taskName 'Server'
+            mods {
+                modServerRun {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory file('runs/data')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            taskName 'Data'
+            mods {
+                modDataRun {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir 'src/generated/resources'
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+
+    runtimeOnly "curse.maven:moogs-voyager-structures-656977:${mvs_file}"
+    runtimeOnly "curse.maven:mtr-moogs-temples-reimagined-1339737:${mtr_file}"
+    runtimeOnly "curse.maven:mss-moogs-soaring-structures-1040210:${mss_file}"
+    runtimeOnly "curse.maven:moogs-end-structures-892382:${mes_file}"
+    runtimeOnly "curse.maven:mns-moogs-nether-structures-967466:${mns_file}"
+
+    // Forge's hack fix
+    implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            fg.component(it)
+        }
+    }
+}
+
+sourceSets.each {
+    def dir = layout.buildDirectory.dir("sourcesSets/$it.name")
+    it.output.resourcesDir = dir
+    it.java.destinationDirectory = dir
+}

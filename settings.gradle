@@ -25,6 +25,17 @@ pluginManagement {
                 includeGroupAndSubgroups("org.spongepowered")
             }
         }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'Forge'
+                    url = uri('https://maven.minecraftforge.net')
+                }
+            }
+            filter {
+                includeGroupAndSubgroups('net.minecraftforge')
+            }
+        }
     }
 }
 
@@ -36,4 +47,5 @@ plugins {
 rootProject.name = 'MoogsStructureLib'
 include('common')
 include('fabric')
+include('forge')
 include('neoforge')
