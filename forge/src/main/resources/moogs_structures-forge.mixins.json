@@ -1,0 +1,14 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.finndog.moogs_structures.mixins.forge",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "structures.StructurePoolMixin"
+    ],
+    "client": [],
+    "server": [],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}
