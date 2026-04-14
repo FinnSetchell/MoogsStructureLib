@@ -1,0 +1,35 @@
+modLoader = "javafml"
+loaderVersion = "${forge_loader_version_range}"
+license = "${license}"
+issueTrackerURL = "https://github.com/FinnSetchell/MoogsStructureLib/issues"
+
+[[mods]]
+    modId = "${mod_id}"
+    logoFile = "assets/moogs_structures/icon.png"
+    logoBlur = false
+    version = "${version}"
+    displayName = "${mod_name}"
+    displayURL = "https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib"
+    authors = "${mod_author}"
+    credits = "${credits}"
+    description = '''${description}'''
+
+[[mixins]]
+    config = "moogs_structures-forge.mixins.json"
+
+[[mixins]]
+    config = "moogs_structures-common.mixins.json"
+
+[[dependencies.moogs_structures]]
+    modId = "forge"
+    mandatory = true
+    versionRange = "${forge_loader_version_range}"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.moogs_structures]]
+    modId = "minecraft"
+    mandatory = true
+    versionRange = "[1.21,1.22)"
+    ordering = "NONE"
+    side = "BOTH"
