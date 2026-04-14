@@ -1,6 +1,6 @@
 modLoader="javafml"
-loaderVersion="[2,)"
-issueTrackerURL="https://github.com/FinnSetchell/MoogsStructureLib/issues"
+loaderVersion="${neoforge_loader_version_range}"
+issueTrackerURL="https://github.com/FinnSetchell/MoogsStructureLib/issues" #optional
 license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 
 [[mods]]
