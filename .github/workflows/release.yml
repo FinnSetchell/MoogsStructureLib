@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - '*.*.*-*.*.*'
 
 jobs:
   release:
@@ -27,7 +27,7 @@ jobs:
         id: changelog
         shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${GITHUB_REF_NAME##*-}"
           BODY=$(python3 -c "
           import re, sys
           content = open('CHANGELOG.md').read()
