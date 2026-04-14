@@ -7,6 +7,8 @@ import com.google.gson.JsonParseException;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -25,6 +27,7 @@ import net.minecraft.world.level.block.JigsawBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
@@ -179,15 +182,24 @@ public final class GeneralUtils {
     public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
         FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
-        String joint = jigsaw1.nbt().getString("joint");
-        if(joint.isEmpty()) {
-            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
-        }
 
-        boolean isRollable = joint.equals("rollable");
         return prop1.front() == prop2.front().getOpposite() &&
-                (isRollable || prop1.top() == prop2.top()) &&
-                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
+                (prop1.top() == prop2.top() || isRollableJoint(jigsaw1, prop1)) &&
+                getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
+    }
+
+    private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
+        String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
+        if(!joint.equals("rollable") && !joint.equals("aligned")) {
+            return !prop1.front().getAxis().isHorizontal();
+        }
+        else {
+            return joint.equals("rollable");
+        }
+    }
+
+    public static String getStringMicroOptimised(CompoundTag tag, String key) {
+        return tag.get(key) instanceof StringTag stringTag ? stringTag.getAsString() : "";
     }
 
     //////////////////////////////////////////////
@@ -245,6 +257,26 @@ public final class GeneralUtils {
         }
 
         return map;
+    }
+
+    ///////////////////////////////////////////
+
+    private static final ConcurrentHashMap<HeightKey, Integer> CACHED_HEIGHT = new ConcurrentHashMap<>(2048);
+    private record HeightKey(ChunkGenerator chunkGenerator, int x, int z) {}
+
+    public static int getCachedFreeHeight(ChunkGenerator chunkGenerator, int x, int z, Heightmap.Types types, LevelHeightAccessor levelHeightAccessor, RandomState randomState) {
+        HeightKey key = new HeightKey(chunkGenerator, x, z);
+        Integer y = CACHED_HEIGHT.get(key);
+
+        if (y == null) {
+            if (CACHED_HEIGHT.size() >= 2048) {
+                CACHED_HEIGHT.clear();
+            }
+            y = chunkGenerator.getFirstFreeHeight(x, z, types, levelHeightAccessor, randomState);
+            CACHED_HEIGHT.put(key, y);
+        }
+
+        return y;
     }
 
 }
