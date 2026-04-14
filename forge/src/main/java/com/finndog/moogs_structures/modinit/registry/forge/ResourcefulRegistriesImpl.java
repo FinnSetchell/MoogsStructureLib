@@ -5,7 +5,7 @@ import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
 import com.finndog.moogs_structures.platform.IRegistryPlatform;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
-import net.minecraftforge.event.registries.NewRegistryEvent;
+import net.minecraftforge.registries.NewRegistryEvent;
 import net.minecraftforge.registries.RegistryBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -64,9 +64,10 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
         }
 
         public RegistryBuilder<T> getBuilder() {
-            return new RegistryBuilder<>(key)
-                    .disableRegistrationCheck()
-                    .sync(sync);
+            RegistryBuilder<T> builder = new RegistryBuilder<T>()
+                    .setName(key.location());
+            if (!sync) builder.disableSync();
+            return builder;
         }
     }
 }
