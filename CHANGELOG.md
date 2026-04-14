@@ -2,7 +2,7 @@
 
 ---
 
-## [2.0.0] - 2026-04-14
+## [2.0.1] - 2026-04-14
 
 ### Changed
 - migrated build system from Architectury to Multiloader template
