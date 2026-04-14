@@ -1,6 +1,12 @@
-
 # Changelog
 
+---
+
+## [2.0.0] - 2026-04-14
+
+### Changed
+- migrated build system from Architectury to Multiloader template
+- replaced `@ExpectPlatform` with ServiceLoader pattern for platform abstraction
+
 ### Added
-- Version-aware `SinglePoolElement`, letting structure packs pick the right NBT per Minecraft version. This allows for wider version compatibility
-- `/moogs_structures debug` command to toggle runtime diagnostics.
+- Forge 1.21.1 support
