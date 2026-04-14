@@ -33,7 +33,15 @@ repositories {
     maven { url "https://nexus.resourcefulbees.com/repository/telepathicgrunt/" }
     maven { url "https://maven.shedaniel.me" }
     maven { url "https://jitpack.io" }
-    maven { url "https://www.cursemaven.com" }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'CurseForge'
+                url = 'https://cursemaven.com'
+            }
+        }
+        filter { includeGroup 'curse.maven' }
+    }
     maven { url "https://api.modrinth.com/maven/" }
 }
 
