@@ -105,8 +105,7 @@ public class PieceLimitedJigsawManager {
         int pieceCenterX = (pieceBoundingBox.maxX() + pieceBoundingBox.minX()) / 2;
         int pieceCenterZ = (pieceBoundingBox.maxZ() + pieceBoundingBox.minZ()) / 2;
         int pieceCenterY = heightmapType
-                .map(types -> startPos.getY() + context.chunkGenerator().getFirstFreeHeight(
-                        pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
+                .map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
                 .orElseGet(startPos::getY);
 
         if (heightmapType.isPresent() && (pieceCenterY > maxY || pieceCenterY < minY)) {
@@ -135,10 +134,10 @@ public class PieceLimitedJigsawManager {
                     Map<Identifier, Integer> currentPieceCounter = new HashMap<>();
 
                     for (int attempts = 0; runOnce || doesNotHaveAllRequiredPieces(components, requiredPieces, currentPieceCounter); attempts++) {
-                        if (attempts == 100) {
+                        if (attempts == 40) {
                             Identifier startKey = startPoolHolder.unwrapKey().map(ResourceKey::identifier).orElse(structureID);
                             MoogsStructuresCommon.LOGGER.error("""
-                                    
+
                                     -------------------------------------------------------------------
                                     Moog's Structure Lib: Failed to create valid structure with all required pieces starting from this pool file: {}. Required pieces failed to generate the required amount are: {}
                                       This can happen if a structure has a required piece but the structure size is set too low.
@@ -169,7 +168,7 @@ public class PieceLimitedJigsawManager {
                         }
 
                         components.clear();
-                        components.add(startPiece); // start stays
+                        components.add(startPieceToUse); // Add start piece to list of pieces
 
                         if (size > 0) {
                             int boxRange = maxDistanceFromCenter.orElse(80);
@@ -614,8 +613,7 @@ public class PieceLimitedJigsawManager {
                             boolean validBounds = false;
 
                             // Make sure new piece fits within the chosen octree without intersecting any other piece.
-                            if (ignoreBounds || (boxOctreeMutableObject.getValue().boundaryContains(axisAlignedBBDeflated)
-                                    && !boxOctreeMutableObject.getValue().intersectsAnyBox(axisAlignedBBDeflated))) {
+                            if (ignoreBounds || (boxOctreeMutableObject.getValue().withinBoundsButNotIntersectingChildren(axisAlignedBBDeflated))) {
                                 boxOctreeMutableObject.getValue().addBox(axisAlignedBB);
                                 validBounds = true;
                             }
