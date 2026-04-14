@@ -21,6 +21,10 @@ jar {
     }
 }
 
+sourcesJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 minecraft {
     mappings channel: 'official', version: minecraft_version
 
