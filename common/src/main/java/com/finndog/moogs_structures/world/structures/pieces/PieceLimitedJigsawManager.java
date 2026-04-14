@@ -114,7 +114,7 @@ public class PieceLimitedJigsawManager {
         int pieceCenterX = (pieceBoundingBox.maxX() + pieceBoundingBox.minX()) / 2;
         int pieceCenterZ = (pieceBoundingBox.maxZ() + pieceBoundingBox.minZ()) / 2;
         int pieceCenterY = heightmapType
-                .map(types -> startPos.getY() + context.chunkGenerator().getFirstFreeHeight(pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
+                .map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
                 .orElseGet(startPos::getY);
 
         if (heightmapType.isPresent() && (pieceCenterY > maxY || pieceCenterY < minY)) {
@@ -134,7 +134,7 @@ public class PieceLimitedJigsawManager {
             boolean runOnce = requiredPieces == null || requiredPieces.isEmpty();
             Map<ResourceLocation, Integer> currentPieceCounter = new HashMap<>();
             for (int attempts = 0; runOnce || doesNotHaveAllRequiredPieces(components, requiredPieces, currentPieceCounter); attempts++) {
-                if (attempts == 100) {
+                if (attempts == 40) {
                     MoogsStructuresCommon.LOGGER.error(
                             """
                                             
@@ -166,14 +166,14 @@ public class PieceLimitedJigsawManager {
                 }
 
                 components.clear();
-                components.add(startPiece); // Add start piece to list of pieces
+                components.add(startPieceToUse); // Add start piece to list of pieces
 
                 if (size > 0) {
                     int boxRange = maxDistanceFromCenter.orElse(80);
                     AABB axisAlignedBB = new AABB(pieceCenterX - boxRange, pieceCenterY - 120, pieceCenterZ - boxRange, pieceCenterX + boxRange + 1, pieceCenterY + 180 + 1, pieceCenterZ + boxRange + 1);
                     BoxOctree boxOctree = new BoxOctree(axisAlignedBB); // The maximum boundary of the entire structure
                     boxOctree.addBox(AABB.of(pieceBoundingBox));
-                    Entry startPieceEntry = new Entry(startPiece, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
+                    Entry startPieceEntry = new Entry(startPieceToUse, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
 
                     Assembler assembler = new Assembler(
                             structureID,
@@ -526,7 +526,7 @@ public class PieceLimitedJigsawManager {
                             boolean validBounds = false;
 
                             // Make sure new piece fits within the chosen octree without intersecting any other piece.
-                            if (ignoreBounds || (boxOctreeMutableObject.getValue().boundaryContains(axisAlignedBBDeflated) && !boxOctreeMutableObject.getValue().intersectsAnyBox(axisAlignedBBDeflated))) {
+                            if (ignoreBounds || (boxOctreeMutableObject.getValue().withinBoundsButNotIntersectingChildren(axisAlignedBBDeflated))) {
                                 boxOctreeMutableObject.getValue().addBox(axisAlignedBB);
                                 validBounds = true;
                             }
