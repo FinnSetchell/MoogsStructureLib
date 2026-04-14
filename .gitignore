@@ -29,9 +29,16 @@ bin/
 .classpath
 .project
 
-# fabric
+# runs
 
 run/
+runs/
+fabric/run/
+fabric/runs/
+forge/run/
+forge/runs/
+neoforge/run/
+neoforge/runs/
 deps/
 
 # development notes (local only)
