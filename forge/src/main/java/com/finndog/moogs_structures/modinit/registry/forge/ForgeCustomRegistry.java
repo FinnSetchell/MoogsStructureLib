@@ -1,56 +1,60 @@
 package com.finndog.moogs_structures.modinit.registry.forge;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
-import net.minecraft.core.Registry;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.registries.IForgeRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 
 public class ForgeCustomRegistry<T> implements CustomRegistryLookup<T> {
 
-    private final Registry<T> registry;
+    private final Supplier<IForgeRegistry<T>> registrySupplier;
 
-    public ForgeCustomRegistry(Registry<T> registry) {
-        this.registry = registry;
+    public ForgeCustomRegistry(Supplier<IForgeRegistry<T>> registrySupplier) {
+        this.registrySupplier = registrySupplier;
+    }
+
+    private IForgeRegistry<T> reg() {
+        return registrySupplier.get();
     }
 
     @Override
-    public boolean containsKey(Identifier id) {
-        return registry.containsKey(id);
+    public boolean containsKey(ResourceLocation id) {
+        return reg().containsKey(id);
     }
 
     @Override
-    public @Nullable T get(Identifier id) {
-        return registry.get(id).map(net.minecraft.core.Holder.Reference::value).orElse(null);
+    public @Nullable T get(ResourceLocation id) {
+        return reg().getValue(id);
     }
 
     @Override
     public Collection<T> getValues() {
-        return registry.stream().collect(Collectors.toList());
+        return reg().getValues();
     }
 
     @Override
-    public Collection<Identifier> getKeys() {
-        return registry.keySet();
+    public Collection<ResourceLocation> getKeys() {
+        return reg().getKeys();
     }
 
     @Override
-    public @Nullable Identifier getKey(Object value) {
-        return registry.getKey((T) value);
+    public @Nullable ResourceLocation getKey(Object value) {
+        return reg().getKey((T) value);
     }
 
     @Override
     public boolean containsValue(Object value) {
-        return registry.containsValue((T) value);
+        return reg().getValues().contains(value);
     }
 
     @NotNull
     @Override
     public Iterator<T> iterator() {
-        return registry.iterator();
+        return reg().getValues().iterator();
     }
 }

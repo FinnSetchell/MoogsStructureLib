@@ -71,9 +71,30 @@ minecraft {
 
 sourceSets.main.resources.srcDir 'src/generated/resources'
 
+processResources {
+    filesMatching('META-INF/mods.toml') {
+        expand([
+            'version'                  : version,
+            'mod_id'                   : mod_id,
+            'mod_name'                 : mod_name,
+            'mod_author'               : mod_author,
+            'license'                  : license,
+            'description'              : project.description,
+            'credits'                  : credits,
+            'forge_loader_version_range': forge_loader_version_range
+        ])
+    }
+}
+
+jarJar.enable()
+
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.4.1")) {
+        jarJar.ranged(it, "[0.4.0,0.5.0)")
+    }
 
     runtimeOnly "curse.maven:moogs-voyager-structures-656977:${mvs_file}"
     runtimeOnly "curse.maven:mtr-moogs-temples-reimagined-1339737:${mtr_file}"
