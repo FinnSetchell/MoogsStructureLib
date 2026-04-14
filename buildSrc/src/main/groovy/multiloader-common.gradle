@@ -102,6 +102,15 @@ processResources {
     inputs.properties(expandProps)
 }
 
+ext.getChangelog = {
+    def changelogFile = rootProject.file('CHANGELOG.md')
+    if (!changelogFile.exists()) return ''
+    def content = changelogFile.getText('UTF-8')
+    def matcher = ~/(?s)## \[${version}\] - \d{4}-\d{2}-\d{2}\r?\n(.*?)(?=\r?\n---|\r?\n## \[|\z)/
+    def match = (content =~ matcher)
+    return match.find() ? match.group(1).trim() : ''
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
