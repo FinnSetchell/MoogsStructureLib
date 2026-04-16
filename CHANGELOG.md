@@ -2,6 +2,13 @@
 
 ---
 
+## [2.0.3] - 2026-04-16
+
+### Fixed
+- fixed mixin refmap not being bundled in the fabric jar, causing a crash on launch
+
+---
+
 ## [2.0.2] - 2026-04-14
 
 ### Fixed
