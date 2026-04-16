@@ -1,10 +1,12 @@
 package com.finndog.moogs_structures.fabric;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
+import com.finndog.moogs_structures.commands.DebugCommand;
 import com.finndog.moogs_structures.events.lifecycle.RegisterReloadListenerEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStartEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStopEvent;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.server.packs.PackType;
@@ -25,5 +27,8 @@ public class MoogsStructuresFabric implements ModInitializer {
 
         RegisterReloadListenerEvent.EVENT.invoke(new RegisterReloadListenerEvent((id, listener) ->
                 ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new FabricReloadListener(id, listener))));
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+                DebugCommand.register(dispatcher));
     }
 }

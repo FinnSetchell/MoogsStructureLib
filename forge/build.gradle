@@ -101,7 +101,7 @@ dependencies {
         jarJar.ranged(it, "[0.4.0,0.5.0)")
     }
 
-    runtimeOnly "curse.maven:moogs-voyager-structures-656977:${mvs_file}"
+    //runtimeOnly "curse.maven:moogs-voyager-structures-656977:${mvs_file}" // TODO: fix biome tag incompatibility in mvs for 1.21.2
     runtimeOnly "curse.maven:mtr-moogs-temples-reimagined-1339737:${mtr_file}"
     runtimeOnly "curse.maven:mss-moogs-soaring-structures-1040210:${mss_file}"
     runtimeOnly "curse.maven:moogs-end-structures-892382:${mes_file}"

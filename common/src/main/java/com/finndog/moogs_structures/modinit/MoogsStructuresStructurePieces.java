@@ -6,6 +6,7 @@ import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistries;
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
 import com.finndog.moogs_structures.world.structures.pieces.LegacyOceanBottomSinglePoolElement;
 import com.finndog.moogs_structures.world.structures.pieces.MirroringSingleJigsawPiece;
+import com.finndog.moogs_structures.world.structures.pieces.VersionAwareSinglePoolElement;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceType;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElementType;
@@ -17,4 +18,5 @@ public final class MoogsStructuresStructurePieces {
 
     public static final RegistryEntry<StructurePoolElementType<MirroringSingleJigsawPiece>> MIRROR_SINGLE = STRUCTURE_POOL_ELEMENT.register("mirroring_single_pool_element", () -> () -> MirroringSingleJigsawPiece.CODEC);
     public static final RegistryEntry<StructurePoolElementType<LegacyOceanBottomSinglePoolElement>> LEGACY_OCEAN_BOTTOM = STRUCTURE_POOL_ELEMENT.register("legacy_ocean_bottom_single_pool_element", () -> () -> LegacyOceanBottomSinglePoolElement.CODEC);
+    public static final RegistryEntry<StructurePoolElementType<VersionAwareSinglePoolElement>> VERSIONED_SINGLE = STRUCTURE_POOL_ELEMENT.register("versioned_single_pool_element", () -> () -> VersionAwareSinglePoolElement.CODEC);
 }

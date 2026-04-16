@@ -55,6 +55,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
         });
         this.StructureToPieceCountsObjs = mapBuilder;
         cachedRequirePiecesMap.clear();
+        cachedMaxCountPiecesMap.clear();
         StructurePieceCountsAdditionsMerger.performCountsAdditionsDetectionAndMerger(manager);
     }
 

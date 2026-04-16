@@ -1,6 +1,7 @@
 package com.finndog.moogs_structures.neoforge;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
+import com.finndog.moogs_structures.commands.DebugCommand;
 import com.finndog.moogs_structures.events.lifecycle.RegisterReloadListenerEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStartEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStopEvent;
@@ -13,6 +14,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
@@ -35,6 +37,7 @@ public class MoogsStructuresNeoforge {
         eventBus.addListener(MoogsStructuresNeoforge::onServerStarting);
         eventBus.addListener(MoogsStructuresNeoforge::onServerStopping);
         eventBus.addListener(MoogsStructuresNeoforge::onAddReloadListeners);
+        eventBus.addListener(MoogsStructuresNeoforge::onRegisterCommands);
     }
 
     private static void onSetup(FMLCommonSetupEvent event) {
@@ -51,6 +54,10 @@ public class MoogsStructuresNeoforge {
 
     private static void onAddReloadListeners(AddReloadListenerEvent event) {
         RegisterReloadListenerEvent.EVENT.invoke(new RegisterReloadListenerEvent((id, listener) -> event.addListener(listener)));
+    }
+
+    private static void onRegisterCommands(RegisterCommandsEvent event) {
+        DebugCommand.register(event.getDispatcher());
     }
 
 }
