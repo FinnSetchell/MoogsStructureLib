@@ -8,7 +8,6 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -199,7 +198,7 @@ public final class GeneralUtils {
     }
 
     public static String getStringMicroOptimised(CompoundTag tag, String key) {
-        return tag.get(key) instanceof StringTag stringTag ? stringTag.getAsString() : "";
+        return tag.getString(key);
     }
 
     //////////////////////////////////////////////
