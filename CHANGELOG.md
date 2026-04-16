@@ -9,4 +9,4 @@
 - replaced `@ExpectPlatform` with ServiceLoader pattern for platform abstraction
 
 ### Added
-- Forge 1.21.1 support
+- Forge 1.21.5 support
