@@ -2,7 +2,7 @@
 
 ---
 
-## [2.0.2] - 2026-04-16
+## [2.0.2] - 2026-04-17
 
 ### Added
 - added `/moogs_structures debug` command (on/off/toggle/status) for runtime debug logging, requires permission level 2
