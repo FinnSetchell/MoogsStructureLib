@@ -2,6 +2,13 @@
 
 ---
 
+## [2.0.4] - 2026-04-17
+
+### Fixed
+- fixed crash on launch caused by broken mixins in the published jar
+
+---
+
 ## [2.0.3] - 2026-04-16
 
 ### Fixed
