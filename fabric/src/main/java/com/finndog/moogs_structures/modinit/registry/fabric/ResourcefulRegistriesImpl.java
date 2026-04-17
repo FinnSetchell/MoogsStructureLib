@@ -5,7 +5,6 @@ import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
 import com.finndog.moogs_structures.platform.IRegistryPlatform;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
-import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,10 +20,11 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
 
     @Override
     public <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
-        FabricRegistryBuilder<T, MappedRegistry<T>> registry = FabricRegistryBuilder.createSimple(null, key.location());
+        @SuppressWarnings("unchecked")
+        var registry = FabricRegistryBuilder.createSimple((ResourceKey<Registry<T>>) (Object) key);
         if (sync) registry.attribute(RegistryAttribute.SYNCED);
         if (allowModification) registry.attribute(RegistryAttribute.MODDED);
-        MappedRegistry<T> builtRegistry = registry.buildAndRegister();
+        var builtRegistry = registry.buildAndRegister();
         CustomRegistry<T> customRegistry = new CustomRegistry<>(builtRegistry);
         return Pair.of(() -> customRegistry, new CustomResourcefulRegistry<>(builtRegistry, modId));
     }
