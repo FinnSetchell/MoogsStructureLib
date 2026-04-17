@@ -21,8 +21,8 @@ neoForge {
         server {
             server()
         }
-        data {
-            data()
+        clientData {
+            clientData()
             programArguments.addAll '--mod', project.mod_id, '--all',
                 '--output', file('src/generated/resources/').getAbsolutePath(),
                 '--existing', file('src/main/resources/').getAbsolutePath()
@@ -38,7 +38,6 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
-    runtimeOnly "curse.maven:moogs-voyager-structures-656977:${mvs_file}"
     runtimeOnly "curse.maven:mtr-moogs-temples-reimagined-1339737:${mtr_file}"
     runtimeOnly "curse.maven:mss-moogs-soaring-structures-1040210:${mss_file}"
     runtimeOnly "curse.maven:moogs-end-structures-892382:${mes_file}"

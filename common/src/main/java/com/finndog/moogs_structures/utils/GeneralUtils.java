@@ -198,7 +198,7 @@ public final class GeneralUtils {
     }
 
     public static String getStringMicroOptimised(CompoundTag tag, String key) {
-        return tag.getString(key);
+        return tag.getString(key).orElse("");
     }
 
     //////////////////////////////////////////////

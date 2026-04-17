@@ -308,7 +308,7 @@ public class PieceLimitedJigsawManager {
 
                 // Get the jigsaw block's piece pool
                 // Resolve pool from NBT via HolderGetter
-                String poolStr = jigsawBlock.info().nbt().getString("pool").get();
+                String poolStr = jigsawBlock.info().nbt().getString("pool").orElse("");
                 ResourceLocation poolId = ResourceLocation.tryParse(poolStr);
                 if (poolId == null) {
                     MoogsStructuresCommon.LOGGER.warn("Invalid pool id in jigsaw NBT: '{}'", poolStr);
@@ -527,7 +527,7 @@ public class PieceLimitedJigsawManager {
                             if (!tempCandidateBoundingBox.isInside(pieceCandidateJigsawBlock.info().pos().relative(JigsawBlock.getFrontFacing(pieceCandidateJigsawBlock.info().state())))) {
                                 return 0;
                             } else {
-                                String tgt = pieceCandidateJigsawBlock.info().nbt().getString("pool").get();
+                                String tgt = pieceCandidateJigsawBlock.info().nbt().getString("pool").orElse("");
                                 ResourceLocation targetPoolId = ResourceLocation.tryParse(tgt);
                                 if (targetPoolId == null) return 0;
                                 ResourceKey<StructureTemplatePool> targetKey =
