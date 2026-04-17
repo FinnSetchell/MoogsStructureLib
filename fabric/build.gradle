@@ -38,6 +38,32 @@ loom {
     }
 }
 
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'fabric')
+            }
+        }
+    }
+}
+loom.remapConfigurations.configureEach {
+    configurations.named(it.name) {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
+}
+
 def changelogContent = rootProject.file('CHANGELOG.md').exists() ? rootProject.file('CHANGELOG.md').getText('UTF-8') : ''
 def changelogMatcher = ~/(?s)## \[${version}\] - \d{4}-\d{2}-\d{2}\r?\n(.*?)(?=\r?\n---|\r?\n## \[|\z)/
 def changelogMatch = (changelogContent =~ changelogMatcher)

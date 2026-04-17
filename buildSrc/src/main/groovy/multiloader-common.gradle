@@ -10,6 +10,7 @@ base {
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
     withSourcesJar()
+    withJavadocJar()
 }
 
 repositories {
@@ -45,8 +46,9 @@ repositories {
     maven { url "https://api.modrinth.com/maven/" }
 }
 
-['apiElements', 'runtimeElements', 'sourcesElements'].each { variant ->
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
     configurations."$variant".outgoing {
+        capability("$group:${project.name}:$version")
         capability("$group:${base.archivesName.get()}:$version")
         capability("$group:$mod_id-${project.name}-${minecraft_version}:$version")
         capability("$group:$mod_id:$version")
@@ -94,11 +96,24 @@ processResources {
         'description'                  : project.description,
         'neoforge_version'             : neoforge_version,
         'neoforge_loader_version_range': neoforge_loader_version_range,
+        'forge_version'                : forge_version,
+        'forge_loader_version_range'   : forge_loader_version_range,
+        'credits'                      : credits,
         'java_version'                 : java_version
     ]
-    filesMatching(['fabric.mod.json', 'META-INF/neoforge.mods.toml', '*.mixins.json']) {
+
+    var jsonExpandProps = expandProps.collectEntries {
+        key, value -> [(key): value instanceof String ? value.replace("\n", "\\\\n") : value]
+    }
+
+    filesMatching(['META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
         expand expandProps
     }
+
+    filesMatching(['pack.mcmeta', 'fabric.mod.json', '*.mixins.json']) {
+        expand jsonExpandProps
+    }
+
     inputs.properties(expandProps)
 }
 

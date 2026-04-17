@@ -76,21 +76,6 @@ minecraft {
 
 sourceSets.main.resources.srcDir 'src/generated/resources'
 
-processResources {
-    filesMatching('META-INF/mods.toml') {
-        expand([
-            'version'                  : version,
-            'mod_id'                   : mod_id,
-            'mod_name'                 : mod_name,
-            'mod_author'               : mod_author,
-            'license'                  : license,
-            'description'              : project.description,
-            'credits'                  : credits,
-            'forge_loader_version_range': forge_loader_version_range
-        ])
-    }
-}
-
 jarJar.enable()
 
 dependencies {
@@ -161,4 +146,23 @@ sourceSets.each {
     def dir = layout.buildDirectory.dir("sourcesSets/$it.name")
     it.output.resourcesDir = dir
     it.java.destinationDirectory = dir
+}
+
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'forge')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'forge')
+            }
+        }
+    }
 }
