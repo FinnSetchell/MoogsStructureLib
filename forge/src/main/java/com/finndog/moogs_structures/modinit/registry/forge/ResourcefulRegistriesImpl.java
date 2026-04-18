@@ -65,7 +65,7 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
 
         public RegistryBuilder<T> getBuilder() {
             RegistryBuilder<T> builder = new RegistryBuilder<T>()
-                    .setName(key.location());
+                    .setName(key.identifier());
             if (!sync) builder.disableSync();
             return builder;
         }

@@ -1,7 +1,7 @@
 package com.finndog.moogs_structures.modinit.registry.forge;
 
 import com.finndog.moogs_structures.modinit.registry.RegistryEntry;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraftforge.registries.RegistryObject;
 
 public class ForgeRegistryEntry<R, T extends R> implements RegistryEntry<T> {
@@ -18,7 +18,7 @@ public class ForgeRegistryEntry<R, T extends R> implements RegistryEntry<T> {
     }
 
     @Override
-    public ResourceLocation getId() {
+    public Identifier getId() {
         return object.getId();
     }
 }

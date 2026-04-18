@@ -6,37 +6,34 @@ import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStartEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStopEvent;
 import com.finndog.moogs_structures.events.lifecycle.SetupEvent;
 import com.finndog.moogs_structures.modinit.registry.forge.ResourcefulRegistriesImpl;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.NewRegistryEvent;
 
 @Mod(MoogsStructuresCommon.MODID)
 public class MoogsStructuresForge {
 
-    public static IEventBus modEventBusTempHolder = null;
+    public static BusGroup modBusGroupTempHolder = null;
 
-    public MoogsStructuresForge() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-        modEventBus.addListener(EventPriority.NORMAL, ResourcefulRegistriesImpl::onRegisterForgeRegistries);
+    public MoogsStructuresForge(FMLJavaModLoadingContext context) {
+        BusGroup modBusGroup = context.getModBusGroup();
+        NewRegistryEvent.BUS.addListener(ResourcefulRegistriesImpl::onRegisterForgeRegistries);
 
-        modEventBusTempHolder = modEventBus;
+        modBusGroupTempHolder = modBusGroup;
         MoogsStructuresCommon.init();
-        modEventBusTempHolder = null;
+        modBusGroupTempHolder = null;
 
-        modEventBus.addListener(MoogsStructuresForge::onSetup);
-
-        IEventBus eventBus = MinecraftForge.EVENT_BUS;
-        eventBus.addListener(MoogsStructuresForge::onServerStarting);
-        eventBus.addListener(MoogsStructuresForge::onServerStopping);
-        eventBus.addListener(MoogsStructuresForge::onAddReloadListeners);
-        eventBus.addListener(MoogsStructuresForge::onRegisterCommands);
+        FMLCommonSetupEvent.getBus(modBusGroup).addListener(MoogsStructuresForge::onSetup);
+        ServerAboutToStartEvent.BUS.addListener(MoogsStructuresForge::onServerStarting);
+        ServerStoppingEvent.BUS.addListener(MoogsStructuresForge::onServerStopping);
+        AddReloadListenerEvent.BUS.addListener(MoogsStructuresForge::onAddReloadListeners);
+        RegisterCommandsEvent.BUS.addListener(MoogsStructuresForge::onRegisterCommands);
     }
 
     private static void onSetup(FMLCommonSetupEvent event) {

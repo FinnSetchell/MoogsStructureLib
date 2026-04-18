@@ -2,6 +2,13 @@
 
 ---
 
+## [2.0.3] - 2026-04-18
+
+### Fixed
+- Fixed Forge build failing due to 1.21.11 API changes (eventbus 7.0.1 rewrite, `ResourceKey.identifier()`, `Identifier` rename)
+
+---
+
 ## [2.0.2] - 2026-04-17
 
 ### Added
