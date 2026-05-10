@@ -1,12 +1,12 @@
-package com.finndog.moogs_structures.modinit.registry.neoforge;
+package com.finndog.moogs_structures.modinit.registry.forge;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
 import com.finndog.moogs_structures.platform.IRegistryPlatform;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
-import net.neoforged.neoforge.registries.NewRegistryEvent;
-import net.neoforged.neoforge.registries.RegistryBuilder;
+import net.minecraftforge.registries.NewRegistryEvent;
+import net.minecraftforge.registries.RegistryBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -19,14 +19,14 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
 
     @Override
     public <T> ResourcefulRegistry<T> create(Registry<T> registry, String id) {
-        return new NeoForgeResourcefulRegistry<>(registry, id);
+        return new ForgeResourcefulRegistry<>(registry, id);
     }
 
     @Override
     public <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
         CustomRegistryInfo<T, T> info = new CustomRegistryInfo<>(new LateSupplier<>(), key, save, sync, allowModification);
         CUSTOM_REGISTRIES.add(info);
-        return Pair.of(info.lookup(), new NeoForgeResourcefulRegistry<>(key, modId));
+        return Pair.of(info.lookup(), new ForgeResourcefulRegistry<>(key, modId));
     }
 
     public static void onRegisterForgeRegistries(NewRegistryEvent event) {
@@ -60,13 +60,14 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
     ) {
 
         public void build(NewRegistryEvent event) {
-            lookup.set(new NeoForgeCustomRegistry<>(event.create(getBuilder())));
+            lookup.set(new ForgeCustomRegistry<>(event.create(getBuilder())));
         }
 
         public RegistryBuilder<T> getBuilder() {
-            return new RegistryBuilder<>(key)
-                    .disableRegistrationCheck()
-                    .sync(sync);
+            RegistryBuilder<T> builder = new RegistryBuilder<T>()
+                    .setName(key.location());
+            if (!sync) builder.disableSync();
+            return builder;
         }
     }
 }

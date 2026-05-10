@@ -12,7 +12,7 @@
         "sources": "https://github.com/FinnSetchell/MoogsStructureLib"
     },
     "license": "GNU Lesser General Public License v3.0",
-    "icon": "icon.png",
+    "icon": "assets/moogs_structures/icon.png",
     "environment": "*",
     "entrypoints": {
         "main": [
@@ -25,11 +25,10 @@
     ],
     "depends": {
         "fabricloader": "*",
-        "minecraft": ">=1.21",
+        "minecraft": "1.21.4",
         "fabric": "*"
     },
     "suggests": {
         "another-mod": "*"
     }
 }
-  

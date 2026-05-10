@@ -4,12 +4,6 @@
 build/
 out/
 classes/
-gradle/wrapper
-DEVELOPMENT_NOTES.md
-
-#Do not gradle.properties and gradle-wrapper.jar as they are necessary for ./gradlew
-!gradle/wrapper/gradle-wrapper.jar
-!gradle/wrapper/gradle-wrapper.properties
 
 # eclipse
 
@@ -30,8 +24,17 @@ bin/
 .classpath
 .project
 
-# fabric
+# runs
 
 run/
+runs/
+fabric/run/
+fabric/runs/
+forge/run/
+forge/runs/
+neoforge/run/
+neoforge/runs/
 deps/
-/.architectury-transformer/
+
+# development notes (local only)
+DEVELOPMENT_NOTES.md

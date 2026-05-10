@@ -1,0 +1,163 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.minecraftforge.gradle' version '[6.0.46,6.2)'
+    id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
+    id 'me.modmuss50.mod-publish-plugin'
+    id 'idea'
+}
+
+base {
+    archivesName = "${mod_id}-forge-${minecraft_version}"
+}
+
+mixin {
+    config("moogs_structures-common.mixins.json")
+    config("moogs_structures-forge.mixins.json")
+}
+
+jar {
+    manifest {
+        attributes["MixinConfigs"] = "moogs_structures-common.mixins.json,moogs_structures-forge.mixins.json"
+    }
+}
+
+sourcesJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+
+    copyIdeResources = true
+
+    reobf = false // Forge 1.20.6+ uses official mappings at runtime
+
+    def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformer = at
+    }
+
+    runs {
+        client {
+            workingDirectory file('runs/client')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            taskName 'Client'
+            mods {
+                modClientRun {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory file('runs/server')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            taskName 'Server'
+            mods {
+                modServerRun {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory file('runs/data')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            taskName 'Data'
+            mods {
+                modDataRun {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir 'src/generated/resources'
+
+processResources {
+    filesMatching('META-INF/mods.toml') {
+        expand([
+            'version'                  : version,
+            'mod_id'                   : mod_id,
+            'mod_name'                 : mod_name,
+            'mod_author'               : mod_author,
+            'license'                  : license,
+            'description'              : project.description,
+            'credits'                  : credits,
+            'forge_loader_version_range': forge_loader_version_range
+        ])
+    }
+}
+
+jarJar.enable()
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.4.1")) {
+        jarJar.ranged(it, "[0.4.0,0.5.0)")
+    }
+
+    runtimeOnly "curse.maven:mtr-moogs-temples-reimagined-1339737:${mtr_file}"
+    runtimeOnly "curse.maven:mss-moogs-soaring-structures-1040210:${mss_file}"
+    runtimeOnly "curse.maven:moogs-end-structures-892382:${mes_file}"
+    runtimeOnly "curse.maven:mns-moogs-nether-structures-967466:${mns_file}"
+
+    // Forge's hack fix
+    implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            fg.component(it)
+        }
+    }
+}
+
+def changelogContent = rootProject.file('CHANGELOG.md').exists() ? rootProject.file('CHANGELOG.md').getText('UTF-8') : ''
+def changelogMatcher = ~/(?s)## \[${version}\] - \d{4}-\d{2}-\d{2}\r?\n(.*?)(?=\r?\n---|\r?\n## \[|\z)/
+def changelogMatch = (changelogContent =~ changelogMatcher)
+def changelogLatest = changelogMatch.find() ? changelogMatch.group(1).trim() : ''
+
+publishMods {
+    file = tasks.named('jarJar').flatMap { it.archiveFile }
+    changelog = changelogLatest
+    version = project.version.toString()
+    type = STABLE
+    displayName = "${mod_name} ${project.version}-${minecraft_version} (Forge)"
+    modLoaders.add("forge")
+    dryRun = false
+    maxRetries = 3
+
+    modrinth {
+        accessToken = providers.environmentVariable('MODRINTH_API_KEY')
+        projectId = modrinth_project_id
+        announcementTitle = "<:modrinth:1132291566019563550> Download on Modrinth"
+        minecraftVersionRange {
+            start = publish_mc_start
+            end = publish_mc_end
+        }
+    }
+
+    curseforge {
+        accessToken = providers.environmentVariable('CURSEFORGE_API_KEY')
+        projectId = cf_project_id
+        projectSlug = 'moogs-structure-lib'
+        announcementTitle = "<:curseforge:1132291568305459250> Download on CurseForge"
+        serverRequired = true
+        minecraftVersionRange {
+            start = publish_mc_start
+            end = publish_mc_end
+        }
+    }
+}
+
+sourceSets.each {
+    def dir = layout.buildDirectory.dir("sourcesSets/$it.name")
+    it.output.resourcesDir = dir
+    it.java.destinationDirectory = dir
+}

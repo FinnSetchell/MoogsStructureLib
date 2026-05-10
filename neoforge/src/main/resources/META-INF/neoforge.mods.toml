@@ -1,11 +1,11 @@
 modLoader="javafml"
-loaderVersion="[2,)"
-issueTrackerURL="https://github.com/FinnSetchell/MoogsStructureLib/issues" #optional
+loaderVersion="${neoforge_loader_version_range}"
+issueTrackerURL="https://github.com/FinnSetchell/MoogsStructureLib/issues"
 license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 
 [[mods]]
     modId="moogs_structures"
-    logoFile= "assets/moogs_structures/icon.png"
+    logoFile="assets/moogs_structures/icon.png"
     logoBlur=false
     version="${version}"
     displayName="Moog's Structure Lib"
@@ -26,11 +26,11 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 [[dependencies.moogs_structures]]
     modId="minecraft"
     mandatory = true
-    versionRange="[1.21.4,)"
+    versionRange="[1.21.4,1.21.5)"
     ordering = "NONE"
     side = "BOTH"
 
 [[dependencies.moogs_structures]]
     modId="neoforge"
     type="required"
-    versionRange="[21.4.86-beta,)"
+    versionRange="${neoforge_loader_version_range}"
