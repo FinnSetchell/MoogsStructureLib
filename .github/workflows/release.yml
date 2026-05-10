@@ -21,7 +21,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build
-        run: ./gradlew build
+        run: chmod +x ./gradlew && ./gradlew build
 
       - name: Extract Changelog
         id: changelog
@@ -37,7 +37,7 @@ jobs:
           printf "body<<DELIMITER\n%s\nDELIMITER\n" "$BODY" >> "$GITHUB_OUTPUT"
 
       - name: Publish to CurseForge, Modrinth & Discord
-        run: ./gradlew :fabric:publishMods :neoforge:publishMods :forge:publishMods
+        run: chmod +x ./gradlew && ./gradlew :fabric:publishMods :neoforge:publishMods :forge:publishMods
         env:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
