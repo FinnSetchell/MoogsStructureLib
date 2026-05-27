@@ -8,7 +8,7 @@ import com.finndog.moogs_structures.utils.VersionResolver.VersionEntry;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionNumber;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
@@ -33,7 +33,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
             Codec.unboundedMap(Codec.STRING, ResourceLocation.CODEC)
                     .flatXmap(VersionResolver::parseVersionMap, VersionResolver::encodeVersionEntries);
 
-    public static final MapCodec<VersionAwareSinglePoolElement> MAP_CODEC = RecordCodecBuilder.mapCodec(instance ->
+    public static final Codec<VersionAwareSinglePoolElement> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
                     ResourceLocation.CODEC.optionalFieldOf("location").forGetter(VersionAwareSinglePoolElement::singleLocation),
                     VERSION_ENTRIES_CODEC.optionalFieldOf("locations").forGetter(VersionAwareSinglePoolElement::versionEntriesOptional),
@@ -46,7 +46,6 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
                             processors,
                             projection
                     )));
-    public static final Codec<VersionAwareSinglePoolElement> CODEC = MAP_CODEC.codec();
 
     @Nullable
     private final ResourceLocation singleLocation;
