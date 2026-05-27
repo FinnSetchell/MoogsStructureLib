@@ -11,7 +11,6 @@ import net.minecraft.core.FrontAndTop;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.BlockTags;
@@ -27,14 +26,13 @@ import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.JigsawBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.level.storage.loot.LootDataType;
-import net.minecraft.world.level.storage.loot.LootTable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,9 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class GeneralUtils {
     private GeneralUtils() {}
@@ -79,6 +75,21 @@ public final class GeneralUtils {
     public static boolean isFullCube(BlockGetter world, BlockPos pos, BlockState state) {
         if(state == null) return false;
         return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape(world, pos)));
+    }
+
+    //////////////////////////////////////////////
+
+    public static BlockState copyBlockProperties(BlockState oldBlockState, BlockState newBlockState) {
+        for (Property<?> property : oldBlockState.getProperties()) {
+            if (newBlockState.hasProperty(property)) {
+                newBlockState = getStateWithProperty(newBlockState, oldBlockState, property);
+            }
+        }
+        return newBlockState;
+    }
+
+    public static <T extends Comparable<T>> BlockState getStateWithProperty(BlockState state, BlockState stateToCopy, Property<T> property) {
+        return state.setValue(property, stateToCopy.getValue(property));
     }
 
     //////////////////////////////////////////////
@@ -255,49 +266,4 @@ public final class GeneralUtils {
         return map;
     }
 
-    ////////////////////////////
-
-    public static boolean isInvalidLootTableFound(MinecraftServer minecraftServer, Map.Entry<ResourceLocation, ResourceLocation> entry) {
-        boolean invalidLootTableFound = false;
-        if(minecraftServer.getLootData().getLootTable(entry.getKey()) == LootTable.EMPTY) {
-            MoogsStructuresCommon.LOGGER.error("Unable to find loot table key: {}", entry.getKey());
-            invalidLootTableFound = true;
-        }
-        if(minecraftServer.getLootData().getLootTable(entry.getValue()) == LootTable.EMPTY) {
-            MoogsStructuresCommon.LOGGER.error("Unable to find loot table value: {}", entry.getValue());
-            invalidLootTableFound = true;
-        }
-        return invalidLootTableFound;
-    }
-
-    public static boolean isMissingLootImporting(MinecraftServer minecraftServer, Set<ResourceLocation> tableKeys) {
-        AtomicBoolean invalidLootTableFound = new AtomicBoolean(false);
-        minecraftServer.getLootData().getKeys(LootDataType.TABLE).forEach(rl -> {
-            if(rl.getNamespace().equals(MoogsStructuresCommon.MODID) && !tableKeys.contains(rl)) {
-                if(rl.getPath().contains("mansions") && rl.getPath().contains("storage")) {
-                    return;
-                }
-
-                if(rl.getPath().contains("monuments")) {
-                    return;
-                }
-
-                if(rl.getPath().contains("dispensers/temples/wasteland_lava")) {
-                    return;
-                }
-
-                if(rl.getPath().contains("lucky_pool")) {
-                    return;
-                }
-
-                if(rl.getPath().contains("archaeology")) {
-                    return;
-                }
-
-                MoogsStructuresCommon.LOGGER.error("No loot importing found for: {}", rl);
-                invalidLootTableFound.set(true);
-            }
-        });
-        return invalidLootTableFound.get();
-    }
 }
