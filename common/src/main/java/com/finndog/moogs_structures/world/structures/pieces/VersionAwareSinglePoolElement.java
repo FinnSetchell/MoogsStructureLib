@@ -6,6 +6,8 @@ import com.finndog.moogs_structures.utils.DebugFlags;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionEntry;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionNumber;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -28,7 +30,7 @@ import java.util.stream.Collectors;
  * A {@link SinglePoolElement} that can resolve different structure templates based
  * on the running Minecraft version.
  */
-public class VersionAwareSinglePoolElement extends SinglePoolElement {
+public class VersionAwareSinglePoolElement extends SinglePoolElement implements PoolElementAdaptationOverride {
 
     private static final Codec<List<VersionEntry>> VERSION_ENTRIES_CODEC =
             Codec.unboundedMap(Codec.STRING, ResourceLocation.CODEC)
@@ -40,14 +42,17 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
                     VERSION_ENTRIES_CODEC.optionalFieldOf("locations").forGetter(VersionAwareSinglePoolElement::versionEntriesOptional),
                     processorsCodec(),
                     projectionCodec(),
-                    overrideLiquidSettingsCodec()
-            ).apply(instance, (singleLocation, versionEntries, processors, projection, overrideLiquidSettings) ->
+                    overrideLiquidSettingsCodec(),
+                    EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation")
+                            .forGetter(VersionAwareSinglePoolElement::moogs_structures_getAdaptationOverride)
+            ).apply(instance, (singleLocation, versionEntries, processors, projection, overrideLiquidSettings, adaptationOverride) ->
                     new VersionAwareSinglePoolElement(
                             singleLocation.orElse(null),
                             versionEntries.map(List::copyOf).orElse(List.of()),
                             processors,
                             projection,
-                            overrideLiquidSettings.orElse(null)
+                            overrideLiquidSettings.orElse(null),
+                            adaptationOverride
                     )));
 
     @Nullable
@@ -55,12 +60,14 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
     private final List<VersionEntry> versionEntries;
     private final ResourceLocation defaultLocation;
     private final String versionEntriesDescription;
+    private final Optional<EnhancedTerrainAdaptation> adaptationOverride;
 
     private VersionAwareSinglePoolElement(@Nullable ResourceLocation singleLocation,
                                           List<VersionEntry> versionEntries,
                                           Holder<StructureProcessorList> processors,
                                           StructureTemplatePool.Projection projection,
-                                          @Nullable LiquidSettings overrideLiquidSettings) {
+                                          @Nullable LiquidSettings overrideLiquidSettings,
+                                          Optional<EnhancedTerrainAdaptation> adaptationOverride) {
         super(Either.left(resolveTargetLocation(singleLocation, versionEntries)),
                 processors,
                 projection,
@@ -73,6 +80,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
         }
         this.defaultLocation = fallback;
         this.versionEntriesDescription = describeVersionEntries(this.versionEntries);
+        this.adaptationOverride = adaptationOverride;
         logFallbackIfNeeded();
     }
 
@@ -143,6 +151,11 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
 
     private Optional<ResourceLocation> singleLocation() {
         return Optional.ofNullable(this.singleLocation);
+    }
+
+    @Override
+    public Optional<EnhancedTerrainAdaptation> moogs_structures_getAdaptationOverride() {
+        return this.adaptationOverride;
     }
 
     @Override
