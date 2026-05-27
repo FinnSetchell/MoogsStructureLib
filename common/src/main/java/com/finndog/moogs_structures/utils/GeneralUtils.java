@@ -25,6 +25,7 @@ import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.JigsawBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -74,6 +75,21 @@ public final class GeneralUtils {
     public static boolean isFullCube(BlockGetter world, BlockPos pos, BlockState state) {
         if(state == null) return false;
         return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape(world, pos)));
+    }
+
+    //////////////////////////////////////////////
+
+    public static BlockState copyBlockProperties(BlockState oldBlockState, BlockState newBlockState) {
+        for (Property<?> property : oldBlockState.getProperties()) {
+            if (newBlockState.hasProperty(property)) {
+                newBlockState = getStateWithProperty(newBlockState, oldBlockState, property);
+            }
+        }
+        return newBlockState;
+    }
+
+    public static <T extends Comparable<T>> BlockState getStateWithProperty(BlockState state, BlockState stateToCopy, Property<T> property) {
+        return state.setValue(property, stateToCopy.getValue(property));
     }
 
     //////////////////////////////////////////////
