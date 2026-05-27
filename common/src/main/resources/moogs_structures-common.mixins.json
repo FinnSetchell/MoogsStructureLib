@@ -5,7 +5,10 @@
     "refmap": "${mod_id}.refmap.json",
     "compatibilityLevel": "JAVA_21",
     "mixins": [
+        "features.NoBasaltColumnsInStructuresMixin",
+        "features.NoDeltasInStructuresMixin",
         "resources.NamespaceResourceManagerAccessor",
+        "structures.JigsawReplacementProcessorMixin",
         "structures.ListPoolElementAccessor",
         "structures.LocateCommandMixin",
         "structures.PoolElementStructurePieceAccessor",
@@ -13,7 +16,9 @@
         "structures.StructurePieceAccessor",
         "structures.StructurePoolAccessor",
         "structures.StructureTemplateManagerAccessor",
-        "structures.TemplateAccessor"
+        "structures.TemplateAccessor",
+        "terrainadaptation.BeardifierAccessor",
+        "terrainadaptation.BeardifierMixin"
     ],
     "client": [
     ],
