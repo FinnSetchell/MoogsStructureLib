@@ -1,6 +1,8 @@
 package com.finndog.moogs_structures.world.structures.pieces;
 
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -19,17 +21,27 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 
 import java.util.Optional;
 
-public class LegacyOceanBottomSinglePoolElement extends SinglePoolElement {
+public class LegacyOceanBottomSinglePoolElement extends SinglePoolElement implements PoolElementAdaptationOverride {
     public static final MapCodec<LegacyOceanBottomSinglePoolElement> CODEC = RecordCodecBuilder.mapCodec(
             (legacyOceanBottomSinglePoolElementInstance) -> legacyOceanBottomSinglePoolElementInstance
                     .group(templateCodec(),
                             processorsCodec(),
                             projectionCodec(),
-                            overrideLiquidSettingsCodec())
+                            overrideLiquidSettingsCodec(),
+                            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation")
+                                    .forGetter(LegacyOceanBottomSinglePoolElement::moogs_structures_getAdaptationOverride))
                     .apply(legacyOceanBottomSinglePoolElementInstance, LegacyOceanBottomSinglePoolElement::new));
 
-    protected LegacyOceanBottomSinglePoolElement(Either<Identifier, StructureTemplate> resourceLocationStructureTemplateEither, Holder<StructureProcessorList> structureProcessorListHolder, StructureTemplatePool.Projection projection, Optional<LiquidSettings> liquidSettings) {
+    protected final Optional<EnhancedTerrainAdaptation> adaptationOverride;
+
+    protected LegacyOceanBottomSinglePoolElement(Either<Identifier, StructureTemplate> resourceLocationStructureTemplateEither, Holder<StructureProcessorList> structureProcessorListHolder, StructureTemplatePool.Projection projection, Optional<LiquidSettings> liquidSettings, Optional<EnhancedTerrainAdaptation> adaptationOverride) {
         super(resourceLocationStructureTemplateEither, structureProcessorListHolder, projection, liquidSettings);
+        this.adaptationOverride = adaptationOverride;
+    }
+
+    @Override
+    public Optional<EnhancedTerrainAdaptation> moogs_structures_getAdaptationOverride() {
+        return this.adaptationOverride;
     }
 
     @Override
