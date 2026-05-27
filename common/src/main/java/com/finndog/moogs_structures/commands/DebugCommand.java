@@ -26,6 +26,14 @@ public final class DebugCommand {
                                                 .executes(context -> set(context.getSource(), false)))
                                         .then(Commands.literal("status")
                                                 .executes(context -> report(context.getSource())))
+                                        .then(Commands.literal("keepjigsaws")
+                                                .executes(context -> toggleKeepJigsaws(context.getSource()))
+                                                .then(Commands.literal("on")
+                                                        .executes(context -> setKeepJigsaws(context.getSource(), true)))
+                                                .then(Commands.literal("off")
+                                                        .executes(context -> setKeepJigsaws(context.getSource(), false)))
+                                                .then(Commands.literal("status")
+                                                        .executes(context -> reportKeepJigsaws(context.getSource()))))
                         )
         );
     }
@@ -49,6 +57,31 @@ public final class DebugCommand {
 
     private static int notify(CommandSourceStack source, String action, boolean enabled) {
         String message = "Moog's Structure debug mode " + action + " (" + (enabled ? "enabled" : "disabled") + ")";
+        MoogsStructuresCommon.LOGGER.info(message);
+        source.sendSuccess(() -> Component.literal(message), true);
+        return enabled ? 1 : 0;
+    }
+
+    private static int toggleKeepJigsaws(CommandSourceStack source) {
+        boolean enabled = DebugFlags.toggleKeepJigsawBlocks();
+        return notifyKeepJigsaws(source, "toggled", enabled);
+    }
+
+    private static int setKeepJigsaws(CommandSourceStack source, boolean value) {
+        boolean enabled = DebugFlags.setKeepJigsawBlocks(value);
+        return notifyKeepJigsaws(source, value ? "enabled" : "disabled", enabled);
+    }
+
+    private static int reportKeepJigsaws(CommandSourceStack source) {
+        boolean enabled = DebugFlags.isKeepJigsawBlocks();
+        source.sendSuccess(() ->
+                Component.literal("Moog's Structure keep-jigsaw-blocks mode is " + (enabled ? "enabled" : "disabled")), false);
+        return enabled ? 1 : 0;
+    }
+
+    private static int notifyKeepJigsaws(CommandSourceStack source, String action, boolean enabled) {
+        String message = "Moog's Structure keep-jigsaw-blocks mode " + action + " (" + (enabled ? "enabled" : "disabled")
+                + "). Newly generated/placed structures will " + (enabled ? "retain" : "no longer retain") + " jigsaw blocks.";
         MoogsStructuresCommon.LOGGER.info(message);
         source.sendSuccess(() -> Component.literal(message), true);
         return enabled ? 1 : 0;
