@@ -2,6 +2,8 @@ package com.finndog.moogs_structures.world.structures.pieces;
 
 import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -30,32 +32,46 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
-public class MirroringSingleJigsawPiece extends SinglePoolElement {
+public class MirroringSingleJigsawPiece extends SinglePoolElement implements PoolElementAdaptationOverride {
     public static final MapCodec<MirroringSingleJigsawPiece> CODEC = RecordCodecBuilder.mapCodec((jigsawPieceInstance) ->
             jigsawPieceInstance.group(
                     templateCodec(),
                     processorsCodec(),
                     projectionCodec(),
-                    mirrorCodec())
+                    mirrorCodec(),
+                    adaptationOverrideCodec())
             .apply(jigsawPieceInstance, MirroringSingleJigsawPiece::new));
 
     protected static <E extends MirroringSingleJigsawPiece> RecordCodecBuilder<E, Mirror> mirrorCodec() {
         return Codec.STRING.fieldOf("mirror")
-                .xmap(Mirror::valueOf, Mirror::toString)
+                .xmap(Mirror::valueOf, Mirror::name)
                 .forGetter((jigsawPieceInstance) -> jigsawPieceInstance.mirror);
     }
 
-    protected final Mirror mirror;
-
-    public MirroringSingleJigsawPiece(SinglePoolElement singleJigsawPiece, Mirror mirror) {
-        this(((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getTemplate(), ((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getProcessors(), singleJigsawPiece.getProjection(), mirror);
+    protected static <E extends MirroringSingleJigsawPiece> RecordCodecBuilder<E, Optional<EnhancedTerrainAdaptation>> adaptationOverrideCodec() {
+        return EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation")
+                .forGetter(MirroringSingleJigsawPiece::moogs_structures_getAdaptationOverride);
     }
 
-    protected MirroringSingleJigsawPiece(Either<ResourceLocation, StructureTemplate> locationTemplateEither, Holder<StructureProcessorList> processorListSupplier, StructureTemplatePool.Projection placementBehaviour, Mirror mirror) {
+    protected final Mirror mirror;
+    protected final Optional<EnhancedTerrainAdaptation> adaptationOverride;
+
+    public MirroringSingleJigsawPiece(SinglePoolElement singleJigsawPiece, Mirror mirror) {
+        this(((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getTemplate(), ((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getProcessors(), singleJigsawPiece.getProjection(), mirror, Optional.empty());
+    }
+
+    protected MirroringSingleJigsawPiece(Either<ResourceLocation, StructureTemplate> locationTemplateEither, Holder<StructureProcessorList> processorListSupplier, StructureTemplatePool.Projection placementBehaviour, Mirror mirror, Optional<EnhancedTerrainAdaptation> adaptationOverride) {
         super(locationTemplateEither, processorListSupplier, placementBehaviour);
         this.mirror = mirror;
+        this.adaptationOverride = adaptationOverride;
+    }
+
+    @Override
+    public Optional<EnhancedTerrainAdaptation> moogs_structures_getAdaptationOverride() {
+        return this.adaptationOverride;
     }
 
     private StructureTemplate getTemplate(StructureTemplateManager templateManager) {
