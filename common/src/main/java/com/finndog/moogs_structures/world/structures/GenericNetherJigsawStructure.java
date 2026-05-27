@@ -25,7 +25,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-public class GenericNetherJigsawStructure extends GenericJigsawStructure {
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
+
+public class GenericNetherJigsawStructure extends GenericJigsawStructure implements EnhancedTerrainAdaptationStructure {
 
     public static final Codec<GenericNetherJigsawStructure> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             GenericNetherJigsawStructure.settingsCodec(instance),
@@ -41,11 +44,13 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Codec.intRange(1, 128).optionalFieldOf("max_distance_from_center").forGetter(structure -> structure.maxDistanceFromCenter),
             Codec.intRange(0, 100).optionalFieldOf("ledge_offset_y").forGetter(structure -> structure.ledgeOffsetY),
             StringRepresentable.fromEnum(LAND_SEARCH_DIRECTION::values).fieldOf("land_search_direction").forGetter(structure -> structure.searchDirection),
-            Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack)
+            Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
+            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
     ).apply(instance, GenericNetherJigsawStructure::new));
 
     public final Optional<Integer> ledgeOffsetY;
     public final LAND_SEARCH_DIRECTION searchDirection;
+    public final EnhancedTerrainAdaptation enhancedTerrainAdaptation;
 
     public GenericNetherJigsawStructure(StructureSettings config,
                                         Holder<StructureTemplatePool> startPool,
@@ -60,7 +65,8 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                                         Optional<Integer> maxDistanceFromCenter,
                                         Optional<Integer> ledgeOffsetY,
                                         LAND_SEARCH_DIRECTION searchDirection,
-                                        boolean useBoundingBoxHack) {
+                                        boolean useBoundingBoxHack,
+                                        EnhancedTerrainAdaptation enhancedTerrainAdaptation) {
         super(config,
             startPool,
             size,
@@ -80,6 +86,12 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
 
         this.ledgeOffsetY = ledgeOffsetY;
         this.searchDirection = searchDirection;
+        this.enhancedTerrainAdaptation = enhancedTerrainAdaptation;
+    }
+
+    @Override
+    public EnhancedTerrainAdaptation getEnhancedTerrainAdaptation() {
+        return this.enhancedTerrainAdaptation;
     }
 
     @Override
