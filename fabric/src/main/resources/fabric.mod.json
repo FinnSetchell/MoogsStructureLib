@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "id": "moogs_structures",
-    "version": "${version}-fabric",
+    "version": "${version}+fabric",
     "name": "Moog's Structure Lib",
     "description": "A library mod for generating structures",
     "authors": [
