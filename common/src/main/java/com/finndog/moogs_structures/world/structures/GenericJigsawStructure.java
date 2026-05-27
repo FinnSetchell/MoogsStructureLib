@@ -48,7 +48,7 @@ public class GenericJigsawStructure extends Structure {
     public static final MapCodec<GenericJigsawStructure> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             GenericJigsawStructure.settingsCodec(instance),
             StructureTemplatePool.CODEC.fieldOf("start_pool").forGetter(structure -> structure.startPool),
-            Codec.intRange(0, 30).fieldOf("size").forGetter(structure -> structure.size),
+            Codec.intRange(0, 128).fieldOf("size").forGetter(structure -> structure.size),
             YRangeAllowance.CODEC.optionalFieldOf("y_allowance").forGetter(structure -> structure.yAllowance),
             HeightProvider.CODEC.fieldOf("start_height").forGetter(structure -> structure.startHeight),
             Heightmap.Types.CODEC.optionalFieldOf("project_start_to_heightmap").forGetter(structure -> structure.projectStartToHeightmap),
