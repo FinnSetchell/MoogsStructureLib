@@ -4,6 +4,7 @@
     "package": "com.finndog.moogs_structures.mixins",
     "compatibilityLevel": "JAVA_21",
     "mixins": [
+        "structures.EntityProcessorMixin"
     ],
     "client": [
     ],

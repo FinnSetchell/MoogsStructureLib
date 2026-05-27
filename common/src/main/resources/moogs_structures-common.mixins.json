@@ -4,7 +4,10 @@
     "package": "com.finndog.moogs_structures.mixins",
     "compatibilityLevel": "JAVA_21",
     "mixins": [
+        "features.NoBasaltColumnsInStructuresMixin",
+        "features.NoDeltasInStructuresMixin",
         "resources.NamespaceResourceManagerAccessor",
+        "structures.JigsawReplacementProcessorMixin",
         "structures.ListPoolElementAccessor",
         "structures.LocateCommandMixin",
         "structures.PoolElementStructurePieceAccessor",
@@ -13,8 +16,9 @@
         "structures.StructurePoolAccessor",
         "structures.StructureProcessorAccessor",
         "structures.StructureTemplateManagerAccessor",
-        "structures.StructureTemplateMixin",
-        "structures.TemplateAccessor"
+        "structures.TemplateAccessor",
+        "terrainadaptation.BeardifierAccessor",
+        "terrainadaptation.BeardifierMixin"
     ],
     "client": [
     ],
