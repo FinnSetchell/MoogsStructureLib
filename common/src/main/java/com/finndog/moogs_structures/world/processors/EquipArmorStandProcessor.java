@@ -41,11 +41,17 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
      * so enchantments/trims/etc. are authored via the {@code components} field.
      */
     public record ArmorSet(Optional<ItemStack> head, Optional<ItemStack> chest, Optional<ItemStack> legs, Optional<ItemStack> feet) {
+        // Wrap vanilla ItemStack codec so datapacks authored against the pre-1.21.5
+        // wrapped enchantments schema ({"minecraft:enchantments":{"levels":{...}}})
+        // still load on MC 1.21.5+, which expects the flat schema.
+        private static final Codec<ItemStack> ITEM_CODEC =
+                EnchantmentsSchemaCompatCodec.wrap(ItemStack.SINGLE_ITEM_CODEC);
+
         public static final Codec<ArmorSet> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                ItemStack.SINGLE_ITEM_CODEC.optionalFieldOf("head").forGetter(ArmorSet::head),
-                ItemStack.SINGLE_ITEM_CODEC.optionalFieldOf("chest").forGetter(ArmorSet::chest),
-                ItemStack.SINGLE_ITEM_CODEC.optionalFieldOf("legs").forGetter(ArmorSet::legs),
-                ItemStack.SINGLE_ITEM_CODEC.optionalFieldOf("feet").forGetter(ArmorSet::feet)
+                ITEM_CODEC.optionalFieldOf("head").forGetter(ArmorSet::head),
+                ITEM_CODEC.optionalFieldOf("chest").forGetter(ArmorSet::chest),
+                ITEM_CODEC.optionalFieldOf("legs").forGetter(ArmorSet::legs),
+                ITEM_CODEC.optionalFieldOf("feet").forGetter(ArmorSet::feet)
         ).apply(instance, ArmorSet::new));
     }
 
