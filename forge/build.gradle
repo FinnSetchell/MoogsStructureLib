@@ -166,3 +166,8 @@ sourceSets.configureEach {
         }
     }
 }
+
+// Make ./gradlew build produce the JiJ jar (with bundled mixinextras), not the plain one.
+tasks.named('jar').configure { archiveClassifier.set('slim') }
+tasks.named('jarJar').configure { archiveClassifier.set('') }
+tasks.named('assemble').configure { dependsOn(tasks.named('jarJar')) }
