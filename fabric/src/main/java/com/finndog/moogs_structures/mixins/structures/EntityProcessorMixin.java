@@ -36,11 +36,22 @@ import java.util.Optional;
 /**
  * Allows {@link StructureEntityProcessor}s to process entities in jigsaw/template structures on Fabric.
  * Vanilla's {@code StructureTemplate.placeEntities} never invokes the {@code processEntity} hook on Fabric,
- * so we hook it ourselves: capture the placement context, then at {@code placeEntities} HEAD run the
- * entity processors and spawn the processed entities (cancelling vanilla placement to avoid duplicates).
+ * so we hook it ourselves: capture the placement context at the start of {@code placeInWorld}, then at
+ * {@code placeEntities} HEAD run the entity processors and spawn the processed entities (cancelling
+ * vanilla placement to avoid duplicates).
  *
  * <p>Only activates when the structure being placed actually uses a {@link StructureEntityProcessor},
  * so other mods' entity placement is unaffected. Ported/adapted from YUNG's API.
+ *
+ * <p><b>Cross-version note:</b> Mojang added a {@link ProblemReporter} parameter to
+ * {@code placeEntities} partway through the 1.21.x cycle (introduced around 1.21.9). To keep one
+ * Fabric jar working across both vanilla signatures in this branch's published MC range
+ * (1.21.5 – 1.21.10) we declare two {@code @Inject} handlers — one for each signature — both with
+ * {@code require = 0} so the non-matching one is silently skipped at mixin-apply time.
+ *
+ * <p>The {@code captureContext} / {@code clearContext} hooks live on {@code placeInWorld} (whose
+ * signature has been stable across the whole range) so they do not depend on the changed
+ * {@code placeEntities} signature.
  */
 @Mixin(StructureTemplate.class)
 public class EntityProcessorMixin {
@@ -51,11 +62,7 @@ public class EntityProcessorMixin {
     @Unique
     private static final ThreadLocal<StructureProcessingContext> moogs_structures$context = new ThreadLocal<>();
 
-    @Inject(
-            method = "placeInWorld",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate;placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;ZLnet/minecraft/util/ProblemReporter;)V"))
+    @Inject(method = "placeInWorld", at = @At("HEAD"))
     private void moogs_structures$captureContext(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, BlockPos structurePiecePivotPos,
                                                  StructurePlaceSettings structurePlaceSettings, RandomSource randomSource, int i, CallbackInfoReturnable<Boolean> cir) {
         moogs_structures$context.set(new StructureProcessingContext(
@@ -67,22 +74,36 @@ public class EntityProcessorMixin {
         ));
     }
 
-    @Inject(
-            method = "placeInWorld",
-            at = @At(
-                    value = "INVOKE",
-                    shift = At.Shift.AFTER,
-                    target = "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate;placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;ZLnet/minecraft/util/ProblemReporter;)V"))
+    @Inject(method = "placeInWorld", at = @At("RETURN"))
     private void moogs_structures$clearContext(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, BlockPos structurePiecePivotPos,
                                                StructurePlaceSettings structurePlaceSettings, RandomSource randomSource, int i, CallbackInfoReturnable<Boolean> cir) {
         moogs_structures$context.remove();
     }
 
+    // Handler for MC 1.21.5 - 1.21.8 (vanilla placeEntities has no ProblemReporter param).
+    // require = 0 so this silently skips on MC versions where the signature does not match.
     @Inject(
-            method = "placeEntities",
+            method = "placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Z)V",
             at = @At(value = "HEAD"),
-            cancellable = true)
-    private void moogs_structures$processAndPlaceEntities(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, ProblemReporter problemReporter, CallbackInfo ci) {
+            cancellable = true,
+            require = 0)
+    private void moogs_structures$processAndPlaceEntities_legacy(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, CallbackInfo ci) {
+        moogs_structures$processAndPlaceEntitiesImpl(serverLevelAccessor, ci);
+    }
+
+    // Handler for MC 1.21.9 - 1.21.10 (vanilla placeEntities has trailing ProblemReporter param).
+    // require = 0 so this silently skips on MC versions where the signature does not match.
+    @Inject(
+            method = "placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;ZLnet/minecraft/util/ProblemReporter;)V",
+            at = @At(value = "HEAD"),
+            cancellable = true,
+            require = 0)
+    private void moogs_structures$processAndPlaceEntities_modern(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, ProblemReporter problemReporter, CallbackInfo ci) {
+        moogs_structures$processAndPlaceEntitiesImpl(serverLevelAccessor, ci);
+    }
+
+    @Unique
+    private void moogs_structures$processAndPlaceEntitiesImpl(ServerLevelAccessor serverLevelAccessor, CallbackInfo ci) {
         StructureProcessingContext ctx = moogs_structures$context.get();
         if (ctx == null) {
             return;
