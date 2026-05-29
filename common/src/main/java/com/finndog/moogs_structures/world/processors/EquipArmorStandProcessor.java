@@ -7,10 +7,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
@@ -28,8 +26,9 @@ import java.util.Optional;
  * authored on them) are written into the stand's {@code ArmorItems} NBT.
  *
  * <p>Targets every {@code minecraft:armor_stand} in any piece whose processor list includes this
- * processor. Item slots are full {@link ItemStack}s (via {@link ItemStack#CODEC}), so
- * enchantments and trims are expressed with the vanilla item-component format.
+ * processor. Item slots are authored as full item NBT (the same shape vanilla's
+ * {@link ItemStack#CODEC} accepts), so enchantments and trims are expressed with the vanilla
+ * item-component format.
  *
  * <p>Being a {@link StructureEntityProcessor}, it is invoked by MSL's fabric
  * {@code EntityProcessorMixin} during entity placement.
@@ -37,15 +36,23 @@ import java.util.Optional;
 public class EquipArmorStandProcessor extends StructureEntityProcessor {
 
     /**
-     * One full set of armor. Any slot may be omitted (left empty). Each item is a full ItemStack,
-     * so enchantments/trims/etc. are authored via the {@code components} field.
+     * One full set of armor. Any slot may be omitted (left empty). Each slot is captured as the
+     * raw item NBT — enchantments/trims/etc. are authored via the {@code components} field but
+     * deserialised lazily by vanilla's armor-stand entity loader, not at processor decode time.
+     *
+     * <p>MC 26.1 made item-component validation eager: {@link ItemStack#CODEC} refuses to build
+     * an {@link ItemStack} whose default components haven't been registered yet. The worldgen
+     * {@code processor_list} registry loads before item components are populated, so invoking
+     * the item codec during processor decode crashes registry load. Capturing the raw
+     * (already-normalised) NBT here defers the item decode to entity-load time, where components
+     * are available.
      */
-    public record ArmorSet(Optional<ItemStack> head, Optional<ItemStack> chest, Optional<ItemStack> legs, Optional<ItemStack> feet) {
-        // Wrap vanilla ItemStack codec so datapacks authored against the pre-1.21.5
-        // wrapped enchantments schema ({"minecraft:enchantments":{"levels":{...}}})
-        // still load on MC 1.21.5+, which expects the flat schema.
-        private static final Codec<ItemStack> ITEM_CODEC =
-                EnchantmentsSchemaCompatCodec.wrap(ItemStack.CODEC);
+    public record ArmorSet(Optional<CompoundTag> head, Optional<CompoundTag> chest, Optional<CompoundTag> legs, Optional<CompoundTag> feet) {
+        // Wrap CompoundTag.CODEC (not ItemStack.CODEC) so the pre-1.21.5 wrapped enchantments
+        // schema ({"minecraft:enchantments":{"levels":{...}}}) is still normalised to the flat
+        // 1.21.5+ shape at decode time, but no eager item-component validation runs.
+        private static final Codec<CompoundTag> ITEM_CODEC =
+                EnchantmentsSchemaCompatCodec.wrap(CompoundTag.CODEC);
 
         public static final Codec<ArmorSet> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 ITEM_CODEC.optionalFieldOf("head").forGetter(ArmorSet::head),
@@ -87,26 +94,24 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
             return globalEntityInfo;
         }
 
-        HolderLookup.Provider provider = serverLevelAccessor.registryAccess();
         CompoundTag newNbt = nbt.copy();
 
         // ArmorStand reads ArmorItems in EquipmentSlot armor index order: feet, legs, chest, head.
         ListTag armorItems = new ListTag();
-        armorItems.add(saveOrEmpty(set.feet(), provider));
-        armorItems.add(saveOrEmpty(set.legs(), provider));
-        armorItems.add(saveOrEmpty(set.chest(), provider));
-        armorItems.add(saveOrEmpty(set.head(), provider));
+        armorItems.add(saveOrEmpty(set.feet()));
+        armorItems.add(saveOrEmpty(set.legs()));
+        armorItems.add(saveOrEmpty(set.chest()));
+        armorItems.add(saveOrEmpty(set.head()));
         newNbt.put("ArmorItems", armorItems);
 
         return new StructureTemplate.StructureEntityInfo(globalEntityInfo.pos, globalEntityInfo.blockPos, newNbt);
     }
 
-    private static Tag saveOrEmpty(Optional<ItemStack> optionalStack, HolderLookup.Provider provider) {
-        if (optionalStack.isEmpty() || optionalStack.get().isEmpty()) {
+    private static Tag saveOrEmpty(Optional<CompoundTag> optionalTag) {
+        if (optionalTag.isEmpty()) {
             return new CompoundTag();
         }
-        return ItemStack.CODEC.encodeStart(provider.createSerializationContext(NbtOps.INSTANCE), optionalStack.get())
-                .getOrThrow();
+        return optionalTag.get();
     }
 
     @Override
