@@ -4,10 +4,16 @@ plugins {
 }
 
 base {
-    archivesName = archives_base_name
+    // MC range goes in archivesName so the jar filename keeps it; the version field
+    // (consumed by fabric.mod.json / neoforge.mods.toml) stays plain SemVer "3.0.0"
+    // so dependent mods can satisfy ">=3.0.0".
+    archivesName = "${archives_base_name}-${minecraft_version_range}"
 }
 
-version = "${mod_version}-${minecraft_version_range}"
+// Anything other than a plain "N.N.N" version is parsed by SemVer as a pre-release
+// and ordered LESS than the plain release, breaking dependent mods' ">=3.0.0" deps.
+// The MC range is preserved in archivesName (see above) so the jar filename keeps it.
+version = "${mod_version}"
 group = maven_group
 
 java {
