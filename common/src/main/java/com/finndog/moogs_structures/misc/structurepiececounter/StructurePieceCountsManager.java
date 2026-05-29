@@ -27,7 +27,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
     private final Map<ResourceLocation, Map<ResourceLocation, Integer>> cachedMaxCountPiecesMap = new HashMap<>();
 
     public StructurePieceCountsManager() {
-        super(ExtraCodecs.JSON, "moogs_structures_pieces_spawn_counts");
+        super(ExtraCodecs.JSON, "msl_pieces_spawn_counts");
     }
 
     @MethodsReturnNonnullByDefault
@@ -50,7 +50,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
                 mapBuilder.put(fileIdentifier, getStructurePieceCountsObjs(fileIdentifier, jsonElement));
             }
             catch (Exception e) {
-                MoogsStructuresCommon.LOGGER.error("Moog's Structure Lib Error: Couldn't parse moogs_structures_pieces_spawn_counts file {} - JSON looks like: {}", fileIdentifier, jsonElement, e);
+                MoogsStructuresCommon.LOGGER.error("Moog's Structure Lib Error: Couldn't parse msl_pieces_spawn_counts file {} - JSON looks like: {}", fileIdentifier, jsonElement, e);
             }
         });
         this.StructureToPieceCountsObjs = mapBuilder;
@@ -65,7 +65,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
                 this.StructureToPieceCountsObjs.computeIfAbsent(structureRL, rl -> new ArrayList<>()).addAll(getStructurePieceCountsObjs(structureRL, jsonElement));
             }
             catch (Exception e) {
-                MoogsStructuresCommon.LOGGER.error("Moog's Structure Lib Error: Couldn't parse moogs_structures_pieces_spawn_counts file {} - JSON looks like: {}", structureRL, jsonElement, e);
+                MoogsStructuresCommon.LOGGER.error("Moog's Structure Lib Error: Couldn't parse msl_pieces_spawn_counts file {} - JSON looks like: {}", structureRL, jsonElement, e);
             }
         });
     }
