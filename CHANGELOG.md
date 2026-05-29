@@ -17,6 +17,11 @@ Major feature release: a full structure-processor and pool-element toolkit, vers
 - **Basalt & delta suppression**: prevents basalt columns and basalt deltas from generating within structure piece bounds (structure tags `no_basalt`, `no_delta`).
 - **Debug command**: `/moogs_structures debug keepjigsaws on|off|status` keeps jigsaw blocks in placed structures so their name/target/pool can be inspected in-world.
 
+### Fixed
+- Dependent mods (e.g. Moog's Nether Structures) failing to recognise this build as version 3.0.0.
+- Structures with enchanted armor on armor stands failing to load.
+- Pillar structures that place chains failing to generate (chains were renamed to iron chains in Minecraft 1.21.9).
+
 ---
 
 ## 2.0.1 (2026-04-13)
