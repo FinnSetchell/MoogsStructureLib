@@ -8,7 +8,9 @@ architectury {
     neoForge()
 }
 
-archivesBaseName = "${rootProject.archives_base_name}"
+// MC range goes in archivesBaseName so the jar filename keeps it; the version field
+// (consumed by neoforge.mods.toml) stays plain SemVer "3.0.0" — see root build.gradle.
+archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version_range}"
 
 configurations {
     common

@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "id": "moogs_structures",
-    "version": "${version}-fabric",
+    "version": "${version}+fabric",
     "name": "Moog's Structure Lib",
     "description": "80+ structures made with vanilla blocks and entities bringing life to your world! Discover loot, enemies, & villagers along the way!",
     "authors": [
