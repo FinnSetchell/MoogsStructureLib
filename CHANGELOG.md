@@ -20,6 +20,9 @@ Major feature release: a full structure-processor and pool-element toolkit, vers
 - **Basalt & delta suppression**: prevents basalt columns and basalt deltas from generating within structure piece bounds (structure tags `no_basalt`, `no_delta`).
 - **Debug command**: `/moogs_structures debug keepjigsaws on|off|status` keeps jigsaw blocks in placed structures so their name/target/pool can be inspected in-world.
 
+### Fixed
+- Dependent mods (e.g. Moog's Nether Structures) failing to recognise this build as version 3.0.0.
+
 ---
 
 ### Added
