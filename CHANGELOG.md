@@ -19,6 +19,11 @@ Major feature release: a full structure-processor and pool-element toolkit, vers
 - **Basalt & delta suppression**: prevents basalt columns and basalt deltas from generating within structure piece bounds (structure tags `no_basalt`, `no_delta`).
 - **Debug command**: `/moogs_structures debug keepjigsaws on|off|status` keeps jigsaw blocks in placed structures so their name/target/pool can be inspected in-world.
 
+### Fixed
+- Crash when generating jigsaw structures on Minecraft 1.21.5 – 1.21.8.
+- Structures with enchanted armor on armor stands failing to load.
+- Pillar structures that place chains failing to generate on Minecraft 1.21.9 and later (chains were renamed to iron chains).
+
 ---
 
 ## [2.0.2] - 2026-04-17
