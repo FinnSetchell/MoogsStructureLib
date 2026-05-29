@@ -30,8 +30,11 @@ allprojects {
 
     archivesBaseName = rootProject.archives_base_name
     // Final artifact will be: <archivesBaseName>-<version>-<classifier>.jar
-    // We want: moogs_structure_lib-1.0.0-1.20-1.20.4-<platform>.jar
-    version = "${rootProject.mod_version}-${rootProject.minecraft_version_range}"
+    // The MC range is now in archivesBaseName (set per loader subproject) so the
+    // fabric.mod.json / mods.toml "version" field stays a plain SemVer "3.0.0".
+    // Anything other than a plain "N.N.N" version is parsed by SemVer as a pre-release
+    // and ordered LESS than the plain release, breaking dependent mods' ">=3.0.0" deps.
+    version = "${rootProject.mod_version}"
     group = rootProject.maven_group
 
     repositories {

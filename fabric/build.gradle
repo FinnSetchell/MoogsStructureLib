@@ -8,8 +8,9 @@ architectury {
     fabric()
 }
 
-// Keep base name simple; version now carries mod version and MC range
-archivesBaseName = "${rootProject.archives_base_name}"
+// MC range goes in archivesBaseName so the jar filename keeps it; the version field
+// (consumed by fabric.mod.json) stays a plain SemVer "3.0.0" — see root build.gradle.
+archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version_range}"
 
 loom {
     accessWidenerPath = project(":common").loom.accessWidenerPath
