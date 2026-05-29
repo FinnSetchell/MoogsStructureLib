@@ -23,7 +23,7 @@ public final class MoogsStructuresConditionsRegistry {
      * json files like the many Repurposed Structures datapacks works but want a code config to control it.
      *
      * Add "condition" to the individual entries in the template pool in pool_additions folder and give it the
-     * ResourceLocation of the condition you registered. The rs_pieces_spawn_counts folder files can also take
+     * ResourceLocation of the condition you registered. The msl_pieces_spawn_counts folder files can also take
      * a "condition" field for its entries as well.
      *
      * You can register what the condition is to this registry by doing the below in your mod so now your config can control the json files.
