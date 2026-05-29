@@ -44,7 +44,7 @@ public class GenericJigsawStructure extends Structure {
     public static final Codec<GenericJigsawStructure> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             GenericJigsawStructure.settingsCodec(instance),
             StructureTemplatePool.CODEC.fieldOf("start_pool").forGetter(structure -> structure.startPool),
-            Codec.intRange(0, 30).fieldOf("size").forGetter(structure -> structure.size),
+            Codec.intRange(0, 128).fieldOf("size").forGetter(structure -> structure.size),
             Codec.INT.optionalFieldOf("min_y_allowed").forGetter(structure -> structure.minYAllowed),
             Codec.INT.optionalFieldOf("max_y_allowed").forGetter(structure -> structure.maxYAllowed),
             Codec.intRange(1, 1000).optionalFieldOf("allowed_y_range_from_start").forGetter(structure -> structure.allowedYRangeFromStart),
