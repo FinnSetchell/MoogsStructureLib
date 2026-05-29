@@ -105,8 +105,8 @@ public class PieceLimitedJigsawManager {
         int pieceCenterX = (pieceBoundingBox.maxX() + pieceBoundingBox.minX()) / 2;
         int pieceCenterZ = (pieceBoundingBox.maxZ() + pieceBoundingBox.minZ()) / 2;
         int pieceCenterY = heightmapType
-                .map(types -> startPos.getY() + context.chunkGenerator().getFirstFreeHeight(
-                        pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
+                .map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(
+                        context.chunkGenerator(), pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
                 .orElseGet(startPos::getY);
 
         if (heightmapType.isPresent() && (pieceCenterY > maxY || pieceCenterY < minY)) {
@@ -582,8 +582,8 @@ public class PieceLimitedJigsawManager {
                                 adjustedCandidatePieceMinY = pieceMinY + candidateJigsawYOffsetNeeded;
                             } else {
                                 if (surfaceHeight == -1) {
-                                    surfaceHeight = context.chunkGenerator().getFirstFreeHeight(
-                                            jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
+                                    surfaceHeight = GeneralUtils.getCachedFreeHeight(
+                                            context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
                                             (isCandidatePieceOceanFloor || isPieceOceanFloor) ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG,
                                             heightLimitView, context.randomState());
                                 }
@@ -648,8 +648,8 @@ public class PieceLimitedJigsawManager {
                                     candidateJigsawBlockY = adjustedCandidatePieceMinY + candidateJigsawBlockRelativeY;
                                 } else {
                                     if (surfaceHeight == -1) {
-                                        surfaceHeight = context.chunkGenerator().getFirstFreeHeight(
-                                                jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
+                                        surfaceHeight = GeneralUtils.getCachedFreeHeight(
+                                                context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
                                                 (isCandidatePieceOceanFloor || isPieceOceanFloor) ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG,
                                                 heightLimitView, context.randomState());
                                     }
