@@ -36,8 +36,14 @@ import java.util.stream.Collectors;
 public class PillarProcessor extends StructureProcessor {
     private static final ResourceLocation EMPTY_RL = ResourceLocation.fromNamespaceAndPath("minecraft", "empty");
 
+    // Wrap vanilla BlockState codec so datapacks authored against legacy block names
+    // (e.g. minecraft:chain) still resolve on a newer MC where the block was renamed
+    // (e.g. minecraft:iron_chain starting around MC 1.21.9). Runtime-aware: no-op when
+    // the modern alias isn't registered on this MC version.
+    private static final Codec<BlockState> BLOCK_STATE_CODEC = BlockAliasCompatCodec.wrap(BlockState.CODEC);
+
     public static final MapCodec<PillarProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-            Codec.mapPair(BlockState.CODEC.fieldOf("trigger"), BlockState.CODEC.fieldOf("replacement"))
+            Codec.mapPair(BLOCK_STATE_CODEC.fieldOf("trigger"), BLOCK_STATE_CODEC.fieldOf("replacement"))
                     .codec().listOf()
                     .xmap((list) -> list.stream().collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)),
                             (map) -> map.entrySet().stream().map((entry) -> Pair.of(entry.getKey(), entry.getValue())).collect(Collectors.toList()))
@@ -45,7 +51,7 @@ public class PillarProcessor extends StructureProcessor {
                     .forGetter((processor) -> processor.pillarTriggerAndReplacementBlocks),
             ResourceLocation.CODEC.optionalFieldOf("pillar_processor_list", EMPTY_RL).forGetter(processor -> processor.processorList),
             Direction.CODEC.optionalFieldOf("direction", Direction.DOWN).forGetter(processor -> processor.direction),
-            BlockState.CODEC.optionalFieldOf("original_replaced_block").forGetter(processor -> processor.originalReplacedBlock),
+            BLOCK_STATE_CODEC.optionalFieldOf("original_replaced_block").forGetter(processor -> processor.originalReplacedBlock),
             Codec.INT.optionalFieldOf("pillar_length", 1000).forGetter(config -> config.pillarLength),
             Codec.BOOL.optionalFieldOf("forced_placement", false).forGetter(config -> config.forcePlacement),
             BlockStateRandomizer.CODEC.optionalFieldOf("pillar_state_randomizer").forGetter(config -> config.pillarRandomizer))
