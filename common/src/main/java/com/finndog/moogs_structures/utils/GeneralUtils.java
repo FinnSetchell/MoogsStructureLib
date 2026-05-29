@@ -29,6 +29,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
@@ -264,6 +265,27 @@ public final class GeneralUtils {
         }
 
         return map;
+    }
+
+    // Cached terrain-height lookups. ChunkGenerator#getFirstFreeHeight is deterministic per (chunkGenerator, x, z)
+    // but expensive (samples the noise column), and structure placement queries the same XZ many times per attempt.
+    // A bounded ConcurrentHashMap-backed cache cuts repeat queries to a hash lookup.
+    private static final ConcurrentHashMap<HeightKey, Integer> CACHED_HEIGHT = new ConcurrentHashMap<>(2048);
+    private record HeightKey(ChunkGenerator chunkGenerator, int x, int z) {}
+
+    public static int getCachedFreeHeight(ChunkGenerator chunkGenerator, int x, int z, Heightmap.Types types, LevelHeightAccessor levelHeightAccessor, RandomState randomState) {
+        HeightKey key = new HeightKey(chunkGenerator, x, z);
+        Integer y = CACHED_HEIGHT.get(key);
+
+        if (y == null) {
+            if (CACHED_HEIGHT.size() >= 2048) {
+                CACHED_HEIGHT.clear();
+            }
+            y = chunkGenerator.getFirstFreeHeight(x, z, types, levelHeightAccessor, randomState);
+            CACHED_HEIGHT.put(key, y);
+        }
+
+        return y;
     }
 
 }
