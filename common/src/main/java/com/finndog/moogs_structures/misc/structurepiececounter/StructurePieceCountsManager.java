@@ -26,7 +26,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
             je  -> new Dynamic<>(JsonOps.INSTANCE, je)
     );
 
-    private static final FileToIdConverter FILES = new FileToIdConverter("rs_pieces_spawn_counts", ".json");
+    private static final FileToIdConverter FILES = new FileToIdConverter("msl_pieces_spawn_counts", ".json");
 
     public static final StructurePieceCountsManager STRUCTURE_PIECE_COUNTS_MANAGER = new StructurePieceCountsManager();
 
@@ -49,7 +49,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
                 mapBuilder.put(fileId, getStructurePieceCountsObjs(fileId, jsonElement));
             } catch (Exception e) {
                 MoogsStructuresCommon.LOGGER.error(
-                        "Moog's Structure Lib Error: Couldn't parse rs_pieces_spawn_counts file {} - JSON: {}",
+                        "Moog's Structure Lib Error: Couldn't parse msl_pieces_spawn_counts file {} - JSON: {}",
                         fileId, jsonElement, e
                 );
             }
@@ -88,7 +88,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
                         .addAll(getStructurePieceCountsObjs(structureRL, jsonElement));
             } catch (Exception e) {
                 MoogsStructuresCommon.LOGGER.error(
-                        "Moog's Structure Lib Error: Couldn't parse rs_pieces_spawn_counts file {} - JSON: {}",
+                        "Moog's Structure Lib Error: Couldn't parse msl_pieces_spawn_counts file {} - JSON: {}",
                         structureRL, jsonElement, e
                 );
             }
