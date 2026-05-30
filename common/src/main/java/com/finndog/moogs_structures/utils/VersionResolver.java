@@ -18,7 +18,23 @@ import java.util.StringJoiner;
  */
 public final class VersionResolver {
 
-    private static final String CURRENT_VERSION_STRING = SharedConstants.getCurrentVersion().getName();
+    private static final String CURRENT_VERSION_STRING = detectVersionString();
+
+    // WorldVersion.getName() was renamed to name() in MC 1.21.9+; probe both to support the full version range.
+    private static String detectVersionString() {
+        Object ver = SharedConstants.getCurrentVersion();
+        try {
+            return (String) ver.getClass().getMethod("getName").invoke(ver);
+        } catch (NoSuchMethodException ignored) {
+            try {
+                return (String) ver.getClass().getMethod("name").invoke(ver);
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException("MSL: cannot determine Minecraft version", e);
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("MSL: cannot determine Minecraft version", e);
+        }
+    }
     private static final VersionNumber CURRENT_VERSION = VersionNumber.parseInternal(CURRENT_VERSION_STRING);
 
     private VersionResolver() {
