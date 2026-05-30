@@ -12,6 +12,7 @@ import com.finndog.moogs_structures.world.processors.RandomReplaceWithProperties
 import com.finndog.moogs_structures.world.processors.RemoveFloatingBlocksProcessor;
 import com.finndog.moogs_structures.world.processors.SpawnerRandomizingProcessor;
 import com.finndog.moogs_structures.world.processors.SuperGravityProcessor;
+import com.finndog.moogs_structures.world.processors.WaterloggingFixProcessor;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 
@@ -26,4 +27,5 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<StructureProcessorType<FloodWithWaterProcessor>> FLOOD_WITH_WATER_PROCESSOR = STRUCTURE_PROCESSOR.register("flood_with_water_processor", () -> () -> FloodWithWaterProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<SpawnerRandomizingProcessor>> SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("spawner_randomizing_processor", () -> () -> SpawnerRandomizingProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> () -> EquipArmorStandProcessor.CODEC);
+    public static final RegistryEntry<StructureProcessorType<WaterloggingFixProcessor>> WATERLOGGING_FIX_PROCESSOR = STRUCTURE_PROCESSOR.register("waterlogging_fix_processor", () -> () -> WaterloggingFixProcessor.CODEC);
 }
