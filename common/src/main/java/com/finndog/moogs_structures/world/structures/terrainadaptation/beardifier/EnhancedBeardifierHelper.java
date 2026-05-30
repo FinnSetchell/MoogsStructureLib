@@ -1,11 +1,12 @@
 package com.finndog.moogs_structures.world.structures.terrainadaptation.beardifier;
 
-import com.finndog.moogs_structures.mixins.terrainadaptation.BeardifierAccessor;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
@@ -19,6 +20,8 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +31,58 @@ import java.util.Optional;
  * Reduced port of YUNG's API EnhancedBeardifierHelper (aquifer override + per-element override removed).
  */
 public class EnhancedBeardifierHelper {
+
+    // MC 1.21.9 changed Beardifier from iterator-based fields (pieceIterator, junctionIterator)
+    // to list-based fields (pieces, junctions, affectedBox) with a different constructor.
+    // We probe once at class-load time and cache the result + field/constructor handles.
+    static final boolean USE_NEW_API;
+    private static final Field PIECES_FIELD;
+    private static final Field JUNCTIONS_FIELD;
+    private static final Field AFFECTED_BOX_FIELD;
+    private static final Field PIECE_ITER_FIELD;
+    private static final Field JUNCTION_ITER_FIELD;
+    @SuppressWarnings("rawtypes")
+    private static final Constructor BEARDIFIER_CTOR;
+
+    static {
+        Field piecesF = null, junctionsF = null, affectedBoxF = null;
+        Field pieceIterF = null, junctionIterF = null;
+        Constructor<?> ctor = null;
+        boolean newApi = false;
+
+        try {
+            // MC 1.21.9+ path: List-based fields + 3-arg constructor
+            piecesF = Beardifier.class.getDeclaredField("pieces");
+            piecesF.setAccessible(true);
+            junctionsF = Beardifier.class.getDeclaredField("junctions");
+            junctionsF.setAccessible(true);
+            affectedBoxF = Beardifier.class.getDeclaredField("affectedBox");
+            affectedBoxF.setAccessible(true);
+            ctor = Beardifier.class.getDeclaredConstructor(List.class, List.class, BoundingBox.class);
+            ctor.setAccessible(true);
+            newApi = true;
+        } catch (NoSuchFieldException | NoSuchMethodException ignored) {
+            try {
+                // MC 1.21.5-1.21.8 path: ObjectListIterator fields + 2-arg constructor
+                pieceIterF = Beardifier.class.getDeclaredField("pieceIterator");
+                pieceIterF.setAccessible(true);
+                junctionIterF = Beardifier.class.getDeclaredField("junctionIterator");
+                junctionIterF.setAccessible(true);
+                ctor = Beardifier.class.getDeclaredConstructor(ObjectListIterator.class, ObjectListIterator.class);
+                ctor.setAccessible(true);
+            } catch (ReflectiveOperationException fatal) {
+                throw new RuntimeException("MSL: cannot locate Beardifier fields or constructor", fatal);
+            }
+        }
+
+        USE_NEW_API = newApi;
+        PIECES_FIELD = piecesF;
+        JUNCTIONS_FIELD = junctionsF;
+        AFFECTED_BOX_FIELD = affectedBoxF;
+        PIECE_ITER_FIELD = pieceIterF;
+        JUNCTION_ITER_FIELD = junctionIterF;
+        BEARDIFIER_CTOR = ctor;
+    }
 
     public static Beardifier forStructuresInChunk(StructureManager structureManager, ChunkPos chunkPos, Beardifier original) {
         ObjectList<EnhancedBeardifierRigid> enhancedBeardifierRigidList = new ObjectArrayList<>(10);
@@ -108,13 +163,63 @@ public class EnhancedBeardifierHelper {
             }
         }
 
-        Beardifier newBeardifier = new Beardifier(
-                ((BeardifierAccessor) original).getPieceIterator(),
-                ((BeardifierAccessor) original).getJunctionIterator());
-        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
-        enhancedBeardifier.setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
-        enhancedBeardifier.setEnhancedJunctionIterator(enhancedJunctionList.iterator());
-        return newBeardifier;
+        try {
+            Beardifier newBeardifier;
+            if (USE_NEW_API) {
+                // MC 1.21.9+: list-based fields, 3-arg constructor, nullable affectedBox short-circuit.
+                // Union the original affectedBox with enhanced pieces/junctions so the compute() hook fires.
+                @SuppressWarnings("unchecked")
+                List<Beardifier.Rigid> pieces = (List<Beardifier.Rigid>) PIECES_FIELD.get(original);
+                @SuppressWarnings("unchecked")
+                List<JigsawJunction> junctions = (List<JigsawJunction>) JUNCTIONS_FIELD.get(original);
+                BoundingBox originalBox = (BoundingBox) AFFECTED_BOX_FIELD.get(original);
+                BoundingBox affectedBox = computeEnhancedAffectedBox(
+                        enhancedBeardifierRigidList, enhancedJunctionList, originalBox);
+                @SuppressWarnings("unchecked")
+                Beardifier b = (Beardifier) BEARDIFIER_CTOR.newInstance(pieces, junctions, affectedBox);
+                newBeardifier = b;
+            } else {
+                // MC 1.21.5-1.21.8: iterator-based fields, 2-arg constructor.
+                @SuppressWarnings("unchecked")
+                ObjectListIterator<Beardifier.Rigid> pieceIter =
+                        (ObjectListIterator<Beardifier.Rigid>) PIECE_ITER_FIELD.get(original);
+                @SuppressWarnings("unchecked")
+                ObjectListIterator<JigsawJunction> junctionIter =
+                        (ObjectListIterator<JigsawJunction>) JUNCTION_ITER_FIELD.get(original);
+                @SuppressWarnings("unchecked")
+                Beardifier b = (Beardifier) BEARDIFIER_CTOR.newInstance(pieceIter, junctionIter);
+                newBeardifier = b;
+            }
+            EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
+            enhancedBeardifier.setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
+            enhancedBeardifier.setEnhancedJunctionIterator(enhancedJunctionList.iterator());
+            return newBeardifier;
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("MSL: failed to construct Beardifier via reflection", e);
+        }
+    }
+
+    // Only called on MC 1.21.9+ (USE_NEW_API path).
+    // BoundingBox.encapsulating(BoundingBox, BoundingBox) and BoundingBox(BlockPos) were added in 1.21.9.
+    private static BoundingBox computeEnhancedAffectedBox(ObjectList<EnhancedBeardifierRigid> rigids,
+                                                          ObjectList<EnhancedJigsawJunction> junctions,
+                                                          BoundingBox originalBox) {
+        BoundingBox box = originalBox;
+        for (EnhancedBeardifierRigid rigid : rigids) {
+            int radius = Math.max(1, rigid.pieceTerrainAdaptation().getKernelRadius());
+            BoundingBox pieceBox = rigid.pieceBoundingBox().inflatedBy(radius);
+            box = box == null ? pieceBox : BoundingBox.encapsulating(box, pieceBox);
+        }
+        for (EnhancedJigsawJunction junction : junctions) {
+            JigsawJunction jigsawJunction = junction.jigsawJunction();
+            int radius = Math.max(1, junction.pieceTerrainAdaptation().getKernelRadius());
+            BoundingBox junctionBox = new BoundingBox(new BlockPos(
+                    jigsawJunction.getSourceX(),
+                    jigsawJunction.getSourceGroundY(),
+                    jigsawJunction.getSourceZ())).inflatedBy(radius);
+            box = box == null ? junctionBox : BoundingBox.encapsulating(box, junctionBox);
+        }
+        return box;
     }
 
     public static double computeDensity(DensityFunction.FunctionContext ctx, double density, EnhancedBeardifierData data) {
