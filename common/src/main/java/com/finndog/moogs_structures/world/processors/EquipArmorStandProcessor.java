@@ -10,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
@@ -104,7 +105,9 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
         if (optionalStack.isEmpty() || optionalStack.get().isEmpty()) {
             return new CompoundTag();
         }
-        return optionalStack.get().save(provider);
+        return ItemStack.SINGLE_ITEM_CODEC.encodeStart(
+                provider.createSerializationContext(NbtOps.INSTANCE),
+                optionalStack.get()).getOrThrow();
     }
 
     @Override

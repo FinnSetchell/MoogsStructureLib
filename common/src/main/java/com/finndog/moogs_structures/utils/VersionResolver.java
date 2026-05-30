@@ -18,7 +18,7 @@ import java.util.StringJoiner;
  */
 public final class VersionResolver {
 
-    private static final String CURRENT_VERSION_STRING = SharedConstants.VERSION_STRING;
+    private static final String CURRENT_VERSION_STRING = SharedConstants.getCurrentVersion().getName();
     private static final VersionNumber CURRENT_VERSION = VersionNumber.parseInternal(CURRENT_VERSION_STRING);
 
     private VersionResolver() {
