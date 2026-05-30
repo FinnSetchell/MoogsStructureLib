@@ -15,15 +15,13 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(MoogsStructuresCommon.MODID)
 public class MoogsStructuresForge {
 
     public static IEventBus modEventBusTempHolder = null;
 
-    public MoogsStructuresForge() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+    public MoogsStructuresForge(IEventBus modEventBus) {
         modEventBus.addListener(EventPriority.NORMAL, ResourcefulRegistriesImpl::onRegisterForgeRegistries);
 
         modEventBusTempHolder = modEventBus;
