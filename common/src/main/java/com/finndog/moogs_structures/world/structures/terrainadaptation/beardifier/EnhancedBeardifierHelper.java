@@ -200,7 +200,6 @@ public class EnhancedBeardifierHelper {
     }
 
     // Only called on MC 1.21.9+ (USE_NEW_API path).
-    // BoundingBox.encapsulating(BoundingBox, BoundingBox) and BoundingBox(BlockPos) were added in 1.21.9.
     private static BoundingBox computeEnhancedAffectedBox(ObjectList<EnhancedBeardifierRigid> rigids,
                                                           ObjectList<EnhancedJigsawJunction> junctions,
                                                           BoundingBox originalBox) {
@@ -208,7 +207,7 @@ public class EnhancedBeardifierHelper {
         for (EnhancedBeardifierRigid rigid : rigids) {
             int radius = Math.max(1, rigid.pieceTerrainAdaptation().getKernelRadius());
             BoundingBox pieceBox = rigid.pieceBoundingBox().inflatedBy(radius);
-            box = box == null ? pieceBox : BoundingBox.encapsulating(box, pieceBox);
+            box = box == null ? pieceBox : box.encapsulate(pieceBox);
         }
         for (EnhancedJigsawJunction junction : junctions) {
             JigsawJunction jigsawJunction = junction.jigsawJunction();
@@ -217,7 +216,7 @@ public class EnhancedBeardifierHelper {
                     jigsawJunction.getSourceX(),
                     jigsawJunction.getSourceGroundY(),
                     jigsawJunction.getSourceZ())).inflatedBy(radius);
-            box = box == null ? junctionBox : BoundingBox.encapsulating(box, junctionBox);
+            box = box == null ? junctionBox : box.encapsulate(junctionBox);
         }
         return box;
     }
