@@ -51,22 +51,24 @@ public class EnhancedBeardifierHelper {
         boolean newApi = false;
 
         try {
-            // MC 1.21.9+ path: List-based fields + 3-arg constructor
-            piecesF = Beardifier.class.getDeclaredField("pieces");
+            // MC 1.21.9+ path: List-based fields + 3-arg constructor.
+            // field_61465/66/67 are the Fabric intermediary names for pieces/junctions/affectedBox.
+            piecesF = getField("pieces", "field_61465");
             piecesF.setAccessible(true);
-            junctionsF = Beardifier.class.getDeclaredField("junctions");
+            junctionsF = getField("junctions", "field_61466");
             junctionsF.setAccessible(true);
-            affectedBoxF = Beardifier.class.getDeclaredField("affectedBox");
+            affectedBoxF = getField("affectedBox", "field_61467");
             affectedBoxF.setAccessible(true);
             ctor = Beardifier.class.getDeclaredConstructor(List.class, List.class, BoundingBox.class);
             ctor.setAccessible(true);
             newApi = true;
         } catch (NoSuchFieldException | NoSuchMethodException ignored) {
             try {
-                // MC 1.21.5-1.21.8 path: ObjectListIterator fields + 2-arg constructor
-                pieceIterF = Beardifier.class.getDeclaredField("pieceIterator");
+                // MC 1.21.5-1.21.8 path: ObjectListIterator fields + 2-arg constructor.
+                // field_28744/45 are the Fabric intermediary names for pieceIterator/junctionIterator.
+                pieceIterF = getField("pieceIterator", "field_28744");
                 pieceIterF.setAccessible(true);
-                junctionIterF = Beardifier.class.getDeclaredField("junctionIterator");
+                junctionIterF = getField("junctionIterator", "field_28745");
                 junctionIterF.setAccessible(true);
                 ctor = Beardifier.class.getDeclaredConstructor(ObjectListIterator.class, ObjectListIterator.class);
                 ctor.setAccessible(true);
@@ -82,6 +84,14 @@ public class EnhancedBeardifierHelper {
         PIECE_ITER_FIELD = pieceIterF;
         JUNCTION_ITER_FIELD = junctionIterF;
         BEARDIFIER_CTOR = ctor;
+    }
+
+    private static Field getField(String mojangName, String intermediaryName) throws NoSuchFieldException {
+        try {
+            return Beardifier.class.getDeclaredField(mojangName);
+        } catch (NoSuchFieldException e) {
+            return Beardifier.class.getDeclaredField(intermediaryName);
+        }
     }
 
     public static Beardifier forStructuresInChunk(StructureManager structureManager, ChunkPos chunkPos, Beardifier original) {
