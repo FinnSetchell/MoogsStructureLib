@@ -1,16 +1,17 @@
 package com.finndog.moogs_structures.misc.trialspawnerconfig;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,14 +25,13 @@ import java.util.Map;
  * resolves a config ResourceLocation to its NBT at placement time and writes it inline into
  * the block entity, since the pre-1.21.5 trial-spawner codec only accepts inline configs.
  */
-public class TrialSpawnerConfigManager extends SimpleJsonResourceReloadListener {
-    private static final Gson GSON = new Gson();
+public class TrialSpawnerConfigManager extends SimpleJsonResourceReloadListener<JsonElement> {
     public static final TrialSpawnerConfigManager INSTANCE = new TrialSpawnerConfigManager();
 
     private Map<ResourceLocation, CompoundTag> configs = new HashMap<>();
 
     public TrialSpawnerConfigManager() {
-        super(GSON, "trial_spawner");
+        super(ExtraCodecs.JSON, FileToIdConverter.json("trial_spawner"));
     }
 
     @Override
