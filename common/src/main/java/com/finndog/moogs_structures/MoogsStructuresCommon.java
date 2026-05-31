@@ -4,6 +4,7 @@ import com.finndog.moogs_structures.events.lifecycle.RegisterReloadListenerEvent
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStartEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStopEvent;
 import com.finndog.moogs_structures.events.lifecycle.SetupEvent;
+import com.finndog.moogs_structures.misc.trialspawnerconfig.TrialSpawnerConfigManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
@@ -11,6 +12,7 @@ import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementTyp
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.modinit.MoogsStructuresTags;
 import com.finndog.moogs_structures.utils.AsyncLocator;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,5 +50,6 @@ public class MoogsStructuresCommon {
     }
 
     public static void registerDatapackListener(final RegisterReloadListenerEvent event) {
+        event.register(ResourceLocation.fromNamespaceAndPath(MODID, "trial_spawner_config_manager"), TrialSpawnerConfigManager.INSTANCE);
     }
 }
