@@ -64,7 +64,7 @@ public class VaultRandomizingProcessor extends StructureProcessor {
         newNbt.remove("server_data");
         newNbt.remove("shared_data");
 
-        CompoundTag config = newNbt.contains("config") ? newNbt.getCompound("config").copy() : new CompoundTag();
+        CompoundTag config = newNbt.getCompoundOrEmpty("config").copy();
         config.putString("loot_table", chosenLoot.toString());
 
         CompoundTag keyItemTag = new CompoundTag();
