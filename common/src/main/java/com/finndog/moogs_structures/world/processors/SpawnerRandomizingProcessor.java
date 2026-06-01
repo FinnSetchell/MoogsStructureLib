@@ -1,8 +1,6 @@
 package com.finndog.moogs_structures.world.processors;
 
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
-import com.finndog.moogs_structures.utils.GeneralUtils;
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -23,6 +21,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Randomizes a mob spawner's mob from an inline weighted list of entity types.
@@ -31,9 +30,16 @@ import java.util.List;
  */
 public class SpawnerRandomizingProcessor extends StructureProcessor {
 
+    public record WeightedEntity(EntityType<?> entity, int weight, Optional<CompoundTag> nbt) {
+        public static final Codec<WeightedEntity> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            BuiltInRegistries.ENTITY_TYPE.byNameCodec().fieldOf("entity").forGetter(WeightedEntity::entity),
+            Codec.intRange(1, Integer.MAX_VALUE).fieldOf("weight").forGetter(WeightedEntity::weight),
+            CompoundTag.CODEC.optionalFieldOf("nbt").forGetter(WeightedEntity::nbt)
+        ).apply(instance, WeightedEntity::new));
+    }
+
     public static final MapCodec<SpawnerRandomizingProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-            Codec.mapPair(BuiltInRegistries.ENTITY_TYPE.byNameCodec().fieldOf("entity"), Codec.intRange(1, Integer.MAX_VALUE).fieldOf("weight"))
-                    .codec().listOf().fieldOf("weighted_entities").forGetter(p -> p.weightedEntities),
+            WeightedEntity.CODEC.listOf().fieldOf("weighted_entities").forGetter(p -> p.weightedEntities),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("delay").orElse(20).forGetter(p -> p.delay),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("max_nearby_entities").orElse(6).forGetter(p -> p.maxNearbyEntities),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("max_spawn_delay").orElse(800).forGetter(p -> p.maxSpawnDelay),
@@ -44,7 +50,7 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
             BlockState.CODEC.fieldOf("spawner_replacement_block").orElse(Blocks.AIR.defaultBlockState()).forGetter(p -> p.replacementState)
     ).apply(instance, instance.stable(SpawnerRandomizingProcessor::new)));
 
-    public final List<Pair<EntityType<?>, Integer>> weightedEntities;
+    public final List<WeightedEntity> weightedEntities;
     public final int delay;
     public final int maxNearbyEntities;
     public final int maxSpawnDelay;
@@ -54,7 +60,7 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
     public final int spawnRange;
     public final BlockState replacementState;
 
-    private SpawnerRandomizingProcessor(List<Pair<EntityType<?>, Integer>> weightedEntities,
+    private SpawnerRandomizingProcessor(List<WeightedEntity> weightedEntities,
                                         int delay, int maxNearbyEntities, int maxSpawnDelay, int minSpawnDelay,
                                         int requiredPlayerRange, int spawnCount, int spawnRange, BlockState replacementState) {
         this.weightedEntities = weightedEntities;
@@ -87,9 +93,14 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
 
     private CompoundTag buildSpawnerNbt(RandomSource random) {
         if (weightedEntities.isEmpty()) return null;
-        EntityType<?> entity = GeneralUtils.getRandomEntry(weightedEntities, random);
-        if (entity == null) return null;
-        ResourceLocation entityRL = BuiltInRegistries.ENTITY_TYPE.getKey(entity);
+        WeightedEntity entry = pickWeightedRandom(weightedEntities, random);
+        if (entry == null) return null;
+        ResourceLocation entityRL = BuiltInRegistries.ENTITY_TYPE.getKey(entry.entity());
+
+        // Build entity compound: merge optional custom NBT first, then set authoritative id.
+        CompoundTag entityData = new CompoundTag();
+        entry.nbt().ifPresent(nbt -> entityData.merge(nbt.copy()));
+        entityData.putString("id", entityRL.toString());
 
         CompoundTag compound = new CompoundTag();
         compound.putShort("Delay", (short) delay);
@@ -100,11 +111,8 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
         compound.putShort("RequiredPlayerRange", (short) requiredPlayerRange);
         compound.putShort("SpawnRange", (short) spawnRange);
 
-        CompoundTag spawnData = new CompoundTag();
         CompoundTag spawnPotentialData = new CompoundTag();
-        CompoundTag entityData = new CompoundTag();
-        entityData.putString("id", entityRL.toString());
-        spawnPotentialData.put("entity", entityData);
+        spawnPotentialData.put("entity", entityData.copy());
 
         CompoundTag listEntry = new CompoundTag();
         listEntry.put("data", spawnPotentialData);
@@ -113,12 +121,22 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
         listTag.add(listEntry);
         compound.put("SpawnPotentials", listTag);
 
-        CompoundTag entityEntry = new CompoundTag();
-        entityEntry.putString("id", entityRL.toString());
-        spawnData.put("entity", entityEntry);
+        CompoundTag spawnData = new CompoundTag();
+        spawnData.put("entity", entityData);
         compound.put("SpawnData", spawnData);
 
         return compound;
+    }
+
+    private static WeightedEntity pickWeightedRandom(List<WeightedEntity> list, RandomSource random) {
+        double total = 0;
+        for (WeightedEntity e : list) total += e.weight();
+        double pick = random.nextFloat() * total;
+        for (WeightedEntity e : list) {
+            pick -= e.weight();
+            if (pick <= 0) return e;
+        }
+        return list.get(list.size() - 1);
     }
 
     @Override
