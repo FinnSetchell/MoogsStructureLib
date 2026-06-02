@@ -58,8 +58,9 @@ if (changeLog.exists()) {
 }
 
 def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
-def discordWebhookEnvVar = isAlpha ? 'DISCORD_ALPHA_WEBHOOK_URL' : 'DISCORD_WEBHOOK'
 
+// Note: Discord announcement is consolidated into :neoforge:publishMods (single
+// combined message + banner). Only CF/Modrinth/GitHub upload tasks live here.
 publishMods {
     file = tasks.jar.archiveFile
     type = isAlpha ? ALPHA : STABLE
@@ -88,38 +89,5 @@ publishMods {
         projectSlug = "moogs-structure-lib"
         serverRequired = true
         minecraftVersions.addAll("26.1", "26.1.1", "26.1.2")
-    }
-
-    discord {
-        webhookUrl = providers.environmentVariable(discordWebhookEnvVar)
-        dryRunWebhookUrl = providers.environmentVariable('DISCORD_WEBHOOK_DRY_RUN').orElse('')
-        username = "Moog's Mods"
-
-        content = changelog.map { text ->
-            def changelogBody = text.replaceFirst(/(?i)^#\s*Changelog\s*\n?/, '')
-                    .replaceFirst(/^\d+\.\d+\.\d+\s*\n?/, '')
-                    .trim()
-
-            def modName = rootProject.findProperty('mod_name') ?: 'Moogs Structure Lib'
-            def mcVersion = rootProject.findProperty('minecraft_version') ?: '1.21.11'
-            def header = isAlpha
-                ? "## 🧪 **${modName} ${project.version}** alpha build is up for testing!"
-                : "## 🎉 **${modName} ${project.version}** has been released!"
-
-            """${header}
-
-**Moog's Structure Lib ${project.version} [FABRIC]**
-Minecraft Version - ${mcVersion}
-
-### 📝 **Changelog:**
-${changelogBody}
-"""
-        }
-
-        style {
-            look = "MODERN"
-            link = "EMBED"
-            color = (rootProject.findProperty('discordEmbedColor') ?: '#9033af')
-        }
     }
 }

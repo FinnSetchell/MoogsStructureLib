@@ -29,12 +29,14 @@ jobs:
         run: ./gradlew build
 
       - name: Publish to CurseForge, Modrinth, Discord & GitHub
-        # On this branch the publish plugin's own github { } block creates the
-        # GitHub release (no softprops/action-gh-release), and each loader has
-        # its own discord { } block (so two messages get posted, one per loader).
-        # type = ALPHA in build.gradle flips CF/Modrinth release type, the GH
-        # pre-release flag, and the Discord embed automatically.
-        run: ./gradlew publishMods
+        # :neoforge:publishMods MUST run last. Its discord block calls
+        # setPlatformsAllFrom(project(':fabric'), project(':neoforge')) so the
+        # Discord embed can attach the fabric upload URLs, which only exist once
+        # :fabric:publishMods has finished. The plugin's own github { } block
+        # creates the GitHub release (no softprops/action-gh-release), and the
+        # discord { } block now lives only in :neoforge so there is exactly one
+        # combined announcement + banner message pair per release.
+        run: ./gradlew :fabric:publishMods :neoforge:publishMods
         env:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
