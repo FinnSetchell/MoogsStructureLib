@@ -8,8 +8,13 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -21,7 +26,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build
-        run: chmod +x ./gradlew && ./gradlew build
+        run: ./gradlew build
 
       - name: Extract Changelog
         id: changelog
@@ -48,7 +53,7 @@ jobs:
         # setPlatformsAllFrom(project(':fabric'), project(':forge'), project(':neoforge'))
         # so the Discord embed can attach the fabric and forge upload URLs, which
         # only exist once those tasks have finished.
-        run: chmod +x ./gradlew && ./gradlew :fabric:publishMods :forge:publishMods :neoforge:publishMods
+        run: ./gradlew :fabric:publishMods :forge:publishMods :neoforge:publishMods
         env:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
