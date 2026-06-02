@@ -57,9 +57,12 @@ if (changeLog.exists()) {
     changelogtext = sections.length > 1 ? "## " + sections[1].trim() : changeLog.text
 }
 
+def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
+def discordWebhookEnvVar = isAlpha ? 'DISCORD_ALPHA_WEBHOOK_URL' : 'DISCORD_WEBHOOK'
+
 publishMods {
     file = tasks.jar.archiveFile
-    type = STABLE
+    type = isAlpha ? ALPHA : STABLE
     modLoaders.add("fabric")
     changelog = changelogtext
 
@@ -88,7 +91,7 @@ publishMods {
     }
 
     discord {
-        webhookUrl = providers.environmentVariable('DISCORD_WEBHOOK')
+        webhookUrl = providers.environmentVariable(discordWebhookEnvVar)
         dryRunWebhookUrl = providers.environmentVariable('DISCORD_WEBHOOK_DRY_RUN').orElse('')
         username = "Moog's Mods"
 
@@ -99,8 +102,11 @@ publishMods {
 
             def modName = rootProject.findProperty('mod_name') ?: 'Moogs Structure Lib'
             def mcVersion = rootProject.findProperty('minecraft_version') ?: '1.21.11'
+            def header = isAlpha
+                ? "## 🧪 **${modName} ${project.version}** alpha build is up for testing!"
+                : "## 🎉 **${modName} ${project.version}** has been released!"
 
-            """## 🎉 **${modName} ${project.version}** has been released!
+            """${header}
 
 **Moog's Structure Lib ${project.version} [FABRIC]**
 Minecraft Version - ${mcVersion}

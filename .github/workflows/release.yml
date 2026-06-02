@@ -33,5 +33,6 @@ jobs:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_ALPHA_WEBHOOK_URL: ${{ secrets.DISCORD_ALPHA_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REF_NAME: ${{ github.ref_name }}

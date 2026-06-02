@@ -3,11 +3,13 @@ plugins {
     id 'maven-publish'
 }
 
+def isAlphaBuild = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
 base {
     // MC range goes in archivesName so the jar filename keeps it; the version field
     // (consumed by fabric.mod.json / neoforge.mods.toml) stays plain SemVer "3.0.0"
-    // so dependent mods can satisfy ">=3.0.0".
-    archivesName = "${archives_base_name}-${minecraft_version_range}"
+    // so dependent mods can satisfy ">=3.0.0". When alphaBuild=true the filename
+    // also picks up an -alpha suffix so testers can spot the difference at a glance.
+    archivesName = "${archives_base_name}-${minecraft_version_range}" + (isAlphaBuild ? '-alpha' : '')
 }
 
 // Anything other than a plain "N.N.N" version is parsed by SemVer as a pre-release
