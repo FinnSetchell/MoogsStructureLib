@@ -7,7 +7,8 @@ plugins {
 }
 
 base {
-    archivesName = "${mod_id}-forge-${minecraft_version}"
+    def isAlphaBuild = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
+    archivesName = "${mod_id}-forge-${minecraft_version}" + (isAlphaBuild ? '-alpha' : '')
 }
 
 mixin {
@@ -124,11 +125,13 @@ def changelogMatcher = ~/(?s)## \[${version}\] - \d{4}-\d{2}-\d{2}\r?\n(.*?)(?=\
 def changelogMatch = (changelogContent =~ changelogMatcher)
 def changelogLatest = changelogMatch.find() ? changelogMatch.group(1).trim() : ''
 
+def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
+
 publishMods {
     file = tasks.named('jarJar').flatMap { it.archiveFile }
     changelog = changelogLatest
     version = project.version.toString()
-    type = STABLE
+    type = isAlpha ? ALPHA : STABLE
     displayName = "${mod_name} ${project.version}-${minecraft_version} (Forge)"
     modLoaders.add("forge")
     dryRun = false

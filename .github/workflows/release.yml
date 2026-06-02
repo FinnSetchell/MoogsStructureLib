@@ -36,17 +36,32 @@ jobs:
           " "$VERSION")
           printf "body<<DELIMITER\n%s\nDELIMITER\n" "$BODY" >> "$GITHUB_OUTPUT"
 
+      - name: Read alphaBuild flag
+        id: alpha
+        shell: bash
+        run: |
+          IS_ALPHA=$(grep -E '^alphaBuild=' gradle.properties | cut -d= -f2 | tr -d ' \r\n' || true)
+          echo "is_alpha=${IS_ALPHA:-false}" >> "$GITHUB_OUTPUT"
+
       - name: Publish to CurseForge, Modrinth & Discord
-        run: ./gradlew :fabric:publishMods :neoforge:publishMods :forge:publishMods
+        # :neoforge:publishMods MUST run last. Its discord block calls
+        # setPlatformsAllFrom(project(':fabric'), project(':forge')) so the
+        # Discord embed can attach the fabric and forge upload URLs, which
+        # only exist once those tasks have finished.
+        run: ./gradlew :fabric:publishMods :forge:publishMods :neoforge:publishMods
         env:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_ALPHA_WEBHOOK_URL: ${{ secrets.DISCORD_ALPHA_WEBHOOK_URL }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          body: ${{ steps.changelog.outputs.body }}
+          name: ${{ steps.alpha.outputs.is_alpha == 'true' && format('{0} (Alpha)', github.ref_name) || github.ref_name }}
+          body: ${{ steps.alpha.outputs.is_alpha == 'true' && format('> 🧪 **Alpha test build.** Feedback welcome at https://github.com/{0}/issues.{1}{1}{2}', github.repository, '
+', steps.changelog.outputs.body) || steps.changelog.outputs.body }}
+          prerelease: ${{ steps.alpha.outputs.is_alpha == 'true' }}
           files: |
             fabric/build/libs/*.jar
             !fabric/build/libs/*-sources.jar

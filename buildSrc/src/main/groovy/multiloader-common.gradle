@@ -3,8 +3,9 @@ plugins {
     id 'maven-publish'
 }
 
+def isAlphaBuild = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
 base {
-    archivesName = "${mod_id}-${project.name}-${minecraft_version}"
+    archivesName = "${mod_id}-${project.name}-${minecraft_version}" + (isAlphaBuild ? '-alpha' : '')
 }
 
 java {
