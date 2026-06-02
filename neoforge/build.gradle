@@ -49,11 +49,14 @@ def changelogMatcher = ~/(?s)## \[${version}\] - \d{4}-\d{2}-\d{2}\r?\n(.*?)(?=\
 def changelogMatch = (changelogContent =~ changelogMatcher)
 def changelogLatest = changelogMatch.find() ? changelogMatch.group(1).trim() : ''
 
+def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
+def discordWebhookEnvVar = isAlpha ? 'DISCORD_ALPHA_WEBHOOK_URL' : 'DISCORD_WEBHOOK'
+
 publishMods {
     file = tasks.named('jar').flatMap { it.archiveFile }
     changelog = changelogLatest
     version = project.version.toString()
-    type = STABLE
+    type = isAlpha ? ALPHA : STABLE
     displayName = "${mod_name} ${project.version}-${minecraft_version} (NeoForge)"
     modLoaders.add("neoforge")
     dryRun = false
@@ -62,7 +65,7 @@ publishMods {
     modrinth {
         accessToken = providers.environmentVariable('MODRINTH_API_KEY')
         projectId = modrinth_project_id
-        announcementTitle = "<:modrinth:1132291566019563550> Download on Modrinth"
+        announcementTitle = "<:modrinth:1132291566019563550> NeoForge (${minecraft_version_range})"
         minecraftVersionRange {
             start = publish_mc_start
             end = publish_mc_end
@@ -73,7 +76,7 @@ publishMods {
         accessToken = providers.environmentVariable('CURSEFORGE_API_KEY')
         projectId = cf_project_id
         projectSlug = 'moogs-structure-lib'
-        announcementTitle = "<:curseforge:1132291568305459250> Download on CurseForge"
+        announcementTitle = "<:curseforge:1132291568305459250> NeoForge (${minecraft_version_range})"
         serverRequired = true
         minecraftVersionRange {
             start = publish_mc_start
@@ -82,23 +85,37 @@ publishMods {
     }
 
     discord {
-        webhookUrl = providers.environmentVariable('DISCORD_WEBHOOK')
+        webhookUrl = providers.environmentVariable(discordWebhookEnvVar)
         dryRunWebhookUrl = providers.environmentVariable('DISCORD_WEBHOOK_DRY_RUN').orElse('')
         username = "Moog's Mods"
         avatarUrl = (project.findProperty('discord_avatar_url') ?: '')
 
+        // Pull in fabric + forge + neoforge uploads so the embed shows all six download
+        // buttons (fabric/forge/neoforge x CurseForge/Modrinth), each pointing at the
+        // actual uploaded jar for the version we just published. setPlatformsAllFrom
+        // REPLACES the implicit local-platform list, so the neoforge project must be
+        // listed explicitly even though this block lives inside it. Requires
+        // :neoforge:publishMods to run AFTER :fabric:publishMods and :forge:publishMods
+        // (see release.yml).
+        setPlatformsAllFrom(project(':fabric'), project(':forge'), project(':neoforge'))
+
         content = changelog.map { text ->
             def changelogBody = text.trim()
             def versionRange = publish_mc_start == publish_mc_end ? publish_mc_start : "${publish_mc_start} - ${publish_mc_end}"
-            """## **${mod_name} ${project.version}** has been released! \uD83C\uDF89
+            def header = isAlpha
+                ? "## **${mod_name} ${project.version}** alpha build is up for testing! \uD83E\uDDEA"
+                : "## **${mod_name} ${project.version}** has been released! \uD83C\uDF89"
+            def body = """${header}
 
 **${mod_name} ${project.version}-${minecraft_version}**
 Versions: ${versionRange} | Fabric, NeoForge & Forge
 
 ### \uD83D\uDCDD **Changelog:**
-${changelogBody}
-
-<:curseforge:1132291568305459250> [CurseForge](https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib) | <:modrinth:1132291566019563550> [Modrinth](https://modrinth.com/mod/moogs-structure-lib)"""
+${changelogBody}"""
+            // In stable mode we append a curated link line under the message body; alpha
+            // mode relies on the per-platform embed links the publish plugin auto-attaches,
+            // so each download button points at the actual uploaded alpha jar.
+            isAlpha ? body : body + "\n\n<:curseforge:1132291568305459250> [CurseForge](https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib) | <:modrinth:1132291566019563550> [Modrinth](https://modrinth.com/mod/moogs-structure-lib)"
         }
 
         style {
@@ -111,19 +128,21 @@ ${changelogBody}
 
 tasks.named('announceDiscord').configure {
     doFirst {
-        def webhookUrl = System.getenv('DISCORD_WEBHOOK')
+        def webhookUrl = System.getenv(discordWebhookEnvVar)
         def bannerUrl = project.findProperty('discord_banner_url') as String
         def avatarUrl = project.findProperty('discord_avatar_url') as String
         if (!bannerUrl) return
         if (!webhookUrl) {
-            logger.warn("Discord banner skipped: DISCORD_WEBHOOK is not set")
+            logger.warn("Discord banner skipped: ${discordWebhookEnvVar} is not set")
             return
         }
         def connection = new URL(webhookUrl).openConnection()
         connection.requestMethod = 'POST'
         connection.doOutput = true
         connection.setRequestProperty('Content-Type', 'application/json')
-        connection.outputStream.withWriter { it << """{"username":"Moog's Mods","avatar_url":"${avatarUrl}","content":"<@&${discord_role_id}>\\n${bannerUrl}","allowed_mentions":{"parse":[],"roles":["${discord_role_id}"]}}""" }
+        def bannerContent = isAlpha ? bannerUrl : "<@&${discord_role_id}>\\n${bannerUrl}"
+        def allowedRoles = isAlpha ? '' : "\"${discord_role_id}\""
+        connection.outputStream.withWriter { it << """{"username":"Moog's Mods","avatar_url":"${avatarUrl}","content":"${bannerContent}","allowed_mentions":{"parse":[],"roles":[${allowedRoles}]}}""" }
         connection.responseCode
     }
 }
