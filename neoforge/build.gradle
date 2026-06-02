@@ -51,9 +51,11 @@ def changelogLatest = changelogMatch.find() ? changelogMatch.group(1).trim() : '
 
 def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
 def discordWebhookEnvVar = isAlpha ? 'DISCORD_ALPHA_WEBHOOK_URL' : 'DISCORD_WEBHOOK'
-// Independent ping control. If the user did not set discordPing explicitly,
-// default to "ping on stable, silent on alpha".
-def discordPing = project.findProperty('discordPing')?.toString()?.toBoolean() ?: !isAlpha
+// Discord role ping control. alphaBuild=true forces no ping (alpha test
+// builds never mention subscribers); otherwise the discordPing property in
+// gradle.properties decides (defaults to true if unset).
+def discordPingExplicit = project.findProperty('discordPing')?.toString()?.toBoolean() ?: true
+def discordPing = isAlpha ? false : discordPingExplicit
 
 publishMods {
     file = tasks.named('jar').flatMap { it.archiveFile }
