@@ -114,17 +114,24 @@ publishMods {
         avatarUrl = (rootProject.findProperty('discord_avatar_url') ?: '')
 
         // Alpha mode: attach one embed button per uploaded jar (fabric/neoforge
-        // x CurseForge/Modrinth = up to 4 embeds) so testers click straight through
-        // to the specific alpha file. setPlatformsAllFrom REPLACES the implicit
-        // local-platform list, so the neoforge project must be listed explicitly
-        // even though this block lives inside it. Requires :neoforge:publishMods
-        // to run AFTER :fabric:publishMods (see release.yml).
+        // x CurseForge/Modrinth = 4 embeds) so testers click straight through to
+        // the specific alpha file. We deliberately enumerate the CurseForge +
+        // Modrinth platforms explicitly rather than using setPlatformsAllFrom(),
+        // because both fabric and neoforge also have github { } blocks and they
+        // resolve to the same release URL — Discord rejects duplicate embed URLs
+        // and the announceDiscord task fails. Listing only CF + Modrinth gives
+        // us 4 distinct embed URLs (one per loader x platform).
         //
         // Stable mode: no auto-attached embeds. The curated CurseForge files and
         // Modrinth versions links inside the content block are the only download
         // entry points.
         if (isAlpha) {
-            setPlatformsAllFrom(project(':fabric'), project(':neoforge'))
+            setPlatforms(
+                project(':fabric').publishMods.platforms.curseforge,
+                project(':fabric').publishMods.platforms.modrinth,
+                project(':neoforge').publishMods.platforms.curseforge,
+                project(':neoforge').publishMods.platforms.modrinth,
+            )
         } else {
             setPlatforms()
         }
