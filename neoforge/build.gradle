@@ -71,6 +71,9 @@ def changelogLatest = changelogMatch.find() ? changelogMatch.group(1).trim() : '
 
 def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
 def discordWebhookEnvVar = isAlpha ? 'DISCORD_ALPHA_WEBHOOK_URL' : 'DISCORD_WEBHOOK'
+// Independent ping control. If the user did not set discordPing explicitly,
+// default to "ping on stable, silent on alpha".
+def discordPing = project.findProperty('discordPing')?.toString()?.toBoolean() ?: !isAlpha
 
 publishMods {
     file = tasks.named('jar').flatMap { it.archiveFile }
@@ -110,14 +113,21 @@ publishMods {
         username = "Moog's Mods"
         avatarUrl = (project.findProperty('discord_avatar_url') ?: '')
 
-        // Pull in fabric + forge + neoforge uploads so the embed shows all six download
-        // buttons (fabric/forge/neoforge x CurseForge/Modrinth), each pointing at the
-        // actual uploaded jar for the version we just published. setPlatformsAllFrom
-        // REPLACES the implicit local-platform list, so the neoforge project must be
-        // listed explicitly even though this block lives inside it. Requires
-        // :neoforge:publishMods to run AFTER :fabric:publishMods and :forge:publishMods
-        // (see release.yml).
-        setPlatformsAllFrom(project(':fabric'), project(':forge'), project(':neoforge'))
+        // Alpha mode: attach one embed button per uploaded jar (fabric/forge/neoforge
+        // x CurseForge/Modrinth = up to 6 embeds) so testers click straight through
+        // to the specific alpha file. setPlatformsAllFrom REPLACES the implicit
+        // local-platform list, so the neoforge project must be listed explicitly
+        // even though this block lives inside it. Requires :neoforge:publishMods
+        // to run AFTER :fabric:publishMods and :forge:publishMods (see release.yml).
+        //
+        // Stable mode: no auto-attached embeds. The curated CurseForge files and
+        // Modrinth versions links inside the content block are the only download
+        // entry points.
+        if (isAlpha) {
+            setPlatformsAllFrom(project(':fabric'), project(':forge'), project(':neoforge'))
+        } else {
+            setPlatforms()
+        }
 
         content = changelog.map { text ->
             def changelogBody = text.trim()
@@ -132,10 +142,10 @@ Versions: ${versionRange} | Fabric, NeoForge & Forge
 
 ### \uD83D\uDCDD **Changelog:**
 ${changelogBody}"""
-            // In stable mode we append a curated link line under the message body; alpha
-            // mode relies on the per-platform embed links the publish plugin auto-attaches,
-            // so each download button points at the actual uploaded alpha jar.
-            isAlpha ? body : body + "\n\n<:curseforge:1132291568305459250> [CurseForge](https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib) | <:modrinth:1132291566019563550> [Modrinth](https://modrinth.com/mod/moogs-structure-lib)"
+            // Stable mode appends curated CurseForge files + Modrinth versions links
+            // under the message body. Alpha mode relies on the per-platform embed
+            // links auto-attached above, so no curated link line is appended.
+            isAlpha ? body : body + "\n\n<:curseforge:1132291568305459250> [CurseForge](https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib/files) | <:modrinth:1132291566019563550> [Modrinth](https://modrinth.com/mod/moogs-structure-lib/versions)"
         }
 
         style {
@@ -160,8 +170,8 @@ tasks.named('announceDiscord').configure {
         connection.requestMethod = 'POST'
         connection.doOutput = true
         connection.setRequestProperty('Content-Type', 'application/json')
-        def bannerContent = isAlpha ? bannerUrl : "<@&${discord_role_id}>\\n${bannerUrl}"
-        def allowedRoles = isAlpha ? '' : "\"${discord_role_id}\""
+        def bannerContent = discordPing ? "<@&${discord_role_id}>\\n${bannerUrl}" : bannerUrl
+        def allowedRoles = discordPing ? "\"${discord_role_id}\"" : ''
         connection.outputStream.withWriter { it << """{"username":"Moog's Mods","avatar_url":"${avatarUrl}","content":"${bannerContent}","allowed_mentions":{"parse":[],"roles":[${allowedRoles}]}}""" }
         connection.responseCode
     }
