@@ -66,7 +66,7 @@ publishMods {
     modrinth {
         accessToken = providers.environmentVariable('MODRINTH_API_KEY')
         projectId = modrinth_project_id
-        announcementTitle = "<:modrinth:1132291566019563550> Download on Modrinth"
+        announcementTitle = "<:modrinth:1132291566019563550> NeoForge (${minecraft_version_range})"
         minecraftVersionRange {
             start = publish_mc_start
             end = publish_mc_end
@@ -77,7 +77,7 @@ publishMods {
         accessToken = providers.environmentVariable('CURSEFORGE_API_KEY')
         projectId = cf_project_id
         projectSlug = 'moogs-structure-lib'
-        announcementTitle = "<:curseforge:1132291568305459250> Download on CurseForge"
+        announcementTitle = "<:curseforge:1132291568305459250> NeoForge (${minecraft_version_range})"
         serverRequired = true
         minecraftVersionRange {
             start = publish_mc_start
@@ -91,11 +91,14 @@ publishMods {
         username = "Moog's Mods"
         avatarUrl = (project.findProperty('discord_avatar_url') ?: '')
 
-        // Pull in fabric + forge uploads so the embed shows all six download buttons
-        // (fabric/forge/neoforge × CurseForge/Modrinth), each pointing at the actual
-        // uploaded jar for the version we just published. Requires :neoforge:publishMods
-        // to run AFTER :fabric:publishMods and :forge:publishMods (see release.yml).
-        setPlatformsAllFrom(project(':fabric'), project(':forge'))
+        // Pull in fabric + forge + neoforge uploads so the embed shows all six download
+        // buttons (fabric/forge/neoforge x CurseForge/Modrinth), each pointing at the
+        // actual uploaded jar for the version we just published. setPlatformsAllFrom
+        // REPLACES the implicit local-platform list, so the neoforge project must be
+        // listed explicitly even though this block lives inside it. Requires
+        // :neoforge:publishMods to run AFTER :fabric:publishMods and :forge:publishMods
+        // (see release.yml).
+        setPlatformsAllFrom(project(':fabric'), project(':forge'), project(':neoforge'))
 
         content = changelog.map { text ->
             def changelogBody = text.trim()
