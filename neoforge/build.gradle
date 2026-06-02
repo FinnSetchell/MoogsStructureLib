@@ -73,6 +73,10 @@ File changeLog = rootProject.file("CHANGELOG.md")
 String changelogtext = changeLog.exists() ? changeLog.text : ""
 
 def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
+def discordWebhookEnvVar = isAlpha ? 'DISCORD_ALPHA_WEBHOOK_URL' : 'DISCORD_WEBHOOK'
+// Independent ping control. If the user did not set discordPing explicitly,
+// default to "ping on stable, silent on alpha".
+def discordPing = project.findProperty('discordPing')?.toString()?.toBoolean() ?: !isAlpha
 
 publishMods {
     file = remapJar.archiveFile
@@ -85,6 +89,7 @@ publishMods {
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
         projectId = "1oUDhxuy"
+        announcementTitle = "<:modrinth:1132291566019563550> NeoForge (${rootProject.minecraft_version_range})"
         minecraftVersionRange {
             start = "1.20.5"
             end = "1.20.6"
@@ -94,6 +99,8 @@ publishMods {
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
         projectId = "1337167"
+        projectSlug = 'moogs-structure-lib'
+        announcementTitle = "<:curseforge:1132291568305459250> NeoForge (${rootProject.minecraft_version_range})"
         serverRequired = true
         minecraftVersionRange {
             start = "1.20.5"
@@ -101,4 +108,74 @@ publishMods {
         }
     }
 
+    discord {
+        webhookUrl = providers.environmentVariable(discordWebhookEnvVar)
+        dryRunWebhookUrl = providers.environmentVariable('DISCORD_WEBHOOK_DRY_RUN').orElse('')
+        username = "Moog's Mods"
+        avatarUrl = (rootProject.findProperty('discord_avatar_url') ?: '')
+
+        // Alpha mode: attach one embed button per uploaded jar (fabric/neoforge
+        // x CurseForge/Modrinth = up to 4 embeds) so testers click straight through
+        // to the specific alpha file. setPlatformsAllFrom REPLACES the implicit
+        // local-platform list, so the neoforge project must be listed explicitly
+        // even though this block lives inside it. Requires :neoforge:publishMods
+        // to run AFTER :fabric:publishMods (see release.yml).
+        //
+        // Stable mode: no auto-attached embeds. The curated CurseForge files and
+        // Modrinth versions links inside the content block are the only download
+        // entry points.
+        if (isAlpha) {
+            setPlatformsAllFrom(project(':fabric'), project(':neoforge'))
+        } else {
+            setPlatforms()
+        }
+
+        content = changelog.map { text ->
+            def changelogBody = text.trim()
+            def mcVersion = rootProject.findProperty('minecraft_version') ?: '1.20.6'
+            def versionRange = rootProject.findProperty('minecraft_version_range') ?: mcVersion
+            def header = isAlpha
+                ? "## **Moog's Structure Lib ${project.version}** alpha build is up for testing! 🧪"
+                : "## **Moog's Structure Lib ${project.version}** has been released! 🎉"
+            def body = """${header}
+
+**Moog's Structure Lib ${project.version}-${mcVersion}**
+Versions: ${versionRange} | Fabric & NeoForge
+
+### 📝 **Changelog:**
+${changelogBody}"""
+            // Stable mode appends curated CurseForge files + Modrinth versions links
+            // under the message body. Alpha mode relies on the per-platform embed
+            // links auto-attached above, so no curated link line is appended.
+            isAlpha ? body : body + "\n\n<:curseforge:1132291568305459250> [CurseForge](https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib/files) | <:modrinth:1132291566019563550> [Modrinth](https://modrinth.com/mod/moogs-structure-lib/versions)"
+        }
+
+        style {
+            look = "MODERN"
+            link = "EMBED"
+            color = (rootProject.findProperty('discord_embed_color') ?: '#3c3040')
+        }
+    }
+}
+
+tasks.named('announceDiscord').configure {
+    doFirst {
+        def webhookUrl = System.getenv(discordWebhookEnvVar)
+        def bannerUrl = rootProject.findProperty('discord_banner_url') as String
+        def avatarUrl = rootProject.findProperty('discord_avatar_url') as String
+        def roleId = rootProject.findProperty('discord_role_id') as String
+        if (!bannerUrl) return
+        if (!webhookUrl) {
+            logger.warn("Discord banner skipped: ${discordWebhookEnvVar} is not set")
+            return
+        }
+        def connection = new URL(webhookUrl).openConnection()
+        connection.requestMethod = 'POST'
+        connection.doOutput = true
+        connection.setRequestProperty('Content-Type', 'application/json')
+        def bannerContent = discordPing ? "<@&${roleId}>\\n${bannerUrl}" : bannerUrl
+        def allowedRoles = discordPing ? "\"${roleId}\"" : ''
+        connection.outputStream.withWriter { it << """{"username":"Moog's Mods","avatar_url":"${avatarUrl}","content":"${bannerContent}","allowed_mentions":{"parse":[],"roles":[${allowedRoles}]}}""" }
+        connection.responseCode
+    }
 }
