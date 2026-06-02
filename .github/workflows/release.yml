@@ -55,12 +55,29 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           DISCORD_ALPHA_WEBHOOK_URL: ${{ secrets.DISCORD_ALPHA_WEBHOOK_URL }}
 
+      - name: Build release title and body
+        id: release_meta
+        shell: bash
+        env:
+          IS_ALPHA: ${{ steps.alpha.outputs.is_alpha }}
+          CHANGELOG_BODY: ${{ steps.changelog.outputs.body }}
+        run: |
+          if [ "$IS_ALPHA" = "true" ]; then
+            TITLE="${GITHUB_REF_NAME} (Alpha)"
+            BANNER="> 🧪 **Alpha test build.** Feedback welcome at https://github.com/${GITHUB_REPOSITORY}/issues."
+            BODY=$(printf "%s\n\n%s" "$BANNER" "$CHANGELOG_BODY")
+          else
+            TITLE="${GITHUB_REF_NAME}"
+            BODY="$CHANGELOG_BODY"
+          fi
+          echo "title=${TITLE}" >> "$GITHUB_OUTPUT"
+          printf "body<<DELIMITER\n%s\nDELIMITER\n" "$BODY" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ steps.alpha.outputs.is_alpha == 'true' && format('{0} (Alpha)', github.ref_name) || github.ref_name }}
-          body: ${{ steps.alpha.outputs.is_alpha == 'true' && format('> 🧪 **Alpha test build.** Feedback welcome at https://github.com/{0}/issues.{1}{1}{2}', github.repository, '
-', steps.changelog.outputs.body) || steps.changelog.outputs.body }}
+          name: ${{ steps.release_meta.outputs.title }}
+          body: ${{ steps.release_meta.outputs.body }}
           prerelease: ${{ steps.alpha.outputs.is_alpha == 'true' }}
           files: |
             fabric/build/libs/*.jar
