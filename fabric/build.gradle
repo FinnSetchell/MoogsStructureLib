@@ -103,6 +103,7 @@ publishMods {
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
         projectId = "1oUDhxuy"
+        announcementTitle = "<:modrinth:1132291566019563550> Fabric (${rootProject.minecraft_version_range})"
         minecraftVersionRange {
             start = "1.20"
             end = "1.20.4"
@@ -112,6 +113,8 @@ publishMods {
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
         projectId = "1337167"
+        projectSlug = 'moogs-structure-lib'
+        announcementTitle = "<:curseforge:1132291568305459250> Fabric (${rootProject.minecraft_version_range})"
         minecraftVersionRange {
             start = "1.20"
             end = "1.20.4"
