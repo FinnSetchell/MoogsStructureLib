@@ -89,7 +89,7 @@ publishMods {
         accessToken = providers.environmentVariable("GITHUB_TOKEN")
         repository = "FinnSetchell/MoogsStructureLib"
         commitish = "26.1.0-26.1.2"
-        tagName = providers.environmentVariable("GITHUB_REF_NAME").orElse("v${project.version}")
+        tagName = providers.environmentVariable("GITHUB_REF_NAME").orElse("${minecraft_version}-${project.version}")
         displayName = "Moog's Structure Lib ${project.version} [NEOFORGE]"
     }
 
