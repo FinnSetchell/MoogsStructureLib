@@ -13,7 +13,7 @@ architectury {
 // When alphaBuild=true the filename also picks up an -alpha suffix so testers can
 // spot the difference at a glance.
 def isAlphaBuild = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
-archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version_range}" + (isAlphaBuild ? '-alpha' : '')
+archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version_range}"
 
 configurations {
     common
