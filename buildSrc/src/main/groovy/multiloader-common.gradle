@@ -5,7 +5,7 @@ plugins {
 
 def isAlphaBuild = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
 base {
-    archivesName = "${mod_id}-${project.name}-${minecraft_version}" + (isAlphaBuild ? '-alpha' : '')
+    archivesName = "${mod_id}-${project.name}-${minecraft_version}"
 }
 
 java {
