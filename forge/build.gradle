@@ -8,7 +8,7 @@ plugins {
 
 base {
     def isAlphaBuild = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
-    archivesName = "${mod_id}-forge-${forge_minecraft_version}" + (isAlphaBuild ? '-alpha' : '')
+    archivesName = "${mod_id}-forge-${forge_minecraft_version}"
 }
 
 mixin {
