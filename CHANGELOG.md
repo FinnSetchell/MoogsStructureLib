@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.0-alpha.2 — 2026-06-03
+
+### Crash fixes
+- Added missing `trial_spawner_randomizing_processor` and `vault_randomizing_processor`. These existed on every other 1.21+ MSL branch but the 1.21.11 propagation was missed in the initial cycle. Resolves a server crash when MNS 3.0.0-alpha tried to load `dragon_arena_pillars` / `large_arena_pillars` processor lists.
+
+### Added
+- Optional `nbt` field on `SpawnerRandomizingProcessor.weighted_entities`, bringing 1.21.11 into parity with other branches. Enables pre-equipped mob spawns from regular spawners.
+
+## 3.0.0-alpha.1 — initial alpha
+- Initial alpha release of MSL 3.0.0.
+
 ---
 
 ## [3.0.0] - 2026-06-02
