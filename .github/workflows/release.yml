@@ -32,13 +32,12 @@ jobs:
         id: changelog
         shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME##*-}"
-          BODY=$(python3 -c "
-          import re, sys
-          content = open('CHANGELOG.md').read()
-          m = re.search(r'## \[' + re.escape(sys.argv[1]) + r'\] - \d{4}-\d{2}-\d{2}\n(.*?)(?=\n---|## \[|\Z)', content, re.DOTALL)
-          print(m.group(1).strip() if m else '')
-          " "$VERSION")
+          VERSION=$(grep -E '^(modVersion|version|mod_version)=' gradle.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')
+          BODY=$(awk -v ver="$VERSION" '
+            $0 ~ "^## [[]?" ver "($|[^-])" { capture=1; next }
+            /^## / && capture { exit }
+            capture { print }
+          ' CHANGELOG.md)
           printf "body<<DELIMITER\n%s\nDELIMITER\n" "$BODY" >> "$GITHUB_OUTPUT"
 
       - name: Read alphaBuild flag
