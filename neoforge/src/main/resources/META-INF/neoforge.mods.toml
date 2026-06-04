@@ -24,6 +24,13 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
     config = "moogs_structures-common.mixins.json"
 
 [[dependencies.moogs_structures]]
+    modId="minecraft"
+    mandatory = true
+    versionRange="[1.21.2,1.21.4)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.moogs_structures]]
     modId="neoforge"
     type="required"
     versionRange="[21.2.1-beta,)"
