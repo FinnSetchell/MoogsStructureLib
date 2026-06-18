@@ -8,8 +8,6 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -23,7 +21,7 @@ import java.util.Optional;
 /**
  * Equips armor onto armor-stand entities as a structure is placed. Each armor stand rolls one
  * "armor set" from an inline weighted list; the chosen set's items (with any enchantments/trims
- * authored on them) are written into the stand's {@code ArmorItems} NBT.
+ * authored on them) are written into the stand's {@code equipment} NBT.
  *
  * <p>Targets every {@code minecraft:armor_stand} in any piece whose processor list includes this
  * processor. Item slots are authored as full item NBT (the same shape vanilla's
@@ -96,22 +94,14 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
 
         CompoundTag newNbt = nbt.copy();
 
-        // ArmorStand reads ArmorItems in EquipmentSlot armor index order: feet, legs, chest, head.
-        ListTag armorItems = new ListTag();
-        armorItems.add(saveOrEmpty(set.feet()));
-        armorItems.add(saveOrEmpty(set.legs()));
-        armorItems.add(saveOrEmpty(set.chest()));
-        armorItems.add(saveOrEmpty(set.head()));
-        newNbt.put("ArmorItems", armorItems);
+        CompoundTag equipment = new CompoundTag();
+        set.feet().ifPresent(tag -> equipment.put("feet", tag));
+        set.legs().ifPresent(tag -> equipment.put("legs", tag));
+        set.chest().ifPresent(tag -> equipment.put("chest", tag));
+        set.head().ifPresent(tag -> equipment.put("head", tag));
+        newNbt.put("equipment", equipment);
 
         return new StructureTemplate.StructureEntityInfo(globalEntityInfo.pos, globalEntityInfo.blockPos, newNbt);
-    }
-
-    private static Tag saveOrEmpty(Optional<CompoundTag> optionalTag) {
-        if (optionalTag.isEmpty()) {
-            return new CompoundTag();
-        }
-        return optionalTag.get();
     }
 
     @Override
