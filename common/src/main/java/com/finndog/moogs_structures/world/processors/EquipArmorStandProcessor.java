@@ -9,9 +9,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -25,7 +23,7 @@ import java.util.Optional;
 /**
  * Equips armor onto armor-stand entities as a structure is placed. Each armor stand rolls one
  * "armor set" from an inline weighted list; the chosen set's items (with any enchantments/trims
- * authored on them) are written into the stand's {@code ArmorItems} NBT.
+ * authored on them) are written into the stand's {@code equipment} NBT.
  *
  * <p>Targets every {@code minecraft:armor_stand} in any piece whose processor list includes this
  * processor. Item slots are full {@link ItemStack}s (via {@link ItemStack#SINGLE_ITEM_CODEC}), so
@@ -90,23 +88,21 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
         HolderLookup.Provider provider = serverLevelAccessor.registryAccess();
         CompoundTag newNbt = nbt.copy();
 
-        // ArmorStand reads ArmorItems in EquipmentSlot armor index order: feet, legs, chest, head.
-        ListTag armorItems = new ListTag();
-        armorItems.add(saveOrEmpty(set.feet(), provider));
-        armorItems.add(saveOrEmpty(set.legs(), provider));
-        armorItems.add(saveOrEmpty(set.chest(), provider));
-        armorItems.add(saveOrEmpty(set.head(), provider));
-        newNbt.put("ArmorItems", armorItems);
+        CompoundTag equipment = new CompoundTag();
+        putSlot(equipment, "feet", set.feet(), provider);
+        putSlot(equipment, "legs", set.legs(), provider);
+        putSlot(equipment, "chest", set.chest(), provider);
+        putSlot(equipment, "head", set.head(), provider);
+        newNbt.put("equipment", equipment);
 
         return new StructureTemplate.StructureEntityInfo(globalEntityInfo.pos, globalEntityInfo.blockPos, newNbt);
     }
 
-    private static Tag saveOrEmpty(Optional<ItemStack> optionalStack, HolderLookup.Provider provider) {
-        if (optionalStack.isEmpty() || optionalStack.get().isEmpty()) {
-            return new CompoundTag();
-        }
-        return ItemStack.CODEC.encodeStart(provider.createSerializationContext(NbtOps.INSTANCE), optionalStack.get())
-                .getOrThrow();
+    private static void putSlot(CompoundTag equipment, String slot, Optional<ItemStack> optionalStack, HolderLookup.Provider provider) {
+        if (optionalStack.isEmpty() || optionalStack.get().isEmpty()) return;
+        equipment.put(slot, ItemStack.CODEC.encodeStart(
+                provider.createSerializationContext(NbtOps.INSTANCE),
+                optionalStack.get()).getOrThrow());
     }
 
     @Override
