@@ -8,6 +8,25 @@ architectury {
     forge()
 }
 
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
+loom {
+    runs {
+        gameTestServer {
+            server()
+            name "Forge Game Test Server"
+            property "forge.enabledGameTestNamespaces", "moogs_structures"
+            property "forge.enableGameTest", "true"
+            property "forge.gameTestServer", "true"
+        }
+    }
+}
+
 // MC range goes in archivesBaseName so the jar filename keeps it; the version field
 // (consumed by mods.toml) stays a plain SemVer "3.0.0" - see root build.gradle.
 // When alphaBuild=true the filename also picks up an -alpha suffix so testers can
@@ -40,6 +59,8 @@ dependencies {
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
+
+    developmentForge files(sourceSets.gameTest.output.classesDirs, sourceSets.gameTest.output.resourcesDir)
 }
 
 processResources {
