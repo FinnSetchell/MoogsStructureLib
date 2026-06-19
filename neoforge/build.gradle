@@ -4,6 +4,13 @@ plugins {
     id 'me.modmuss50.mod-publish-plugin'
 }
 
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
 neoForge {
     version = neoforge_version
     def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -27,10 +34,15 @@ neoForge {
                 '--output', file('src/generated/resources/').getAbsolutePath(),
                 '--existing', file('src/main/resources/').getAbsolutePath()
         }
+        gameTestServer {
+            type = "gameTestServer"
+            gameDirectory = this.mkdir(this.file("runs/gameTestServer"))
+        }
     }
     mods {
         "${mod_id}" {
             sourceSet sourceSets.main
+            sourceSet sourceSets.gameTest
         }
     }
 }
