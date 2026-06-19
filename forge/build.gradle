@@ -15,6 +15,31 @@ sourceSets {
     }
 }
 
+task gameTestJar(type: Jar) {
+    archiveClassifier = 'gametest'
+    from sourceSets.gameTest.output
+}
+
+// Same Architectury pack_format:4 incompatibility as in 1.20.5-1.20.6 -- see that
+// branch's build.gradle for the full explanation. Workaround: copy NBT files to
+// run/world/generated so StructureTemplateManager.detect() finds them directly.
+task copyGameTestStructures(type: Copy) {
+    from sourceSets.gameTest.resources.srcDirs
+    include "data/*/structure/*.nbt"
+    into layout.projectDirectory.dir("run/world/generated")
+    eachFile { fileCopyDetails ->
+        def path = fileCopyDetails.relativePath.segments
+        // Rewrite: data/{ns}/structure/{name}.nbt -> {ns}/structures/{name}.nbt
+        def ns = path[1]
+        def name = path[3]
+        fileCopyDetails.relativePath = new RelativePath(true, ns, "structures", name)
+    }
+    includeEmptyDirs = false
+}
+afterEvaluate {
+    tasks.named("runGameTestServer") { dependsOn copyGameTestStructures }
+}
+
 loom {
     runs {
         gameTestServer {
@@ -60,7 +85,7 @@ dependencies {
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
 
-    developmentForge files(sourceSets.gameTest.output.classesDirs, sourceSets.gameTest.output.resourcesDir)
+    developmentForge files(gameTestJar)
 }
 
 processResources {
