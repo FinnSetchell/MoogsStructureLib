@@ -4,6 +4,13 @@ plugins {
     id 'me.modmuss50.mod-publish-plugin'
 }
 
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
 neoForge {
     version = neo_version
     // Automatically enable AccessTransformers if the file exists
@@ -38,6 +45,7 @@ neoForge {
     mods {
         "${mod_id}" {
             sourceSet sourceSets.main
+            sourceSet sourceSets.gameTest
         }
     }
 }
@@ -135,6 +143,8 @@ publishMods {
                 project(':fabric').publishMods.platforms.modrinth,
                 project(':neoforge').publishMods.platforms.curseforge,
                 project(':neoforge').publishMods.platforms.modrinth,
+                project(':forge').publishMods.platforms.curseforge,
+                project(':forge').publishMods.platforms.modrinth,
             )
         } else {
             setPlatforms()
@@ -153,7 +163,7 @@ publishMods {
             def body = """${header}
 
 **${modName} ${project.version}-${mcVersion}**
-Versions: ${mcVersion} | Fabric & NeoForge
+Versions: ${mcVersion} | Fabric, NeoForge & Forge
 
 ### 📝 **Changelog:**
 ${changelogBody}"""

@@ -87,17 +87,30 @@ Current status:
 | 1.20.5-1.20.6 | no |
 | 1.20-1.20.4 | no (needs forge/ placement) |
 
+## Adding a new test
+
+Tests live in `neoforge/src/gameTest/java/...` and register via `RegisterGameTestsEvent`.
+See `EquipArmorStandProcessorTest` for the pattern:
+
+1. Annotate the class with `@EventBusSubscriber(modid = "moogs_structures")`
+2. Subscribe a static method to `RegisterGameTestsEvent` via `@SubscribeEvent`
+3. Register an environment via `event.registerEnvironment()` (use `new TestEnvironmentDefinition.AllOf()` for an empty environment)
+4. Create `TestData` with the structure template identifier and tick limits
+5. Call `event.registerTest()` with a `GameTestInstance` subclass
+
+For tests that don't interact with the world, generate an empty structure template once:
+```powershell
+.\scripts\gen-empty-structure.ps1 -Out neoforge\src\gameTest\resources\data\moogs_structures\structure\<name>.nbt
+```
+
 ## Test structure resource
 
-`neoforge/src/main/resources/data/moogs_structures/structure/armor_stand_processor_test_empty.nbt`
+`neoforge/src/gameTest/resources/data/moogs_structures/structure/armor_stand_processor_test_empty.nbt`
 
-A minimal 1x1x1 gzip-compressed NBT structure with no blocks and no entities. Required by
-the NeoForge GameTest framework (every `@GameTest` method needs a template). The template
-exists only to satisfy the framework -- the test does not interact with the world.
+A minimal 1x1x1 gzip-compressed NBT structure with no blocks and no entities. The template
+exists only to satisfy the GameTest framework -- the test does not interact with the world.
 
-To regenerate it for a different MC version (DataVersion change), run:
+To regenerate it for a different DataVersion:
 ```powershell
-.\scripts\gen-empty-structure.ps1 -DataVersion <n> -Out neoforge\src\main\resources\data\moogs_structures\structure\armor_stand_processor_test_empty.nbt
+.\scripts\gen-empty-structure.ps1 -DataVersion <n> -Out neoforge\src\gameTest\resources\data\moogs_structures\structure\armor_stand_processor_test_empty.nbt
 ```
-(See `scripts/gen-empty-structure.ps1`. For an empty structure the DataVersion value does
-not matter since there are no blocks or entities to migrate through DFU.)
