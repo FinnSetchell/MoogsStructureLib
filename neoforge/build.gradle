@@ -8,6 +8,25 @@ architectury {
     neoForge()
 }
 
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
+loom {
+    runs {
+        gameTestServer {
+            server()
+            name "NeoForge Game Test Server"
+            property "neoforge.enabledGameTestNamespaces", "moogs_structures"
+            property "neoforge.enableGameTest", "true"
+            property "neoforge.gameTestServer", "true"
+        }
+    }
+}
+
 // MC range goes in archivesBaseName so the jar filename keeps it; the version field
 // (consumed by neoforge.mods.toml) stays plain SemVer "3.0.0" - see root build.gradle.
 // When alphaBuild=true the filename also picks up an -alpha suffix so testers can
@@ -28,6 +47,8 @@ dependencies {
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive = false }
+
+    developmentNeoForge files(sourceSets.gameTest.output.classesDirs, sourceSets.gameTest.output.resourcesDir)
 }
 
 processResources {
