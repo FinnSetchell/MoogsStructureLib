@@ -79,7 +79,7 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
                                                                StructureTemplate.StructureEntityInfo globalEntityInfo,
                                                                StructurePlaceSettings structurePlaceSettings) {
         CompoundTag nbt = globalEntityInfo.nbt;
-        if (nbt == null || !"minecraft:armor_stand".equals(nbt.getString("id"))) {
+        if (nbt == null || !nbt.getString("id").map("minecraft:armor_stand"::equals).orElse(false)) {
             return globalEntityInfo;
         }
         if (weightedSets.isEmpty()) {
