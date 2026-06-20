@@ -1,8 +1,6 @@
 # Changelog
 
-## [3.0.0] - 2026-06-02
-
-Major feature release: a full structure-processor and pool-element toolkit, version-aware templates, terrain adaptation, and entity (armor stand) equipping.
+## [3.0.0] - 2026-06-20
 
 ### Added
 - **Version-aware pool element** (`moogs_structures:versioned_single_pool_element`): resolves a different structure template per Minecraft version, via a `locations` map of version ranges (e.g. `"1.21-1.21.4"`, `"1.21.5-26.1.2"`) with a fallback `location`.
@@ -21,9 +19,9 @@ Major feature release: a full structure-processor and pool-element toolkit, vers
 - **Debug command**: `/moogs_structures debug keepjigsaws on|off|status` keeps jigsaw blocks in placed structures so their name/target/pool can be inspected in-world.
 
 ### Fixed
-- Dependent mods (e.g. Moog's Nether Structures) failing to recognise this build as version 3.0.0.
-- Structures with enchanted armor on armor stands failing to load.
-- Pillar structures that place chains failing to generate (chains were renamed to iron chains in Minecraft 1.21.9).
+- dependent mods (e.g. Moog's Nether Structures) failing to recognise this build as version 3.0.0.
+- structures with enchanted armor on armor stands failing to load.
+- pillar structures that place chains failing to generate (chains were renamed to iron chains in Minecraft 1.21.9).
 - `equip_armor_stand_processor` not equipping armor stands on MC 1.21.5+ (armor was written to the legacy `ArmorItems` array; now uses the `equipment` compound tag introduced in 1.21.5).
 - `equip_armor_stand_processor` skipping all armor stand entities on MC 1.21.5+ (entity-type check always evaluated to false because `CompoundTag.getString()` returns `Optional<String>` in 1.21.5+, never equal to a string literal).
 
