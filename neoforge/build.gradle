@@ -83,7 +83,8 @@ def discordWebhookEnvVar = isAlpha ? 'DISCORD_ALPHA_WEBHOOK_URL' : 'DISCORD_WEBH
 // Discord role ping control. alphaBuild=true forces no ping (alpha test
 // builds never mention subscribers); otherwise the discordPing property in
 // gradle.properties decides (defaults to true if unset).
-def discordPingExplicit = project.findProperty('discordPing')?.toString()?.toBoolean() ?: true
+def rawDiscordPing = project.findProperty('discordPing')
+def discordPingExplicit = rawDiscordPing != null ? rawDiscordPing.toString().toBoolean() : true
 def discordPing = isAlpha ? false : discordPingExplicit
 
 publishMods {
