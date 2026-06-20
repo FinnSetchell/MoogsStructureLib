@@ -10,6 +10,7 @@ import com.finndog.moogs_structures.modinit.registry.forge.ResourcefulRegistries
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.RegisterGameTestsEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -31,10 +32,20 @@ public class MoogsStructuresForge {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         modEventBus.addListener(MoogsStructuresForge::onSetup);
+        modEventBus.addListener(MoogsStructuresForge::registerGameTests);
         eventBus.addListener(MoogsStructuresForge::onServerStarting);
         eventBus.addListener(MoogsStructuresForge::onServerStopping);
         eventBus.addListener(MoogsStructuresForge::onAddReloadListeners);
         eventBus.addListener(MoogsStructuresForge::onRegisterCommands);
+    }
+
+    // Register game tests when the test class is on the classpath (dev/gametest only).
+    // Class.forName silently fails in production where the test class is absent.
+    private static void registerGameTests(RegisterGameTestsEvent event) {
+        try {
+            event.register(Class.forName("com.finndog.moogs_structures.gametest.EquipArmorStandProcessorTest"));
+        } catch (ClassNotFoundException ignored) {
+        }
     }
 
     private static void onSetup(FMLCommonSetupEvent event) {

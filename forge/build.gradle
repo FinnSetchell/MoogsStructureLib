@@ -48,6 +48,18 @@ loom {
             property "forge.enabledGameTestNamespaces", "moogs_structures"
             property "forge.enableGameTest", "true"
             property "forge.gameTestServer", "true"
+            source sourceSets.gameTest
+        }
+    }
+}
+
+// Tell Loom that gameTest classes belong to the moogs_structures mod so Forge's
+// @EventBusSubscriber scanner picks them up during runGameTestServer.
+loom {
+    mods {
+        "moogs_structures" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.gameTest
         }
     }
 }
