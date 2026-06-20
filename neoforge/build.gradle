@@ -143,8 +143,6 @@ publishMods {
                 project(':fabric').publishMods.platforms.modrinth,
                 project(':neoforge').publishMods.platforms.curseforge,
                 project(':neoforge').publishMods.platforms.modrinth,
-                project(':forge').publishMods.platforms.curseforge,
-                project(':forge').publishMods.platforms.modrinth,
             )
         } else {
             setPlatforms()
