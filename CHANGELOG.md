@@ -24,6 +24,8 @@ Major feature release: a full structure-processor and pool-element toolkit, vers
 - Dependent mods (e.g. Moog's Nether Structures) failing to recognise this build as version 3.0.0.
 - Structures with enchanted armor on armor stands failing to load.
 - Pillar structures that place chains failing to generate (chains were renamed to iron chains in Minecraft 1.21.9).
+- `equip_armor_stand_processor` not equipping armor stands on MC 1.21.5+ (armor was written to the legacy `ArmorItems` array; now uses the `equipment` compound tag introduced in 1.21.5).
+- `equip_armor_stand_processor` skipping all armor stand entities on MC 1.21.5+ (entity-type check always evaluated to false because `CompoundTag.getString()` returns `Optional<String>` in 1.21.5+, never equal to a string literal).
 
 ---
 
