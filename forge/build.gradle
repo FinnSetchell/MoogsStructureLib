@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "me.modmuss50.mod-publish-plugin" version "0.8.4"
 }
@@ -154,7 +154,11 @@ publishing {
 
 // Publish to CurseForge and Modrinth
 File changeLog = rootProject.file("CHANGELOG.md")
-String changelogtext = changeLog.exists() ? changeLog.text : ""
+String changelogtext = ""
+if (changeLog.exists()) {
+    def sections = changeLog.text.split(/(?m)^## /)
+    changelogtext = sections.length > 1 ? "## " + sections[1].trim() : changeLog.text
+}
 
 def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
 def discordWebhookEnvVar = isAlpha ? 'DISCORD_ALPHA_WEBHOOK_URL' : 'DISCORD_WEBHOOK'
