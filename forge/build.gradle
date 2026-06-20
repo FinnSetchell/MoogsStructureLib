@@ -8,6 +8,50 @@ architectury {
     forge()
 }
 
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
+task gameTestJar(type: Jar) {
+    archiveClassifier = 'gametest'
+    from sourceSets.gameTest.output
+}
+
+// Same Architectury pack_format:4 incompatibility as in 1.20.5-1.20.6 -- see that
+// branch's build.gradle for the full explanation. Workaround: copy NBT files to
+// run/world/generated so StructureTemplateManager.detect() finds them directly.
+task copyGameTestStructures(type: Copy) {
+    from sourceSets.gameTest.resources.srcDirs
+    include "data/*/structure/*.nbt"
+    into layout.projectDirectory.dir("run/world/generated")
+    eachFile { fileCopyDetails ->
+        def path = fileCopyDetails.relativePath.segments
+        // Rewrite: data/{ns}/structure/{name}.nbt -> {ns}/structures/{name}.nbt
+        def ns = path[1]
+        def name = path[3]
+        fileCopyDetails.relativePath = new RelativePath(true, ns, "structures", name)
+    }
+    includeEmptyDirs = false
+}
+afterEvaluate {
+    tasks.named("runGameTestServer") { dependsOn copyGameTestStructures }
+}
+
+loom {
+    runs {
+        gameTestServer {
+            server()
+            name "Forge Game Test Server"
+            property "forge.enabledGameTestNamespaces", "moogs_structures"
+            property "forge.enableGameTest", "true"
+            property "forge.gameTestServer", "true"
+        }
+    }
+}
+
 // MC range goes in archivesBaseName so the jar filename keeps it; the version field
 // (consumed by mods.toml) stays a plain SemVer "3.0.0" - see root build.gradle.
 // When alphaBuild=true the filename also picks up an -alpha suffix so testers can
@@ -40,6 +84,8 @@ dependencies {
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
+
+    developmentForge files(gameTestJar)
 }
 
 processResources {
