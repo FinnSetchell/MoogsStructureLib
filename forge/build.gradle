@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id 'multiloader-loader'
     id 'net.minecraftforge.gradle' version '[6.0.46,6.2)'
     id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
@@ -106,7 +106,8 @@ publishing {
 }
 
 def changelogContent = rootProject.file('CHANGELOG.md').exists() ? rootProject.file('CHANGELOG.md').getText('UTF-8') : ''
-def changelogMatcher = ~/(?s)## \[${version}\] - \d{4}-\d{2}-\d{2}\r?\n(.*?)(?=\r?\n---|\r?\n## \[|\z)/
+def changelogVersion = version.toString().replaceAll(/-alpha\\.\\d+\$/, '')
+def changelogMatcher = ~/(?s)## \[${changelogVersion}\] - \d{4}-\d{2}-\d{2}\r?\n(.*?)(?=\r?\n---|\r?\n## \[|\z)/
 def changelogMatch = (changelogContent =~ changelogMatcher)
 def changelogLatest = changelogMatch.find() ? changelogMatch.group(1).trim() : ''
 
