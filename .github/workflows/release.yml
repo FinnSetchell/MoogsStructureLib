@@ -39,13 +39,14 @@ jobs:
             -H "Authorization: ${MODRINTH_API_KEY}" \
             -H "User-Agent: FinnSetchell/MoogsStructureLib" \
             "https://api.modrinth.com/v2/project/1oUDhxuy/version")
-          EXISTS=$(echo "$RESULT" | jq --arg ver "$VERSION" '[.[] | select(.version_number == $ver and .version_type == "release")] | length')
+          MC_VER=$(grep -E '^minecraft_version=' gradle.properties | cut -d= -f2 | tr -d ' \r\n')
+          EXISTS=$(echo "$RESULT" | jq --arg ver "$VERSION" --arg mc "$MC_VER" '[.[] | select(.version_number == $ver and .version_type == "release" and (.game_versions | map(. == $mc) | any))] | length')
           if [ "${EXISTS:-0}" -gt "0" ]; then
             echo "already_published=true" >> "$GITHUB_OUTPUT"
-            echo "Version ${VERSION} already on Modrinth — skipping upload"
+            echo "Version ${VERSION} already on Modrinth â€” skipping upload"
           else
             echo "already_published=false" >> "$GITHUB_OUTPUT"
-            echo "Version ${VERSION} not on Modrinth yet — proceeding"
+            echo "Version ${VERSION} not on Modrinth yet â€” proceeding"
           fi
 
       - name: Publish to CurseForge, Modrinth, Discord & GitHub
