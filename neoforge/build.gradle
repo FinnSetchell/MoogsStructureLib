@@ -49,6 +49,18 @@ loom {
             property "neoforge.enabledGameTestNamespaces", "moogs_structures"
             property "neoforge.enableGameTest", "true"
             property "neoforge.gameTestServer", "true"
+            source sourceSets.gameTest
+        }
+    }
+}
+
+// Tell Loom that gameTest classes belong to the moogs_structures mod so NeoForge's
+// @EventBusSubscriber scanner picks them up during runGameTestServer.
+loom {
+    mods {
+        "moogs_structures" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.gameTest
         }
     }
 }

@@ -15,6 +15,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
@@ -32,12 +33,22 @@ public class MoogsStructuresNeoforge {
         modEventBusTempHolder = null;
 
         modEventBus.addListener(MoogsStructuresNeoforge::onSetup);
+        modEventBus.addListener(MoogsStructuresNeoforge::registerGameTests);
 
         IEventBus eventBus = NeoForge.EVENT_BUS;
         eventBus.addListener(MoogsStructuresNeoforge::onServerStarting);
         eventBus.addListener(MoogsStructuresNeoforge::onServerStopping);
         eventBus.addListener(MoogsStructuresNeoforge::onAddReloadListeners);
         eventBus.addListener(MoogsStructuresNeoforge::onRegisterCommands);
+    }
+
+    // Register game tests when the test class is on the classpath (dev/gametest only).
+    // Class.forName silently fails in production where the test class is absent.
+    private static void registerGameTests(RegisterGameTestsEvent event) {
+        try {
+            event.register(Class.forName("com.finndog.moogs_structures.gametest.EquipArmorStandProcessorTest"));
+        } catch (ClassNotFoundException ignored) {
+        }
     }
 
     private static void onSetup(FMLCommonSetupEvent event) {
