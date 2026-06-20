@@ -1,7 +1,5 @@
 # Changelog
 
----
-
 ## [3.0.0] - 2026-06-02
 
 Major feature release: a full structure-processor and pool-element toolkit, version-aware templates, terrain adaptation, and entity (armor stand) equipping.
@@ -22,41 +20,15 @@ Major feature release: a full structure-processor and pool-element toolkit, vers
 - **Basalt & delta suppression**: prevents basalt columns and basalt deltas from generating within structure piece bounds (structure tags `no_basalt`, `no_delta`).
 - **Debug command**: `/moogs_structures debug keepjigsaws on|off|status` keeps jigsaw blocks in placed structures so their name/target/pool can be inspected in-world.
 
----
-
-## [2.0.4] - 2026-04-17
-
 ### Fixed
-- fixed crash on launch caused by broken mixins in the published jar
+- Dependent mods (e.g. Moog's Nether Structures) failing to recognise this build as version 3.0.0.
+- Structures with enchanted armor on armor stands failing to load.
+- Pillar structures that place chains failing to generate (chains were renamed to iron chains in Minecraft 1.21.9).
+- `equip_armor_stand_processor` not equipping armor stands on MC 1.21.5+ (armor was written to the legacy `ArmorItems` array; now uses the `equipment` compound tag introduced in 1.21.5).
+- `equip_armor_stand_processor` skipping all armor stand entities on MC 1.21.5+ (entity-type check always evaluated to false because `CompoundTag.getString()` returns `Optional<String>` in 1.21.5+, never equal to a string literal).
 
 ---
 
-## [2.0.3] - 2026-04-16
-
-### Fixed
-- fixed mixin refmap not being bundled in the fabric jar, causing a crash on launch
-
----
-
-## [2.0.2] - 2026-04-14
-
-### Fixed
-- fixed structures sometimes always generating the same layout instead of varying
-- fixed structures occasionally spawning in or near water/lava when they shouldn't
-- improved spawn height accuracy, reducing structures floating or sinking into terrain
-- fixed a precision bug that could cause structures to clip into each other or fail to place
-- improved structure overlap detection to better prevent intersecting structures
-- optimized structure collision checks, improving world generation performance
-- fixed a potential crash with unrecognized structure connection types
-- reduced piece placement retry limit, improving generation speed
-
----
-
-## [2.0.1] - 2026-04-14
-
-### Changed
-- migrated build system from Architectury to Multiloader template
-- replaced `@ExpectPlatform` with ServiceLoader pattern for platform abstraction
-
-### Added
-- Forge 1.21.1 support
+## 2.0.1 (2026-04-13)
+- Updated to mc 26.1.2
+- Ported build system from Architectury to Jared's MultiLoader template
