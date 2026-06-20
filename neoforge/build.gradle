@@ -144,8 +144,6 @@ publishMods {
                 project(':neoforge').publishMods.platforms.curseforge,
                 project(':neoforge').publishMods.platforms.modrinth,
             )
-        } else {
-            setPlatforms()
         }
 
         content = changelog.map { text ->
