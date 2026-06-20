@@ -120,8 +120,6 @@ publishMods {
         // entry points.
         if (isAlpha) {
             setPlatformsAllFrom(project(':fabric'), project(':forge'), project(':neoforge'))
-        } else {
-            setPlatforms()
         }
 
         content = changelog.map { text ->
