@@ -47,7 +47,28 @@ jobs:
           IS_ALPHA=$(grep -E '^alphaBuild=' gradle.properties | cut -d= -f2 | tr -d ' \r\n' || true)
           echo "is_alpha=${IS_ALPHA:-false}" >> "$GITHUB_OUTPUT"
 
+      - name: Check if already published
+        id: check_release
+        shell: bash
+        env:
+          MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
+        run: |
+          VERSION=$(grep -E '^(version|mod_version)=' gradle.properties | head -1 | cut -d= -f2 | tr -d ' \r\n')
+          RESULT=$(curl -s \
+            -H "Authorization: ${MODRINTH_API_KEY}" \
+            -H "User-Agent: FinnSetchell/MoogsStructureLib" \
+            "https://api.modrinth.com/v2/project/1oUDhxuy/version")
+          EXISTS=$(echo "$RESULT" | jq --arg ver "$VERSION" '[.[] | select(.version_number == $ver)] | length')
+          if [ "${EXISTS:-0}" -gt "0" ]; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "Version ${VERSION} already on Modrinth — skipping upload"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+            echo "Version ${VERSION} not on Modrinth yet — proceeding"
+          fi
+
       - name: Publish to CurseForge, Modrinth & Discord
+        if: steps.check_release.outputs.already_published != 'true'
         # :neoforge:publishMods MUST run last. Its discord block calls
         # setPlatformsAllFrom(project(':fabric'), project(':forge')) so the
         # Discord embed can attach the fabric and forge upload URLs, which
