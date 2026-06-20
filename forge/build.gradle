@@ -218,8 +218,6 @@ publishMods {
         // entry points.
         if (isAlpha) {
             setPlatformsAllFrom(project(':fabric'), project(':forge'))
-        } else {
-            setPlatforms()
         }
 
         content = changelog.map { text ->
