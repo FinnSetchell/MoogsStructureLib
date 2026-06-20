@@ -23,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(JigsawReplacementProcessor.class)
 public class JigsawReplacementProcessorMixin {
 
-    @Inject(method = "processBlock", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "processBlock", at = @At("HEAD"), cancellable = true, remap = false)
     private void moogs_structures_keepJigsawBlocks(LevelReader level,
                                                    BlockPos offset,
                                                    BlockPos pos,

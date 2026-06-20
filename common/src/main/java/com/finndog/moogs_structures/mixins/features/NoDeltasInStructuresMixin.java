@@ -16,7 +16,8 @@ public class NoDeltasInStructuresMixin {
     @Inject(
             method = "place(Lnet/minecraft/world/level/levelgen/feature/FeaturePlaceContext;)Z",
             at = @At(value = "HEAD"),
-            cancellable = true
+            cancellable = true,
+            remap = false
     )
     private void moogs_structures_noDeltasInStructures(FeaturePlaceContext<DeltaFeatureConfiguration> context, CallbackInfoReturnable<Boolean> cir) {
         if (!(context.level() instanceof WorldGenRegion worldGenRegion)) return;

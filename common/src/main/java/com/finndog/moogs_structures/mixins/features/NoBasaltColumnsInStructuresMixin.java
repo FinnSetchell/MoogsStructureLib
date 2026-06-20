@@ -16,7 +16,8 @@ public class NoBasaltColumnsInStructuresMixin {
     @Inject(
             method = "canPlaceAt(Lnet/minecraft/world/level/LevelAccessor;ILnet/minecraft/core/BlockPos$MutableBlockPos;)Z",
             at = @At(value = "HEAD"),
-            cancellable = true
+            cancellable = true,
+            remap = false
     )
     private static void moogs_structures_noBasaltColumnsInStructures(LevelAccessor levelAccessor, int seaLevel, BlockPos.MutableBlockPos mutableBlockPos, CallbackInfoReturnable<Boolean> cir) {
         if (!(levelAccessor instanceof WorldGenRegion worldGenRegion)) return;

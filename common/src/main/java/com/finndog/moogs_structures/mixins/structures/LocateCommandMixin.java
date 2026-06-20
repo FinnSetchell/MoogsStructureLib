@@ -39,7 +39,8 @@ public class LocateCommandMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/ChunkGenerator;findNearestMapStructure(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/HolderSet;Lnet/minecraft/core/BlockPos;IZ)Lcom/mojang/datafixers/util/Pair;", ordinal = 0),
             locals = LocalCapture.CAPTURE_FAILSOFT,
             cancellable = true,
-            require = 0
+            require = 0,
+            remap = false
     )
     private static void moogs_structures_increaseLocateRadius(CommandSourceStack commandSourceStack,
                                                                   ResourceOrTagKeyArgument.Result<Structure> result,

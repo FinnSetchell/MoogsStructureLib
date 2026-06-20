@@ -27,13 +27,13 @@ public class BeardifierMixin implements EnhancedBeardifierData {
     @Unique
     private ObjectListIterator<EnhancedBeardifierRigid> moogs_structures_enhancedPieceIterator;
 
-    @Inject(method = "forStructuresInChunk", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "forStructuresInChunk", at = @At("RETURN"), cancellable = true, remap = false)
     private static void moogs_structures_supportEnhancedTerrainAdaptations(StructureManager structureManager, ChunkPos chunkPos, CallbackInfoReturnable<Beardifier> cir) {
         Beardifier enhancedBeardifier = EnhancedBeardifierHelper.forStructuresInChunk(structureManager, chunkPos, cir.getReturnValue());
         cir.setReturnValue(enhancedBeardifier);
     }
 
-    @Inject(method = "compute", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "compute", at = @At("RETURN"), cancellable = true, remap = false)
     private void moogs_structures_calculateDensity(DensityFunction.FunctionContext ctx, CallbackInfoReturnable<Double> cir) {
         double density = cir.getReturnValue();
         double newDensity = EnhancedBeardifierHelper.computeDensity(ctx, density, this);
