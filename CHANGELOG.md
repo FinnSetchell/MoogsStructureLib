@@ -1,7 +1,5 @@
 # Changelog
 
----
-
 ## [3.0.0] - 2026-06-02
 
 Major feature release: a full structure-processor and pool-element toolkit, version-aware templates, terrain adaptation, and entity (armor stand) equipping.
@@ -22,15 +20,15 @@ Major feature release: a full structure-processor and pool-element toolkit, vers
 - **Basalt & delta suppression**: prevents basalt columns and basalt deltas from generating within structure piece bounds (structure tags `no_basalt`, `no_delta`).
 - **Debug command**: `/moogs_structures debug keepjigsaws on|off|status` keeps jigsaw blocks in placed structures so their name/target/pool can be inspected in-world.
 
+### Fixed
+- Dependent mods (e.g. Moog's Nether Structures) failing to recognise this build as version 3.0.0.
+- Structures with enchanted armor on armor stands failing to load.
+- Pillar structures that place chains failing to generate (chains were renamed to iron chains in Minecraft 1.21.9).
+- `equip_armor_stand_processor` not equipping armor stands on MC 1.21.5+ (armor was written to the legacy `ArmorItems` array; now uses the `equipment` compound tag introduced in 1.21.5).
+- `equip_armor_stand_processor` skipping all armor stand entities on MC 1.21.5+ (entity-type check always evaluated to false because `CompoundTag.getString()` returns `Optional<String>` in 1.21.5+, never equal to a string literal).
+
 ---
 
-## [2.0.0] - 2026-05-10
-
-### Added
-- Forge 1.21.4 support
-- Version-aware `SinglePoolElement`, letting structure packs pick the right NBT per Minecraft version
-- `/moogs_structures debug` command to toggle runtime diagnostics
-
-### Changed
-- Migrated build system from Architectury to MultiLoader (jaredlll08) template
-- Replaced `@ExpectPlatform` with `ServiceLoader` pattern for platform abstraction
+## 2.0.1 (2026-04-13)
+- Updated to mc 26.1.2
+- Ported build system from Architectury to Jared's MultiLoader template
