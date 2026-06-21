@@ -17,7 +17,6 @@ import net.minecraft.world.level.block.SpawnerBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.List;
@@ -28,7 +27,7 @@ import java.util.Optional;
  * Adapted from RepurposedStructures' SpawnerRandomizingProcessor, but takes the mob list
  * directly in the codec instead of depending on RS's datapack-driven MobSpawnerManager.
  */
-public class SpawnerRandomizingProcessor extends StructureProcessor {
+public class SpawnerRandomizingProcessor implements StructureProcessor {
 
     public record WeightedEntity(EntityType<?> entity, int weight, Optional<CompoundTag> nbt) {
         public static final Codec<WeightedEntity> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -38,7 +37,7 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
         ).apply(instance, WeightedEntity::new));
     }
 
-    public static final MapCodec<SpawnerRandomizingProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    public static final MapCodec<SpawnerRandomizingProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
             WeightedEntity.CODEC.listOf().fieldOf("weighted_entities").forGetter(p -> p.weightedEntities),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("delay").orElse(20).forGetter(p -> p.delay),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("max_nearby_entities").orElse(6).forGetter(p -> p.maxNearbyEntities),
@@ -75,20 +74,20 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
     }
 
     @Override
-    public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldView, BlockPos pos, BlockPos blockPos, StructureTemplate.StructureBlockInfo structureBlockInfoLocal, StructureTemplate.StructureBlockInfo structureBlockInfoWorld, StructurePlaceSettings structurePlacementData) {
-        if (structureBlockInfoWorld.state().getBlock() instanceof SpawnerBlock) {
-            BlockPos worldPos = structureBlockInfoWorld.pos();
-            RandomSource random = structurePlacementData.getRandom(structureBlockInfoWorld.pos());
+    public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldView, BlockPos targetPosition, BlockPos referencePos, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo processedBlockInfo, StructurePlaceSettings structurePlacementData) {
+        if (processedBlockInfo.state().getBlock() instanceof SpawnerBlock) {
+            BlockPos worldPos = processedBlockInfo.pos();
+            RandomSource random = structurePlacementData.getRandom(processedBlockInfo.pos());
             CompoundTag spawnerNBT = buildSpawnerNbt(random);
 
             if (spawnerNBT == null) {
                 return new StructureTemplate.StructureBlockInfo(worldPos, replacementState, null);
             }
             else {
-                return new StructureTemplate.StructureBlockInfo(worldPos, structureBlockInfoWorld.state(), spawnerNBT);
+                return new StructureTemplate.StructureBlockInfo(worldPos, processedBlockInfo.state(), spawnerNBT);
             }
         }
-        return structureBlockInfoWorld;
+        return processedBlockInfo;
     }
 
     private CompoundTag buildSpawnerNbt(RandomSource random) {
@@ -140,7 +139,7 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
     }
 
     @Override
-    protected StructureProcessorType<?> getType() {
-        return MoogsStructuresProcessors.SPAWNER_RANDOMIZING_PROCESSOR.get();
+    public MapCodec<SpawnerRandomizingProcessor> codec() {
+        return MAP_CODEC;
     }
 }

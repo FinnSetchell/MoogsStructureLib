@@ -12,7 +12,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.List;
@@ -60,7 +59,7 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
         ).apply(instance, ArmorSet::new));
     }
 
-    public static final MapCodec<EquipArmorStandProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    public static final MapCodec<EquipArmorStandProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
             Codec.mapPair(ArmorSet.CODEC.fieldOf("armor"), Codec.intRange(1, Integer.MAX_VALUE).fieldOf("weight"))
                     .codec().listOf().fieldOf("armor_sets").forGetter(p -> p.weightedSets)
     ).apply(instance, instance.stable(EquipArmorStandProcessor::new)));
@@ -105,7 +104,7 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
     }
 
     @Override
-    protected StructureProcessorType<?> getType() {
-        return MoogsStructuresProcessors.EQUIP_ARMOR_STAND_PROCESSOR.get();
+    public MapCodec<EquipArmorStandProcessor> codec() {
+        return MAP_CODEC;
     }
 }

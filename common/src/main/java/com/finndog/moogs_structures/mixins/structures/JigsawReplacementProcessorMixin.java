@@ -25,15 +25,15 @@ public class JigsawReplacementProcessorMixin {
 
     @Inject(method = "processBlock", at = @At("HEAD"), cancellable = true)
     private void moogs_structures_keepJigsawBlocks(LevelReader level,
-                                                   BlockPos offset,
-                                                   BlockPos pos,
-                                                   StructureTemplate.StructureBlockInfo blockInfo,
-                                                   StructureTemplate.StructureBlockInfo relativeBlockInfo,
+                                                   BlockPos targetPosition,
+                                                   BlockPos referencePos,
+                                                   BlockPos templateRelativePos,
+                                                   StructureTemplate.StructureBlockInfo processedBlockInfo,
                                                    StructurePlaceSettings settings,
                                                    CallbackInfoReturnable<StructureTemplate.StructureBlockInfo> cir) {
         if (DebugFlags.isKeepJigsawBlocks()) {
             // Return the block unchanged so the jigsaw block survives into the world.
-            cir.setReturnValue(relativeBlockInfo);
+            cir.setReturnValue(processedBlockInfo);
         }
     }
 }

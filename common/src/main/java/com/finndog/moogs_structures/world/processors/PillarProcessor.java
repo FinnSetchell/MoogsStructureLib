@@ -22,7 +22,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorList;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Map;
@@ -34,7 +33,7 @@ import java.util.stream.Collectors;
  * blocks (air, lava/water, plants, etc.) until it hits solid ground or bedrock.
  * Ported from RepurposedStructures' PillarProcessor (TelepathicGrunt) to MSL.
  */
-public class PillarProcessor extends StructureProcessor {
+public class PillarProcessor implements StructureProcessor {
     private static final Identifier EMPTY_RL = Identifier.fromNamespaceAndPath("minecraft", "empty");
 
     // Wrap vanilla BlockState codec so datapacks authored against legacy block names
@@ -43,7 +42,7 @@ public class PillarProcessor extends StructureProcessor {
     // the modern alias isn't registered on this MC version.
     private static final Codec<BlockState> BLOCK_STATE_CODEC = BlockAliasCompatCodec.wrap(BlockState.CODEC);
 
-    public static final MapCodec<PillarProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    public static final MapCodec<PillarProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
             Codec.mapPair(BLOCK_STATE_CODEC.fieldOf("trigger"), BLOCK_STATE_CODEC.fieldOf("replacement"))
                     .codec().listOf()
                     .xmap((list) -> list.stream().collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)),
@@ -84,11 +83,11 @@ public class PillarProcessor extends StructureProcessor {
     }
 
     @Override
-    public StructureTemplate.StructureBlockInfo processBlock(LevelReader levelReader, BlockPos templateOffset, BlockPos worldOffset, StructureTemplate.StructureBlockInfo structureBlockInfoLocal, StructureTemplate.StructureBlockInfo structureBlockInfoWorld, StructurePlaceSettings structurePlacementData) {
+    public StructureTemplate.StructureBlockInfo processBlock(LevelReader levelReader, BlockPos targetPosition, BlockPos referencePos, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo processedBlockInfo, StructurePlaceSettings structurePlacementData) {
 
-        BlockState blockState = structureBlockInfoWorld.state();
+        BlockState blockState = processedBlockInfo.state();
         if (pillarTriggerAndReplacementBlocks.containsKey(blockState)) {
-            BlockPos worldPos = structureBlockInfoWorld.pos();
+            BlockPos worldPos = processedBlockInfo.pos();
 
             BlockState replacementState = pillarTriggerAndReplacementBlocks.get(blockState);
             BlockState originalReplacementState = originalReplacedBlock.orElse(replacementState);
@@ -126,20 +125,20 @@ public class PillarProcessor extends StructureProcessor {
                 BlockState fillState = pillarRandomizer.isPresent()
                         ? pillarRandomizer.get().get(structurePlacementData.getRandom(currentPos), currentPos.getY())
                         : replacementState;
-                StructureTemplate.StructureBlockInfo newPillarState1 = new StructureTemplate.StructureBlockInfo(currentPos.subtract(worldPos).offset(templateOffset), fillState, null);
-                StructureTemplate.StructureBlockInfo newPillarState2 = new StructureTemplate.StructureBlockInfo(currentPos.immutable(), fillState, null);
+                BlockPos pillarTemplateRelativePos = currentPos.subtract(worldPos).offset(targetPosition);
+                StructureTemplate.StructureBlockInfo newPillarState = new StructureTemplate.StructureBlockInfo(currentPos.immutable(), fillState, null);
 
                 if(structureProcessorList != null) {
                     for(StructureProcessor processor : structureProcessorList.list()) {
-                        if(newPillarState2 == null) {
+                        if(newPillarState == null) {
                             break;
                         }
-                        newPillarState2 = processor.processBlock(levelReader, newPillarState1.pos(), newPillarState2.pos(), newPillarState1, newPillarState2, structurePlacementData);
+                        newPillarState = processor.processBlock(levelReader, targetPosition, referencePos, pillarTemplateRelativePos, newPillarState, structurePlacementData);
                     }
                 }
 
-                if(newPillarState2 != null) {
-                    levelReader.getChunk(currentPos).setBlockState(currentPos, newPillarState2.state(), Block.UPDATE_CLIENTS);
+                if(newPillarState != null) {
+                    levelReader.getChunk(currentPos).setBlockState(currentPos, newPillarState.state(), Block.UPDATE_CLIENTS);
                 }
 
                 currentPos.move(direction);
@@ -150,7 +149,7 @@ public class PillarProcessor extends StructureProcessor {
             return getReturnBlock(worldPos, originalReplacementState);
         }
 
-        return structureBlockInfoWorld;
+        return processedBlockInfo;
     }
 
     private static StructureTemplate.StructureBlockInfo getReturnBlock(BlockPos worldPos, BlockState originalReplacementState) {
@@ -159,7 +158,7 @@ public class PillarProcessor extends StructureProcessor {
     }
 
     @Override
-    protected StructureProcessorType<?> getType() {
-        return MoogsStructuresProcessors.PILLAR_PROCESSOR.get();
+    public MapCodec<PillarProcessor> codec() {
+        return MAP_CODEC;
     }
 }

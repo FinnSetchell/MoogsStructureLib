@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link StructureEntityProcessor} over a structure's entity list at placement time and
  * spawning the processed results. Ported/adapted from YUNG's API.
  */
-public abstract class StructureEntityProcessor extends StructureProcessor {
+public abstract class StructureEntityProcessor implements StructureProcessor {
 
     /**
      * Applies a processor to an entity in a structure component or jigsaw piece.

@@ -12,7 +12,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Optional;
@@ -23,12 +22,12 @@ import java.util.Optional;
  * {@code config.key_item} from this processor's fields, choosing the normal vs ominous variant
  * based on the existing blockstate's {@code ominous} property.
  */
-public class VaultRandomizingProcessor extends StructureProcessor {
+public class VaultRandomizingProcessor implements StructureProcessor {
 
     private static final Identifier DEFAULT_KEY = Identifier.parse("minecraft:trial_key");
     private static final Identifier DEFAULT_OMINOUS_KEY = Identifier.parse("minecraft:ominous_trial_key");
 
-    public static final MapCodec<VaultRandomizingProcessor> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final MapCodec<VaultRandomizingProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Identifier.CODEC.fieldOf("loot_table").forGetter(p -> p.lootTable),
             Identifier.CODEC.optionalFieldOf("ominous_loot_table").forGetter(p -> p.ominousLootTable),
             Identifier.CODEC.optionalFieldOf("key_item", DEFAULT_KEY).forGetter(p -> p.keyItem),
@@ -48,17 +47,17 @@ public class VaultRandomizingProcessor extends StructureProcessor {
     }
 
     @Override
-    public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldView, BlockPos pos, BlockPos blockPos, StructureTemplate.StructureBlockInfo structureBlockInfoLocal, StructureTemplate.StructureBlockInfo structureBlockInfoWorld, StructurePlaceSettings structurePlacementData) {
-        BlockState state = structureBlockInfoWorld.state();
+    public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldView, BlockPos targetPosition, BlockPos referencePos, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo processedBlockInfo, StructurePlaceSettings structurePlacementData) {
+        BlockState state = processedBlockInfo.state();
         if (!(state.getBlock() instanceof VaultBlock)) {
-            return structureBlockInfoWorld;
+            return processedBlockInfo;
         }
 
         boolean ominous = state.getValue(BlockStateProperties.OMINOUS);
         Identifier chosenLoot = ominous ? ominousLootTable.orElse(lootTable) : lootTable;
         Identifier chosenKey = ominous ? ominousKeyItem : keyItem;
 
-        CompoundTag existing = structureBlockInfoWorld.nbt();
+        CompoundTag existing = processedBlockInfo.nbt();
         CompoundTag newNbt = existing != null ? existing.copy() : new CompoundTag();
 
         newNbt.remove("server_data");
@@ -74,11 +73,11 @@ public class VaultRandomizingProcessor extends StructureProcessor {
 
         newNbt.put("config", config);
 
-        return new StructureTemplate.StructureBlockInfo(structureBlockInfoWorld.pos(), state, newNbt);
+        return new StructureTemplate.StructureBlockInfo(processedBlockInfo.pos(), state, newNbt);
     }
 
     @Override
-    protected StructureProcessorType<?> getType() {
-        return MoogsStructuresProcessors.VAULT_RANDOMIZING_PROCESSOR.get();
+    public MapCodec<VaultRandomizingProcessor> codec() {
+        return MAP_CODEC;
     }
 }

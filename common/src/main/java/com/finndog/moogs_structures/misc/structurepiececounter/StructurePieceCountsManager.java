@@ -6,7 +6,6 @@ import com.google.gson.reflect.TypeToken;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.Dynamic;
-import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -62,7 +61,6 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
         StructurePieceCountsAdditionsMerger.performCountsAdditionsDetectionAndMerger(resourceManager);
     }
 
-    @MethodsReturnNonnullByDefault
     private List<StructurePieceCountsObj> getStructurePieceCountsObjs(Identifier fileIdentifier, JsonElement jsonElement) throws Exception {
         List<StructurePieceCountsObj> piecesSpawnCounts =
                 GSON.fromJson(jsonElement.getAsJsonObject().get("pieces_spawn_counts"),
@@ -117,7 +115,6 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
         return requirePiecesMap;
     }
 
-    @MethodsReturnNonnullByDefault
     public Map<Identifier, Integer> getMaximumCountForPieces(Identifier structureRL) {
         if (cachedMaxCountPiecesMap.containsKey(structureRL)) return cachedMaxCountPiecesMap.get(structureRL);
 

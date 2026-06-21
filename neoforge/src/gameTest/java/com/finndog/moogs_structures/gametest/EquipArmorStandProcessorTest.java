@@ -59,7 +59,7 @@ public class EquipArmorStandProcessorTest {
 	}
 
 	private static void equipmentKeyIsWritten(GameTestHelper helper) {
-		EquipArmorStandProcessor processor = EquipArmorStandProcessor.CODEC
+		EquipArmorStandProcessor processor = EquipArmorStandProcessor.MAP_CODEC
 			.codec()
 			.parse(JsonOps.INSTANCE, JsonParser.parseString(PROCESSOR_JSON))
 			.result()

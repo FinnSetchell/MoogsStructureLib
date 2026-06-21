@@ -10,7 +10,6 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.TrialSpawnerBlock;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Optional;
@@ -21,9 +20,9 @@ import java.util.Optional;
  * as Identifier strings. On 26.1+ vanilla resolves these from its own
  * {@code minecraft:trial_spawner} registry at block-entity load time — no inline NBT needed.
  */
-public class TrialSpawnerRandomizingProcessor extends StructureProcessor {
+public class TrialSpawnerRandomizingProcessor implements StructureProcessor {
 
-    public static final MapCodec<TrialSpawnerRandomizingProcessor> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final MapCodec<TrialSpawnerRandomizingProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Identifier.CODEC.fieldOf("normal_config").forGetter(p -> p.normalConfig),
             Identifier.CODEC.optionalFieldOf("ominous_config").forGetter(p -> p.ominousConfig)
     ).apply(instance, instance.stable(TrialSpawnerRandomizingProcessor::new)));
@@ -37,12 +36,12 @@ public class TrialSpawnerRandomizingProcessor extends StructureProcessor {
     }
 
     @Override
-    public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldView, BlockPos pos, BlockPos blockPos, StructureTemplate.StructureBlockInfo structureBlockInfoLocal, StructureTemplate.StructureBlockInfo structureBlockInfoWorld, StructurePlaceSettings structurePlacementData) {
-        if (!(structureBlockInfoWorld.state().getBlock() instanceof TrialSpawnerBlock)) {
-            return structureBlockInfoWorld;
+    public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldView, BlockPos targetPosition, BlockPos referencePos, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo processedBlockInfo, StructurePlaceSettings structurePlacementData) {
+        if (!(processedBlockInfo.state().getBlock() instanceof TrialSpawnerBlock)) {
+            return processedBlockInfo;
         }
 
-        CompoundTag existing = structureBlockInfoWorld.nbt();
+        CompoundTag existing = processedBlockInfo.nbt();
         CompoundTag newNbt = existing != null ? existing.copy() : new CompoundTag();
 
         newNbt.remove("server_data");
@@ -57,11 +56,11 @@ public class TrialSpawnerRandomizingProcessor extends StructureProcessor {
             newNbt.putString("ominous_config", ominousConfig.get().toString());
         }
 
-        return new StructureTemplate.StructureBlockInfo(structureBlockInfoWorld.pos(), structureBlockInfoWorld.state(), newNbt);
+        return new StructureTemplate.StructureBlockInfo(processedBlockInfo.pos(), processedBlockInfo.state(), newNbt);
     }
 
     @Override
-    protected StructureProcessorType<?> getType() {
-        return MoogsStructuresProcessors.TRIAL_SPAWNER_RANDOMIZING_PROCESSOR.get();
+    public MapCodec<TrialSpawnerRandomizingProcessor> codec() {
+        return MAP_CODEC;
     }
 }
