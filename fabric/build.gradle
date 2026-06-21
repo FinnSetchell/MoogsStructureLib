@@ -72,7 +72,7 @@ publishMods {
     github {
         accessToken = providers.environmentVariable("GITHUB_TOKEN")
         repository = "FinnSetchell/MoogsStructureLib"
-        commitish = "26.1.0-26.1.2"
+        commitish = "26.2.0"
         tagName = providers.environmentVariable("GITHUB_REF_NAME").orElse("${minecraft_version}-${project.version}")
         displayName = "Moog's Structure Lib ${project.version} [FABRIC]"
     }
@@ -80,7 +80,7 @@ publishMods {
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
         projectId = "1oUDhxuy"
-        minecraftVersions.addAll("26.1", "26.1.1", "26.1.2")
+        minecraftVersions.addAll("26.2")
     }
 
     curseforge {
@@ -88,6 +88,6 @@ publishMods {
         projectId = "1337167"
         projectSlug = "moogs-structure-lib"
         serverRequired = true
-        minecraftVersions.addAll("26.1", "26.1.1", "26.1.2")
+        minecraftVersions.addAll("26.2")
     }
 }

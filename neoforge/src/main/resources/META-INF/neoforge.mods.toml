@@ -26,6 +26,6 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 [[dependencies.moogs_structures]]
     modId="minecraft"
     mandatory = true
-    versionRange="[26.1.0,26.1.2]"
+    versionRange="[26.2,26.2]"
     ordering = "NONE"
     side = "BOTH"
