@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.0.0] - 2026-06-21 — MC 26.2
+
+### Changed
+- ported to mc 26.2 (chaos cubed). no api changes.
+- vulkan renderer backend (experimental, opt-in via game settings): msl has no rendering code; confirmed no impact on structure or processor behaviour.
+
 ## [3.0.0] - 2026-06-20
 
 ### Added
