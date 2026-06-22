@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.0.1] - 2026-06-22
+
+### Fixed
+- mixin compatibility level bumped to java 25 on fabric and neoforge configs (was java 21), matching the mc 26.2 class version. previously the neoforge `StructurePoolMixin` and fabric `EntityProcessorMixin` were silently skipped at load.
+
 ## [3.0.0] - 2026-06-21 — MC 26.2
 
 ### Changed
