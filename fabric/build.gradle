@@ -4,6 +4,11 @@ plugins {
     id 'me.modmuss50.mod-publish-plugin'
 }
 
+// fabric's github { } block attaches the neoforge jar via additionalFiles,
+// so :neoforge must be configured before this script evaluates `tasks.named('jar')`
+// on it.
+evaluationDependsOn(':neoforge')
+
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
@@ -69,12 +74,18 @@ publishMods {
 
     displayName = "Moog's Structure Lib ${project.version} [FABRIC]"
 
+    // Fabric owns the unified GitHub release for the tag and attaches the
+    // neoforge jar via additionalFiles. Neoforge's publishMods deliberately
+    // omits a github { } block so both loaders share one release at the same
+    // tag (the GitHub Releases API rejects a second create against an existing
+    // tag, which previously broke :neoforge:publishGithub).
     github {
         accessToken = providers.environmentVariable("GITHUB_TOKEN")
         repository = "FinnSetchell/MoogsStructureLib"
         commitish = "26.1.0-26.1.2"
         tagName = providers.environmentVariable("GITHUB_REF_NAME").orElse("${minecraft_version}-${project.version}")
-        displayName = "Moog's Structure Lib ${project.version} [FABRIC]"
+        displayName = "Moog's Structure Lib ${project.version}"
+        additionalFiles.from(project(':neoforge').tasks.named('jar').flatMap { it.archiveFile })
     }
 
     modrinth {

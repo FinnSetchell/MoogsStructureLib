@@ -91,13 +91,10 @@ publishMods {
     maxRetries = 3
     dryRun = false
 
-    github {
-        accessToken = providers.environmentVariable("GITHUB_TOKEN")
-        repository = "FinnSetchell/MoogsStructureLib"
-        commitish = "26.1.0-26.1.2"
-        tagName = providers.environmentVariable("GITHUB_REF_NAME").orElse("${minecraft_version}-${project.version}")
-        displayName = "Moog's Structure Lib ${project.version} [NEOFORGE]"
-    }
+    // No github { } block here on purpose: fabric/build.gradle owns the unified
+    // GitHub release and attaches this jar via additionalFiles. Two github
+    // blocks on the same tag race each other and the second one 422s on
+    // already_exists.
 
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_API_KEY")
