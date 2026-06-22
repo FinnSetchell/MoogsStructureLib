@@ -34,6 +34,7 @@ def main():
     avatar_url   = props.get("discord_avatar_url", "")
     color_hex    = props.get("discordEmbedColor", "#39313f").lstrip("#")
     color        = int(color_hex, 16)
+    loaders      = props.get("publish_loaders", "Fabric, NeoForge")
 
     cf_slug = "moogs-structure-lib"
     mr_slug = "moogs-structure-lib"
@@ -48,7 +49,7 @@ def main():
     description = (
         f"## {header}\n\n"
         f"**{mod_name} {version}-{mc_version}**\n"
-        f"Versions - {mc_range} | Fabric, NeoForge\n\n"
+        f"Versions - {mc_range} | {loaders}\n\n"
         f"### \U0001f4dd **Changelog:**\n{changelog}\n\n"
         f"<:curseforge:1132291568305459250> [CurseForge](https://www.curseforge.com/minecraft/mc-mods/{cf_slug}/files) "
         f"| <:modrinth:1132291566019563550> [Modrinth](https://modrinth.com/mod/{mr_slug}/versions)"
