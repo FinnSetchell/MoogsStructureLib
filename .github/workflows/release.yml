@@ -25,6 +25,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
       - name: Build
         run: ./gradlew build
 
@@ -68,18 +73,16 @@ jobs:
             echo "Version ${VERSION} not on Modrinth yet â€” proceeding"
           fi
 
-      - name: Publish to CurseForge, Modrinth & Discord
+      - name: Publish to CurseForge & Modrinth
         if: steps.check_release.outputs.already_published != 'true'
-        # :neoforge:publishMods MUST run last. Its discord block calls
-        # setPlatformsAllFrom(project(':fabric'), project(':forge')) so the
-        # Discord embed can attach the fabric and forge upload URLs, which
-        # only exist once those tasks have finished.
+        # Discord is posted separately by .github/scripts/post_discord.py after
+        # the github release is created. The discord { } block / announceDiscord
+        # task were removed from neoforge/build.gradle, so the plugin no longer
+        # creates publishDiscord or announceDiscord tasks here.
         run: ./gradlew :fabric:publishMods :forge:publishMods :neoforge:publishMods
         env:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_ALPHA_WEBHOOK_URL: ${{ secrets.DISCORD_ALPHA_WEBHOOK_URL }}
 
       - name: Build release title and body
         id: release_meta
@@ -115,3 +118,13 @@ jobs:
             !forge/build/libs/*-sources.jar
             !forge/build/libs/*-slim.jar
           fail_on_unmatched_files: false
+
+      - name: Post Discord Announcement
+        if: steps.check_release.outputs.already_published != 'true'
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_ALPHA_WEBHOOK_URL: ${{ secrets.DISCORD_ALPHA_WEBHOOK_URL }}
+          IS_ALPHA: ${{ steps.alpha.outputs.is_alpha }}
+          CHANGELOG_BODY: ${{ steps.changelog.outputs.body }}
+        run: python3 .github/scripts/post_discord.py
