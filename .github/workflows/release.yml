@@ -25,8 +25,33 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
       - name: Build
         run: ./gradlew build
+
+      - name: Extract Changelog
+        id: changelog
+        shell: bash
+        run: |
+          VERSION=$(grep -E '^(version|mod_version)=' gradle.properties | head -1 | cut -d= -f2 | tr -d ' \r\n')
+          BODY=$(python3 -c "
+          import re, sys
+          content = open('CHANGELOG.md', encoding='utf-8').read()
+          m = re.search(r'## \[' + re.escape(sys.argv[1]) + r'\] - \d{4}-\d{2}-\d{2}\r?\n(.*?)(?=\r?\n---|## \[|\Z)', content, re.DOTALL)
+          print(m.group(1).strip() if m else '')
+          " "$VERSION")
+          printf "body<<DELIMITER\n%s\nDELIMITER\n" "$BODY" >> "$GITHUB_OUTPUT"
+
+      - name: Read alphaBuild flag
+        id: alpha
+        shell: bash
+        run: |
+          IS_ALPHA=$(grep -E '^alphaBuild=' gradle.properties | cut -d= -f2 | tr -d ' \r\n' || true)
+          echo "is_alpha=${IS_ALPHA:-false}" >> "$GITHUB_OUTPUT"
 
       - name: Check if already published
         id: check_release
@@ -43,26 +68,31 @@ jobs:
           EXISTS=$(echo "$RESULT" | jq --arg ver "$VERSION" --arg mc "$MC_VER" '[.[] | select(.version_number == $ver and .version_type == "release" and (.game_versions | map(. == $mc) | any))] | length')
           if [ "${EXISTS:-0}" -gt "0" ]; then
             echo "already_published=true" >> "$GITHUB_OUTPUT"
-            echo "Version ${VERSION} already on Modrinth â€” skipping upload"
+            echo "Version ${VERSION} already on Modrinth - skipping upload"
           else
             echo "already_published=false" >> "$GITHUB_OUTPUT"
-            echo "Version ${VERSION} not on Modrinth yet â€” proceeding"
+            echo "Version ${VERSION} not on Modrinth yet - proceeding"
           fi
 
-      - name: Publish to CurseForge, Modrinth, Discord & GitHub
+      - name: Publish to CurseForge, Modrinth & GitHub
         if: steps.check_release.outputs.already_published != 'true'
-        # :neoforge:publishMods MUST run last. Its discord block calls
-        # setPlatformsAllFrom(project(':fabric'), project(':neoforge')) so the
-        # Discord embed can attach the fabric upload URLs, which only exist once
-        # :fabric:publishMods has finished. The plugin's own github { } block
-        # creates the GitHub release (no softprops/action-gh-release), and the
-        # discord { } block now lives only in :neoforge so there is exactly one
-        # combined announcement + banner message pair per release.
+        # Discord is posted separately by .github/scripts/post_discord.py after
+        # publishMods finishes. The discord { } block / announceDiscord task
+        # were removed from neoforge/build.gradle, so the plugin no longer
+        # creates publishDiscord or announceDiscord tasks here.
         run: ./gradlew :fabric:publishMods :neoforge:publishMods
         env:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_ALPHA_WEBHOOK_URL: ${{ secrets.DISCORD_ALPHA_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      - name: Post Discord Announcement
+        if: steps.check_release.outputs.already_published != 'true'
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_ALPHA_WEBHOOK_URL: ${{ secrets.DISCORD_ALPHA_WEBHOOK_URL }}
+          IS_ALPHA: ${{ steps.alpha.outputs.is_alpha }}
+          CHANGELOG_BODY: ${{ steps.changelog.outputs.body }}
+        run: python3 .github/scripts/post_discord.py
