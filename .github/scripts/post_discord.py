@@ -78,10 +78,15 @@ def main():
         payload["allowed_mentions"] = {"parse": [], "roles": [role_id]}
 
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    # Discord's Cloudflare layer 403s the default `Python-urllib/x.y` User-Agent.
+    # Discord's docs ask for "BotName (URL, version)" format; satisfying both.
     req = urllib.request.Request(
         webhook,
         data=data,
-        headers={"Content-Type": "application/json; charset=utf-8"},
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "User-Agent": f"MoogsStructureLib-Releases (https://github.com/FinnSetchell/MoogsStructureLib, {version})",
+        },
         method="POST",
     )
     with urllib.request.urlopen(req) as resp:
