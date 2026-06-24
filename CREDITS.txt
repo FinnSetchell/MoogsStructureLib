@@ -14,3 +14,27 @@ Links:
 Tutorial Mod: https://github.com/TelepathicGrunt/StructureTutorialMod
 RS: https://github.com/TelepathicGrunt/RepurposedStructures/tree/1.20-Arch
 RS License: https://github.com/TelepathicGrunt/RepurposedStructures/blob/1.20-Arch/LICENSE
+
+YungNickYoung (YUNG's API):
+A big thanks to YungNickYoung for YUNG's API, from which this mod ports and adapts
+several worldgen systems.
+
+Ported / adapted from YUNG's API (LGPL-3.0):
+- Enhanced terrain adaptation (beardifier): EnhancedTerrainAdaptation,
+  EnhancedBeardifierHelper, BeardifierMixin
+- Entity processing framework: StructureEntityProcessor, StructureProcessingContext,
+  EntityProcessorMixin
+- BlockStateRandomizer (inspired by YUNG's BlockStateRandomizer)
+- Feature-cancelling mixin helpers: MixinUtils
+- PieceLimitedJigsawManager (piece count limiting jigsaw manager)
+
+Changes:
+Most changes are noted at the top of each affected file. In general the ports are
+reduced/trimmed to a self-contained MSL form. For example, the aquifer-override and
+per-pool-element-override features of the original terrain adaptation are intentionally
+omitted.
+
+Links:
+YUNG's API: https://github.com/YUNG-GANG/YUNGs-API
+YUNG's API License: https://github.com/YUNG-GANG/YUNGs-API/blob/main/LICENSE
+PieceLimitedJigsawManager source: https://github.com/yungnickyoung/YUNGs-Better-Strongholds/blob/fabric-1.16/src/main/java/com/yungnickyoung/minecraft/betterstrongholds/world/jigsaw/JigsawManager.java
