@@ -7,9 +7,9 @@ import it.unimi.dsi.fastutil.objects.ObjectListIterator;
  * (kernel-based) piece and junction iterators.
  */
 public interface EnhancedBeardifierData {
-    ObjectListIterator<EnhancedBeardifierRigid> getEnhancedPieceIterator();
-    void setEnhancedPieceIterator(ObjectListIterator<EnhancedBeardifierRigid> enhancedPieceIterator);
+    ObjectListIterator<EnhancedBeardifierRigid> moogs_structures_getEnhancedPieceIterator();
+    void moogs_structures_setEnhancedPieceIterator(ObjectListIterator<EnhancedBeardifierRigid> enhancedPieceIterator);
 
-    ObjectListIterator<EnhancedJigsawJunction> getEnhancedJunctionIterator();
-    void setEnhancedJunctionIterator(ObjectListIterator<EnhancedJigsawJunction> enhancedJunctionIterator);
+    ObjectListIterator<EnhancedJigsawJunction> moogs_structures_getEnhancedJunctionIterator();
+    void moogs_structures_setEnhancedJunctionIterator(ObjectListIterator<EnhancedJigsawJunction> enhancedJunctionIterator);
 }
