@@ -42,25 +42,25 @@ public class BeardifierMixin implements EnhancedBeardifierData {
 
     @Unique
     @Override
-    public ObjectListIterator<EnhancedBeardifierRigid> getEnhancedPieceIterator() {
+    public ObjectListIterator<EnhancedBeardifierRigid> moogs_structures_getEnhancedPieceIterator() {
         return this.moogs_structures_enhancedPieceIterator;
     }
 
     @Unique
     @Override
-    public void setEnhancedPieceIterator(ObjectListIterator<EnhancedBeardifierRigid> enhancedPieceIterator) {
+    public void moogs_structures_setEnhancedPieceIterator(ObjectListIterator<EnhancedBeardifierRigid> enhancedPieceIterator) {
         this.moogs_structures_enhancedPieceIterator = enhancedPieceIterator;
     }
 
     @Unique
     @Override
-    public ObjectListIterator<EnhancedJigsawJunction> getEnhancedJunctionIterator() {
+    public ObjectListIterator<EnhancedJigsawJunction> moogs_structures_getEnhancedJunctionIterator() {
         return this.moogs_structures_enhancedJunctionIterator;
     }
 
     @Unique
     @Override
-    public void setEnhancedJunctionIterator(ObjectListIterator<EnhancedJigsawJunction> enhancedJunctionIterator) {
+    public void moogs_structures_setEnhancedJunctionIterator(ObjectListIterator<EnhancedJigsawJunction> enhancedJunctionIterator) {
         this.moogs_structures_enhancedJunctionIterator = enhancedJunctionIterator;
     }
 }
