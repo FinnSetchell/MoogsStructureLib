@@ -124,8 +124,8 @@ public class EnhancedBeardifierHelper {
                 ((BeardifierAccessor) original).getJunctions(),
                 affectedBox);
         EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
-        enhancedBeardifier.setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
-        enhancedBeardifier.setEnhancedJunctionIterator(enhancedJunctionList.iterator());
+        enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
+        enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
         return newBeardifier;
     }
 
@@ -155,8 +155,8 @@ public class EnhancedBeardifierHelper {
         int y = ctx.blockY();
         int z = ctx.blockZ();
 
-        while (data.getEnhancedPieceIterator() != null && data.getEnhancedPieceIterator().hasNext()) {
-            EnhancedBeardifierRigid rigid = data.getEnhancedPieceIterator().next();
+        while (data.moogs_structures_getEnhancedPieceIterator() != null && data.moogs_structures_getEnhancedPieceIterator().hasNext()) {
+            EnhancedBeardifierRigid rigid = data.moogs_structures_getEnhancedPieceIterator().next();
             BoundingBox originalBox = rigid.pieceBoundingBox();
             BoundingBox pieceBoundingBox = originalBox;
             EnhancedTerrainAdaptation adaptation = rigid.pieceTerrainAdaptation();
@@ -211,10 +211,10 @@ public class EnhancedBeardifierHelper {
                     xDistanceToBoundingBox, yDistanceToBoundingBox, zDistanceToBoundingBox, yDistanceToPieceBottom) * 0.8D;
             density += densityFactor;
         }
-        data.getEnhancedPieceIterator().back(Integer.MAX_VALUE);
+        data.moogs_structures_getEnhancedPieceIterator().back(Integer.MAX_VALUE);
 
-        while (data.getEnhancedJunctionIterator() != null && data.getEnhancedJunctionIterator().hasNext()) {
-            EnhancedJigsawJunction enhancedJigsawJunction = data.getEnhancedJunctionIterator().next();
+        while (data.moogs_structures_getEnhancedJunctionIterator() != null && data.moogs_structures_getEnhancedJunctionIterator().hasNext()) {
+            EnhancedJigsawJunction enhancedJigsawJunction = data.moogs_structures_getEnhancedJunctionIterator().next();
             JigsawJunction jigsawJunction = enhancedJigsawJunction.jigsawJunction();
             EnhancedTerrainAdaptation adaptation = enhancedJigsawJunction.pieceTerrainAdaptation();
 
@@ -232,7 +232,7 @@ public class EnhancedBeardifierHelper {
                     xDistanceToJunction, yDistanceToJunction, zDistanceToJunction, yDistanceToJunction) * 0.4D;
             density += densityFactor;
         }
-        data.getEnhancedJunctionIterator().back(Integer.MAX_VALUE);
+        data.moogs_structures_getEnhancedJunctionIterator().back(Integer.MAX_VALUE);
 
         return density;
     }
