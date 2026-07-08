@@ -201,8 +201,8 @@ public class EnhancedBeardifierHelper {
                 newBeardifier = b;
             }
             EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
-            enhancedBeardifier.setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
-            enhancedBeardifier.setEnhancedJunctionIterator(enhancedJunctionList.iterator());
+            enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
+            enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
             return newBeardifier;
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("MSL: failed to construct Beardifier via reflection", e);
