@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.0.3] - 2026-07-09
+
+### Fixed
+- worldgen crash ("parent chunk missing") when yung's api is installed on fabric. the 3.0.2 rename fix wasn't enough: both mods were swapping out the beardifier at the same mixin point, so whichever ran first lost its terrain adaptation data and chunk generation died. msl now modifies the vanilla beardifier in place and applies its mixin after yung's, so both mods' terrain adaptation works at the same time.
+
 ## [3.0.2] - 2026-07-09
 
 ### Fixed
