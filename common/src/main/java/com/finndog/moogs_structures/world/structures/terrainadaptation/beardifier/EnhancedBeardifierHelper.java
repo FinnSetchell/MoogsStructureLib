@@ -110,7 +110,7 @@ public class EnhancedBeardifierHelper {
         }
 
         // 1.21.11's Beardifier is List-based with a nullable affectedBox; both compute() and
-        // fillArray() short-circuit to 0 when affectedBox is null. So the reconstructed Beardifier
+        // fillArray() short-circuit to 0 when affectedBox is null. So the returned Beardifier
         // must carry an affectedBox covering the enhanced regions, or the enhanced density (added
         // via the compute mixin) would never be evaluated. Union the original box with the enhanced
         // pieces/junctions (inflated by their kernel radius) to keep enhanced adaptation active.
@@ -119,14 +119,16 @@ public class EnhancedBeardifierHelper {
                 enhancedJunctionList,
                 ((BeardifierAccessor) original).getAffectedBox());
 
-        Beardifier newBeardifier = new Beardifier(
-                ((BeardifierAccessor) original).getPieces(),
-                ((BeardifierAccessor) original).getJunctions(),
-                affectedBox);
-        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
+        // Mutate the existing instance rather than constructing a replacement. YUNG's API's
+        // BeardifierMixin also swaps the returned Beardifier at this same injection point; if
+        // either mod replaces the other's instance, the replaced instance's @Unique duck data
+        // is lost and that mod's compute handler sees null iterators (BUG17: deterministic
+        // world-gen crash on fabric with both mods installed).
+        ((BeardifierAccessor) original).setAffectedBox(affectedBox);
+        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) original;
         enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
         enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
-        return newBeardifier;
+        return original;
     }
 
     private static BoundingBox computeEnhancedAffectedBox(ObjectList<EnhancedBeardifierRigid> rigids,
@@ -211,7 +213,9 @@ public class EnhancedBeardifierHelper {
                     xDistanceToBoundingBox, yDistanceToBoundingBox, zDistanceToBoundingBox, yDistanceToPieceBottom) * 0.8D;
             density += densityFactor;
         }
-        data.moogs_structures_getEnhancedPieceIterator().back(Integer.MAX_VALUE);
+        if (data.moogs_structures_getEnhancedPieceIterator() != null) {
+            data.moogs_structures_getEnhancedPieceIterator().back(Integer.MAX_VALUE);
+        }
 
         while (data.moogs_structures_getEnhancedJunctionIterator() != null && data.moogs_structures_getEnhancedJunctionIterator().hasNext()) {
             EnhancedJigsawJunction enhancedJigsawJunction = data.moogs_structures_getEnhancedJunctionIterator().next();
@@ -232,7 +236,9 @@ public class EnhancedBeardifierHelper {
                     xDistanceToJunction, yDistanceToJunction, zDistanceToJunction, yDistanceToJunction) * 0.4D;
             density += densityFactor;
         }
-        data.moogs_structures_getEnhancedJunctionIterator().back(Integer.MAX_VALUE);
+        if (data.moogs_structures_getEnhancedJunctionIterator() != null) {
+            data.moogs_structures_getEnhancedJunctionIterator().back(Integer.MAX_VALUE);
+        }
 
         return density;
     }

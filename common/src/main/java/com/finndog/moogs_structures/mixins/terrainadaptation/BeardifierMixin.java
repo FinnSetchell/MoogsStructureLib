@@ -19,7 +19,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Injects enhanced (kernel-based) terrain adaptation behavior into vanilla's Beardifier.
  * Reduced port of YUNG's API BeardifierMixin (no aquifer-override / NoiseChunk handling).
  */
-@Mixin(Beardifier.class)
+// Priority 1500 so this applies after YUNG's API's BeardifierMixin (default 1000): both mods
+// hook forStructuresInChunk at RETURN, so our handler must run on whatever instance YUNG's
+// handler produced — see EnhancedBeardifierHelper.forStructuresInChunk.
+@Mixin(value = Beardifier.class, priority = 1500)
 public class BeardifierMixin implements EnhancedBeardifierData {
     @Unique
     private ObjectListIterator<EnhancedJigsawJunction> moogs_structures_enhancedJunctionIterator;
