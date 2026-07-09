@@ -3,6 +3,8 @@ plugins {
     id 'maven-publish'
 }
 
+
+version = "${modVersion}"
 def isAlphaBuild = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
 base {
     archivesName = "${mod_id}-${project.name}-${minecraft_version}"
