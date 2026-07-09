@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.0.1] - 2026-07-09
+
+### Fixed
+- worldgen hang from beardifier mixin method names colliding with yung's api. renamed the methods so both mods coexist.
+
 ## [3.0.0] - 2026-06-20
 
 ### Added
