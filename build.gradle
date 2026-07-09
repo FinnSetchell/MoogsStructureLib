@@ -5,3 +5,18 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.141' apply false
     id 'me.modmuss50.mod-publish-plugin' version '0.8.4' apply false
 }
+
+def loaderProjects = subprojects.findAll { it.name in ['fabric', 'neoforge', 'forge'] && new File(it.projectDir, 'build.gradle').exists() }
+
+tasks.register('collectJars', Copy) {
+    loaderProjects.each { sub ->
+        dependsOn "${sub.path}:jar"
+        from(sub.tasks.named('jar').flatMap { it.archiveFile })
+    }
+    into layout.buildDirectory.dir('libs')
+}
+
+tasks.register('build') {
+    loaderProjects.each { sub -> dependsOn "${sub.path}:build" }
+    finalizedBy 'collectJars'
+}
