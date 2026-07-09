@@ -1,3 +1,9 @@
+## [3.0.4] - 2026-07-09
+
+_Pending. Update this header date and replace this line with the actual changes before tagging._
+
+---
+
 # Changelog
 
 ## [3.0.3] - 2026-07-09
