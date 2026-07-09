@@ -7,7 +7,7 @@ base {
     archivesName = "${archives_base_name}-${project.name}-${minecraft_version}"
 }
 
-version = "${mod_version}"
+version = "${modVersion}"
 group = maven_group
 
 java {
