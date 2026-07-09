@@ -34,7 +34,7 @@ allprojects {
     // fabric.mod.json / mods.toml "version" field stays a plain SemVer "3.0.0".
     // Anything other than a plain "N.N.N" version is parsed by SemVer as a pre-release
     // and ordered LESS than the plain release, breaking dependent mods' ">=3.0.0" deps.
-    version = "${rootProject.mod_version}"
+    version = "${rootProject.modVersion}"
     group = rootProject.maven_group
 
     repositories {
@@ -53,4 +53,24 @@ allprojects {
     java {
         withSourcesJar()
     }
+}
+
+
+def loaderProjectsForCollect = subprojects.findAll { it.name in ['fabric', 'neoforge', 'forge'] && new File(it.projectDir, 'build.gradle').exists() }
+
+tasks.register('collectJars', Copy) {
+    loaderProjectsForCollect.each { sub ->
+        dependsOn "${sub.path}:jar"
+        from(sub.tasks.named('jar').flatMap { it.archiveFile })
+    }
+    into layout.buildDirectory.dir('libs')
+}
+
+if (tasks.findByName('build') == null) {
+    tasks.register('build') {
+        loaderProjectsForCollect.each { sub -> dependsOn "${sub.path}:build" }
+        finalizedBy 'collectJars'
+    }
+} else {
+    tasks.named('build').configure { finalizedBy 'collectJars' }
 }
