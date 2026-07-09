@@ -4,6 +4,7 @@ import net.minecraft.world.level.levelgen.Beardifier;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.List;
@@ -18,4 +19,8 @@ public interface BeardifierAccessor {
 
     @Accessor
     BoundingBox getAffectedBox();
+
+    @Mutable
+    @Accessor("affectedBox")
+    void setAffectedBox(BoundingBox affectedBox);
 }
