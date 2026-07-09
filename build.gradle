@@ -3,3 +3,23 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.141' apply false
     id 'me.modmuss50.mod-publish-plugin' version '0.8.4' apply false
 }
+
+
+def loaderProjectsForCollect = subprojects.findAll { it.name in ['fabric', 'neoforge', 'forge'] && new File(it.projectDir, 'build.gradle').exists() }
+
+tasks.register('collectJars', Copy) {
+    loaderProjectsForCollect.each { sub ->
+        dependsOn "${sub.path}:jar"
+        from(sub.tasks.named('jar').flatMap { it.archiveFile })
+    }
+    into layout.buildDirectory.dir('libs')
+}
+
+if (tasks.findByName('build') == null) {
+    tasks.register('build') {
+        loaderProjectsForCollect.each { sub -> dependsOn "${sub.path}:build" }
+        finalizedBy 'collectJars'
+    }
+} else {
+    tasks.named('build').configure { finalizedBy 'collectJars' }
+}
