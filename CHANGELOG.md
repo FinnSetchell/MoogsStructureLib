@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.0.2] - 2026-07-12
+
+### Fixed
+- version-mapping fallback warnings are now silent by default; enable with `/moogs_structures debug on` to see them (issue #10).
+
 ## [3.0.1] - 2026-07-09
 
 ### Fixed
