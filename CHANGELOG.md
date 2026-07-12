@@ -1,6 +1,7 @@
-## [3.0.4] - 2026-07-09
+## [3.0.4] - 2026-07-12
 
-_Pending. Update this header date and replace this line with the actual changes before tagging._
+### Fixed
+- version-mapping fallback warnings are now silent by default; enable with `/moogs_structures debug on` to see them (issue #10).
 
 ---
 
