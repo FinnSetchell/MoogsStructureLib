@@ -125,11 +125,13 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
         }
 
         ResourceLocation fallback = this.template.left().orElse(this.defaultLocation);
-        MoogsStructuresCommon.LOGGER.warn(
-                "Moog's Structure Lib: No version mapping matched runtime version {}. Falling back to template {}. Defined mappings: [{}]",
-                VersionResolver.getCurrentVersionString(),
-                fallback,
-                this.versionEntriesDescription);
+        if (DebugFlags.isEnabled()) {
+            MoogsStructuresCommon.LOGGER.info(
+                    "Moog's Structure Lib: No version mapping matched runtime version {}. Falling back to template {}. Defined mappings: [{}]",
+                    VersionResolver.getCurrentVersionString(),
+                    fallback,
+                    this.versionEntriesDescription);
+        }
     }
 
     private Optional<List<VersionEntry>> versionEntriesOptional() {
