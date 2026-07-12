@@ -124,6 +124,7 @@ public class EnhancedBeardifierHelper {
 
         while (data.moogs_structures_getEnhancedPieceIterator() != null && data.moogs_structures_getEnhancedPieceIterator().hasNext()) {
             EnhancedBeardifierRigid rigid = data.moogs_structures_getEnhancedPieceIterator().next();
+            if (rigid == null) continue;
             BoundingBox originalBox = rigid.pieceBoundingBox();
             BoundingBox pieceBoundingBox = originalBox;
             EnhancedTerrainAdaptation adaptation = rigid.pieceTerrainAdaptation();
@@ -184,6 +185,7 @@ public class EnhancedBeardifierHelper {
 
         while (data.moogs_structures_getEnhancedJunctionIterator() != null && data.moogs_structures_getEnhancedJunctionIterator().hasNext()) {
             EnhancedJigsawJunction enhancedJigsawJunction = data.moogs_structures_getEnhancedJunctionIterator().next();
+            if (enhancedJigsawJunction == null) continue;
             JigsawJunction jigsawJunction = enhancedJigsawJunction.jigsawJunction();
             EnhancedTerrainAdaptation adaptation = enhancedJigsawJunction.pieceTerrainAdaptation();
 
