@@ -73,8 +73,13 @@ def loaderProjectsForCollect = subprojects.findAll { it.name in ['fabric', 'neof
 
 tasks.register('collectJars', Copy) {
     loaderProjectsForCollect.each { sub ->
-        dependsOn "${sub.path}:jar"
-        from(sub.tasks.named('jar').flatMap { it.archiveFile })
+        // Loom-based subprojects expose a "dev" jar (unremapped, classifier "dev") that
+        // collides in name across loaders since archivesBaseName only encodes the MC
+        // range, not the loader. The actual per-loader release artifact is remapJar
+        // (classifier "fabric"/"forge"/"neoforge"), so prefer that when present.
+        def releaseTaskName = sub.tasks.findByName('remapJar') ? 'remapJar' : 'jar'
+        dependsOn "${sub.path}:${releaseTaskName}"
+        from(sub.tasks.named(releaseTaskName).flatMap { it.archiveFile })
     }
     into layout.buildDirectory.dir('libs')
 }
