@@ -1,6 +1,7 @@
-## [3.0.5] - 2026-07-12
+## [3.0.5] - 2026-07-19
 
-_Pending. Update this header date and replace this line with the actual changes before tagging._
+### Fixed
+- worldgen crash on chunk generation when another mod's beardifier / density function mixin invalidates the enhanced-beardifier iterator between hasNext() and next(). fastutil returns a null slot instead of throwing, and computeDensity NPE'd on the next line. reported on 26.2 fabric with terralith installed (issue #12).
 
 ---
 
