@@ -1,8 +1,7 @@
-## [3.0.6] - Unreleased
+## [3.0.6] - 2026-07-23
 
 ### Fixed
-- worldgen crash (`NoSuchElementException` in `computeDensity`) when many chunks generate at once near a large enhanced-adaptation structure. this is the real cause of the crash 3.0.5 tried to fix; no other mod is involved. the enhanced beardifier kept single-use fastutil iterators as mutable state on the vanilla `Beardifier`, draining them per noise cell and rewinding with `back(Integer.MAX_VALUE)` to reuse them. that only works if one thread evaluates the beardifier at a time, so under parallel chunk generation the shared cursor advanced between `hasNext()` and `next()`. msl now stores the piece and junction lists and iterates them locally per call, the way modern vanilla does.
-- enhanced terrain adaptation no longer writes per-chunk data onto vanilla's shared `Beardifier.EMPTY` singleton. vanilla returns `EMPTY` whenever no *vanilla* terrain-adapting structure touches a chunk, which is the usual case for msl structures, so every chunk generating at the same time was reading and overwriting one another's structure pieces and affected bounding box. this is what made the iterator shared across threads in the first place, and on its own it could produce terrain that differed between runs. msl now uses a private beardifier instance for those chunks and leaves the singleton alone.
+- worldgen crash when lots of chunks generate at once near a structure using enhanced terrain adaptation. this is the real cause of the crash 3.0.5 tried to fix — no other mod is involved. the enhanced beardifier was sharing terrain adaptation state between chunks instead of keeping it per chunk, so world-gen threads tripped over each other. terrain output is unchanged.
 
 ---
 
