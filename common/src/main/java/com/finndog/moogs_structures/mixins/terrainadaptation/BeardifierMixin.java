@@ -4,7 +4,7 @@ import com.finndog.moogs_structures.world.structures.terrainadaptation.beardifie
 import com.finndog.moogs_structures.world.structures.terrainadaptation.beardifier.EnhancedBeardifierHelper;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.beardifier.EnhancedBeardifierRigid;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.beardifier.EnhancedJigsawJunction;
-import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.levelgen.Beardifier;
@@ -24,11 +24,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 // handler produced — see EnhancedBeardifierHelper.forStructuresInChunk.
 @Mixin(value = Beardifier.class, priority = 1500)
 public class BeardifierMixin implements EnhancedBeardifierData {
+    // Lists, not iterators: forStructuresInChunk builds these once per chunk, but compute() runs
+    // on world-gen worker threads and re-entrantly per noise cell. A stored cursor would be shared
+    // mutable state — hasNext() could pass and next() then throw NoSuchElementException once another
+    // thread drained it. computeDensity() iterates these locally instead, like modern vanilla does.
     @Unique
-    private ObjectListIterator<EnhancedJigsawJunction> moogs_structures_enhancedJunctionIterator;
+    private ObjectList<EnhancedJigsawJunction> moogs_structures_enhancedJunctions;
 
     @Unique
-    private ObjectListIterator<EnhancedBeardifierRigid> moogs_structures_enhancedPieceIterator;
+    private ObjectList<EnhancedBeardifierRigid> moogs_structures_enhancedPieces;
 
     @Inject(method = "forStructuresInChunk", at = @At("RETURN"), cancellable = true)
     private static void moogs_structures_supportEnhancedTerrainAdaptations(StructureManager structureManager, ChunkPos chunkPos, CallbackInfoReturnable<Beardifier> cir) {
@@ -45,25 +49,25 @@ public class BeardifierMixin implements EnhancedBeardifierData {
 
     @Unique
     @Override
-    public ObjectListIterator<EnhancedBeardifierRigid> moogs_structures_getEnhancedPieceIterator() {
-        return this.moogs_structures_enhancedPieceIterator;
+    public ObjectList<EnhancedBeardifierRigid> moogs_structures_getEnhancedPieces() {
+        return this.moogs_structures_enhancedPieces;
     }
 
     @Unique
     @Override
-    public void moogs_structures_setEnhancedPieceIterator(ObjectListIterator<EnhancedBeardifierRigid> enhancedPieceIterator) {
-        this.moogs_structures_enhancedPieceIterator = enhancedPieceIterator;
+    public void moogs_structures_setEnhancedPieces(ObjectList<EnhancedBeardifierRigid> pieces) {
+        this.moogs_structures_enhancedPieces = pieces;
     }
 
     @Unique
     @Override
-    public ObjectListIterator<EnhancedJigsawJunction> moogs_structures_getEnhancedJunctionIterator() {
-        return this.moogs_structures_enhancedJunctionIterator;
+    public ObjectList<EnhancedJigsawJunction> moogs_structures_getEnhancedJunctions() {
+        return this.moogs_structures_enhancedJunctions;
     }
 
     @Unique
     @Override
-    public void moogs_structures_setEnhancedJunctionIterator(ObjectListIterator<EnhancedJigsawJunction> enhancedJunctionIterator) {
-        this.moogs_structures_enhancedJunctionIterator = enhancedJunctionIterator;
+    public void moogs_structures_setEnhancedJunctions(ObjectList<EnhancedJigsawJunction> junctions) {
+        this.moogs_structures_enhancedJunctions = junctions;
     }
 }

@@ -119,16 +119,37 @@ public class EnhancedBeardifierHelper {
                 enhancedJunctionList,
                 ((BeardifierAccessor) original).getAffectedBox());
 
-        // Mutate the existing instance rather than constructing a replacement. YUNG's API's
+        // Vanilla returns its shared static Beardifier.EMPTY whenever no *vanilla* terrain-adapting
+        // structure start touches this chunk. That is the normal case for our structures, which adapt
+        // terrain through enhanced adaptation rather than vanilla's terrainAdaptation(). Writing this
+        // chunk's data onto EMPTY would publish it to a global singleton that every concurrently
+        // generating chunk shares across every world-gen worker thread, so each chunk would read
+        // whichever chunk wrote last. Give ourselves a private instance instead.
+        Beardifier target = original;
+        if (target == Beardifier.EMPTY) {
+            if (enhancedBeardifierRigidList.isEmpty() && enhancedJunctionList.isEmpty()) {
+                // Nothing enhanced here either; leave vanilla's empty fast path untouched.
+                return original;
+            }
+            target = new Beardifier(List.of(), List.of(), null);
+        }
+
+        // For a per-chunk instance, mutate in place rather than constructing a replacement. YUNG's API's
         // BeardifierMixin also swaps the returned Beardifier at this same injection point; if
         // either mod replaces the other's instance, the replaced instance's @Unique duck data
         // is lost and that mod's compute handler sees null iterators (BUG17: deterministic
-        // world-gen crash on fabric/26.1.x with both mods installed).
-        ((BeardifierAccessor) original).setAffectedBox(affectedBox);
-        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) original;
-        enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
-        enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
-        return original;
+        // world-gen crash on fabric/26.1.x with both mods installed). YUNG's handler runs first
+        // (priority 1000 vs our 1500) and always returns a fresh Beardifier, so when it is present
+        // `original` is never EMPTY and we never take the replacement branch above.
+        ((BeardifierAccessor) target).setAffectedBox(affectedBox);
+        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) target;
+        // Store the lists themselves, never iterators: compute() is called from world-gen worker
+        // threads and re-entrantly per noise cell, so a shared cursor gets advanced out from under
+        // a running loop (hasNext() passes, next() throws NoSuchElementException). computeDensity()
+        // takes a fresh local cursor per call instead.
+        enhancedBeardifier.moogs_structures_setEnhancedPieces(enhancedBeardifierRigidList);
+        enhancedBeardifier.moogs_structures_setEnhancedJunctions(enhancedJunctionList);
+        return target;
     }
 
     private static BoundingBox computeEnhancedAffectedBox(ObjectList<EnhancedBeardifierRigid> rigids,
@@ -157,89 +178,87 @@ public class EnhancedBeardifierHelper {
         int y = ctx.blockY();
         int z = ctx.blockZ();
 
-        while (data.moogs_structures_getEnhancedPieceIterator() != null && data.moogs_structures_getEnhancedPieceIterator().hasNext()) {
-            EnhancedBeardifierRigid rigid = data.moogs_structures_getEnhancedPieceIterator().next();
-            if (rigid == null) continue;
-            BoundingBox originalBox = rigid.pieceBoundingBox();
-            BoundingBox pieceBoundingBox = originalBox;
-            EnhancedTerrainAdaptation adaptation = rigid.pieceTerrainAdaptation();
-            Rotation pieceRotation = rigid.rotation();
+        // Iterate with local cursors over the stored lists. compute() runs on world-gen worker
+        // threads, so anything cursor-shaped kept on the Beardifier would be shared mutable state.
+        ObjectList<EnhancedBeardifierRigid> pieces = data.moogs_structures_getEnhancedPieces();
+        if (pieces != null) {
+            for (EnhancedBeardifierRigid rigid : pieces) {
+                BoundingBox originalBox = rigid.pieceBoundingBox();
+                BoundingBox pieceBoundingBox = originalBox;
+                EnhancedTerrainAdaptation adaptation = rigid.pieceTerrainAdaptation();
+                Rotation pieceRotation = rigid.rotation();
 
-            Optional<EnhancedTerrainAdaptation.Band> bandOpt = adaptation.getBand();
-            // If a band targets specific piece heights, skip pieces whose Y-span isn't in the list.
-            if (bandOpt.isPresent()
-                    && bandOpt.get().pieceHeights().isPresent()
-                    && !bandOpt.get().pieceHeights().get().contains(originalBox.getYSpan())) {
-                continue;
-            }
-
-            // Apply bottom offset
-            pieceBoundingBox = pieceBoundingBox.moved(0, (int) adaptation.getBottomOffset(), 0);
-
-            // Apply x/z padding (rotation-aware)
-            Direction.Axis xPaddingDirection = pieceRotation.rotate(Direction.EAST).getAxis();
-            int xPadding = xPaddingDirection == Direction.Axis.X ? adaptation.getPadding().x() : adaptation.getPadding().z();
-            int zPadding = xPaddingDirection == Direction.Axis.X ? adaptation.getPadding().z() : adaptation.getPadding().x();
-            pieceBoundingBox = pieceBoundingBox.inflatedBy(xPadding, 0, zPadding);
-
-            if (bandOpt.isPresent()) {
-                // Clamp the adapted region to a vertical band in piece-local rows (0 = piece floor).
-                // The band overrides any top/bottom padding. Kernel falloff still bleeds a few
-                // blocks above/below for a natural blend.
-                EnhancedTerrainAdaptation.Band band = bandOpt.get();
-                int floor = originalBox.minY() + (int) adaptation.getBottomOffset();
-                pieceBoundingBox = new BoundingBox(
-                        pieceBoundingBox.minX(), floor + band.bottom(), pieceBoundingBox.minZ(),
-                        pieceBoundingBox.maxX(), floor + band.top(), pieceBoundingBox.maxZ());
-            } else {
-                // Apply top/bottom padding
-                if (adaptation.getPadding().top() != 0) {
-                    pieceBoundingBox = new BoundingBox(
-                            pieceBoundingBox.minX(), pieceBoundingBox.minY(), pieceBoundingBox.minZ(),
-                            pieceBoundingBox.maxX(), pieceBoundingBox.maxY() + adaptation.getPadding().top(), pieceBoundingBox.maxZ());
+                Optional<EnhancedTerrainAdaptation.Band> bandOpt = adaptation.getBand();
+                // If a band targets specific piece heights, skip pieces whose Y-span isn't in the list.
+                if (bandOpt.isPresent()
+                        && bandOpt.get().pieceHeights().isPresent()
+                        && !bandOpt.get().pieceHeights().get().contains(originalBox.getYSpan())) {
+                    continue;
                 }
-                if (adaptation.getPadding().bottom() != 0) {
+
+                // Apply bottom offset
+                pieceBoundingBox = pieceBoundingBox.moved(0, (int) adaptation.getBottomOffset(), 0);
+
+                // Apply x/z padding (rotation-aware)
+                Direction.Axis xPaddingDirection = pieceRotation.rotate(Direction.EAST).getAxis();
+                int xPadding = xPaddingDirection == Direction.Axis.X ? adaptation.getPadding().x() : adaptation.getPadding().z();
+                int zPadding = xPaddingDirection == Direction.Axis.X ? adaptation.getPadding().z() : adaptation.getPadding().x();
+                pieceBoundingBox = pieceBoundingBox.inflatedBy(xPadding, 0, zPadding);
+
+                if (bandOpt.isPresent()) {
+                    // Clamp the adapted region to a vertical band in piece-local rows (0 = piece floor).
+                    // The band overrides any top/bottom padding. Kernel falloff still bleeds a few
+                    // blocks above/below for a natural blend.
+                    EnhancedTerrainAdaptation.Band band = bandOpt.get();
+                    int floor = originalBox.minY() + (int) adaptation.getBottomOffset();
                     pieceBoundingBox = new BoundingBox(
-                            pieceBoundingBox.minX(), pieceBoundingBox.minY() - adaptation.getPadding().bottom(), pieceBoundingBox.minZ(),
-                            pieceBoundingBox.maxX(), pieceBoundingBox.maxY(), pieceBoundingBox.maxZ());
+                            pieceBoundingBox.minX(), floor + band.bottom(), pieceBoundingBox.minZ(),
+                            pieceBoundingBox.maxX(), floor + band.top(), pieceBoundingBox.maxZ());
+                } else {
+                    // Apply top/bottom padding
+                    if (adaptation.getPadding().top() != 0) {
+                        pieceBoundingBox = new BoundingBox(
+                                pieceBoundingBox.minX(), pieceBoundingBox.minY(), pieceBoundingBox.minZ(),
+                                pieceBoundingBox.maxX(), pieceBoundingBox.maxY() + adaptation.getPadding().top(), pieceBoundingBox.maxZ());
+                    }
+                    if (adaptation.getPadding().bottom() != 0) {
+                        pieceBoundingBox = new BoundingBox(
+                                pieceBoundingBox.minX(), pieceBoundingBox.minY() - adaptation.getPadding().bottom(), pieceBoundingBox.minZ(),
+                                pieceBoundingBox.maxX(), pieceBoundingBox.maxY(), pieceBoundingBox.maxZ());
+                    }
                 }
+
+                int xDistanceToBoundingBox = Math.max(0, Math.max(pieceBoundingBox.minX() - x, x - pieceBoundingBox.maxX()));
+                int yDistanceToBoundingBox = Math.max(0, Math.max(pieceBoundingBox.minY() - y, y - pieceBoundingBox.maxY()));
+                int zDistanceToBoundingBox = Math.max(0, Math.max(pieceBoundingBox.minZ() - z, z - pieceBoundingBox.maxZ()));
+                int yDistanceToPieceBottom = y - pieceBoundingBox.minY();
+
+                double densityFactor = adaptation.computeDensityFactor(
+                        xDistanceToBoundingBox, yDistanceToBoundingBox, zDistanceToBoundingBox, yDistanceToPieceBottom) * 0.8D;
+                density += densityFactor;
             }
-
-            int xDistanceToBoundingBox = Math.max(0, Math.max(pieceBoundingBox.minX() - x, x - pieceBoundingBox.maxX()));
-            int yDistanceToBoundingBox = Math.max(0, Math.max(pieceBoundingBox.minY() - y, y - pieceBoundingBox.maxY()));
-            int zDistanceToBoundingBox = Math.max(0, Math.max(pieceBoundingBox.minZ() - z, z - pieceBoundingBox.maxZ()));
-            int yDistanceToPieceBottom = y - pieceBoundingBox.minY();
-
-            double densityFactor = adaptation.computeDensityFactor(
-                    xDistanceToBoundingBox, yDistanceToBoundingBox, zDistanceToBoundingBox, yDistanceToPieceBottom) * 0.8D;
-            density += densityFactor;
-        }
-        if (data.moogs_structures_getEnhancedPieceIterator() != null) {
-            data.moogs_structures_getEnhancedPieceIterator().back(Integer.MAX_VALUE);
         }
 
-        while (data.moogs_structures_getEnhancedJunctionIterator() != null && data.moogs_structures_getEnhancedJunctionIterator().hasNext()) {
-            EnhancedJigsawJunction enhancedJigsawJunction = data.moogs_structures_getEnhancedJunctionIterator().next();
-            if (enhancedJigsawJunction == null) continue;
-            JigsawJunction jigsawJunction = enhancedJigsawJunction.jigsawJunction();
-            EnhancedTerrainAdaptation adaptation = enhancedJigsawJunction.pieceTerrainAdaptation();
+        ObjectList<EnhancedJigsawJunction> junctions = data.moogs_structures_getEnhancedJunctions();
+        if (junctions != null) {
+            for (EnhancedJigsawJunction enhancedJigsawJunction : junctions) {
+                JigsawJunction jigsawJunction = enhancedJigsawJunction.jigsawJunction();
+                EnhancedTerrainAdaptation adaptation = enhancedJigsawJunction.pieceTerrainAdaptation();
 
-            // Band-limited adaptation is piece-local; junction beards sit at connection ground level
-            // and would carve outside the band, so skip them when a band is configured.
-            if (adaptation.getBand().isPresent()) {
-                continue;
+                // Band-limited adaptation is piece-local; junction beards sit at connection ground level
+                // and would carve outside the band, so skip them when a band is configured.
+                if (adaptation.getBand().isPresent()) {
+                    continue;
+                }
+
+                int groundY = jigsawJunction.getSourceGroundY() + (int) adaptation.getBottomOffset();
+                int xDistanceToJunction = x - jigsawJunction.getSourceX();
+                int yDistanceToJunction = y - groundY;
+                int zDistanceToJunction = z - jigsawJunction.getSourceZ();
+                double densityFactor = adaptation.computeDensityFactor(
+                        xDistanceToJunction, yDistanceToJunction, zDistanceToJunction, yDistanceToJunction) * 0.4D;
+                density += densityFactor;
             }
-
-            int groundY = jigsawJunction.getSourceGroundY() + (int) adaptation.getBottomOffset();
-            int xDistanceToJunction = x - jigsawJunction.getSourceX();
-            int yDistanceToJunction = y - groundY;
-            int zDistanceToJunction = z - jigsawJunction.getSourceZ();
-            double densityFactor = adaptation.computeDensityFactor(
-                    xDistanceToJunction, yDistanceToJunction, zDistanceToJunction, yDistanceToJunction) * 0.4D;
-            density += densityFactor;
-        }
-        if (data.moogs_structures_getEnhancedJunctionIterator() != null) {
-            data.moogs_structures_getEnhancedJunctionIterator().back(Integer.MAX_VALUE);
         }
 
         return density;
