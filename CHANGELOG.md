@@ -1,3 +1,10 @@
+## [3.0.6] - 2026-07-24
+
+### Fixed
+- fixed a world generation crash near some structures, usually when flying or teleporting into new terrain. 3.0.5 tried to fix this and didn't — this release does.
+
+---
+
 ## [3.0.5] - 2026-07-19
 
 ### Fixed
