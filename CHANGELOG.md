@@ -1,7 +1,7 @@
-## [3.0.6] - 2026-07-23
+## [3.0.6] - 2026-07-24
 
 ### Fixed
-- worldgen crash when lots of chunks generate at once near a structure using enhanced terrain adaptation. this is the real cause of the crash 3.0.5 tried to fix — no other mod is involved. the enhanced beardifier was sharing terrain adaptation state between chunks instead of keeping it per chunk, so world-gen threads tripped over each other. terrain output is unchanged.
+- fixed a world generation crash near some structures, usually when flying or teleporting into new terrain. 3.0.5 tried to fix this and didn't — this release does.
 
 ---
 
