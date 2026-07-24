@@ -37,3 +37,11 @@ deps/
 DEVELOPMENT_NOTES.md
 /fabric/runs/*
 /neoforge/runs/*
+
+# local build / dev-server scratch output
+/runs/
+*.pid
+build-*.log
+build2-*.log
+check-*.log
+server-*.log
