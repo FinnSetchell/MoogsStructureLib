@@ -1,7 +1,6 @@
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev'
-    id 'me.modmuss50.mod-publish-plugin'
 }
 
 sourceSets {
@@ -69,48 +68,4 @@ sourceSets.configureEach {
             }
         }
     }
-}
-
-File changeLog = rootProject.file("CHANGELOG.md")
-String changelogtext = ""
-if (changeLog.exists()) {
-    def sections = changeLog.text.split(/(?m)^## /)
-    changelogtext = sections.length > 1 ? "## " + sections[1].trim() : changeLog.text
-}
-
-def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
-
-publishMods {
-    file = tasks.jar.archiveFile
-    changelog = changelogtext
-    type = isAlpha ? ALPHA : STABLE
-    modLoaders.add("neoforge")
-
-    displayName = "Moog's Structure Lib ${project.version} [NEOFORGE]"
-
-    maxRetries = 3
-    dryRun = false
-
-    // No github { } block here on purpose: fabric/build.gradle owns the unified
-    // GitHub release and attaches this jar via additionalFiles. Two github
-    // blocks on the same tag race each other and the second one 422s on
-    // already_exists.
-
-    modrinth {
-        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
-        projectId = "1oUDhxuy"
-        minecraftVersions.addAll("26.1", "26.1.1", "26.1.2")
-    }
-
-    curseforge {
-        accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-        projectId = "1337167"
-        projectSlug = "moogs-structure-lib"
-        serverRequired = true
-        minecraftVersions.addAll("26.1", "26.1.1", "26.1.2")
-    }
-
-    // Discord announcement is posted by .github/scripts/post_discord.py from
-    // the release workflow, not by the publish plugin. The publishDiscord and
-    // announceDiscord tasks are excluded in the workflow to avoid double-posts.
 }
