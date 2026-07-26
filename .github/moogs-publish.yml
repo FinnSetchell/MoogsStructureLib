@@ -3,9 +3,9 @@
 schema: 1
 mod:
   id: msl
-  tagFormat: mc-first   # real tags: 26.2.0-3.0.6, 1.21.4-3.0.0-alpha.1
+  displayName: "Moog's Structure Lib"
+  environments: [Server]   # verified against live CF files 2026-07-26
   name: MoogsStructureLib
-  displayPrefix: MSL
   validate: false
 platforms:
   curseforge: { projectId: 1337167, slug: moogs-structure-lib }   # slug from gradle.properties; CF /mods API 403 — verified via files endpoint only
