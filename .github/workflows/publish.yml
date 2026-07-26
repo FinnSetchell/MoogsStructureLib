@@ -11,6 +11,7 @@ on:
       ping: {type: string, required: true}
       payloadVersion: {type: string, required: true}
       planDigest: {type: string, required: false, default: ''}
+      dryRun: {type: string, required: false, default: 'false'}
 
 permissions:
   contents: write
@@ -27,4 +28,5 @@ jobs:
       silent: ${{ inputs.silent }}
       ping: ${{ inputs.ping }}
       planDigest: ${{ inputs.planDigest }}
+      dryRun: ${{ inputs.dryRun }}
     secrets: inherit
