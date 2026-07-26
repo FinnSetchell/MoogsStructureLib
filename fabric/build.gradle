@@ -1,13 +1,7 @@
 plugins {
     id 'multiloader-loader'
     id 'net.fabricmc.fabric-loom'
-    id 'me.modmuss50.mod-publish-plugin'
 }
-
-// fabric's github { } block attaches the neoforge jar via additionalFiles,
-// so :neoforge must be configured before this script evaluates `tasks.named('jar')`
-// on it.
-evaluationDependsOn(':neoforge')
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
@@ -52,39 +46,5 @@ sourceSets.configureEach {
                 attribute(loaderAttribute, 'fabric')
             }
         }
-    }
-}
-
-File changeLog = rootProject.file("CHANGELOG.md")
-String changelogtext = ""
-if (changeLog.exists()) {
-    def sections = changeLog.text.split(/(?m)^## /)
-    changelogtext = sections.length > 1 ? "## " + sections[1].trim() : changeLog.text
-}
-
-def isAlpha = project.findProperty('alphaBuild')?.toString()?.toBoolean() ?: false
-
-// Note: Discord announcement is consolidated into :neoforge:publishMods (single
-// combined message + banner). Only CF/Modrinth/GitHub upload tasks live here.
-publishMods {
-    file = tasks.jar.archiveFile
-    type = isAlpha ? ALPHA : STABLE
-    modLoaders.add("fabric")
-    changelog = changelogtext
-
-    displayName = "Moog's Structure Lib ${project.version} [FABRIC]"
-
-    modrinth {
-        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
-        projectId = "1oUDhxuy"
-        minecraftVersions.addAll("26.2")
-    }
-
-    curseforge {
-        accessToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-        projectId = "1337167"
-        projectSlug = "moogs-structure-lib"
-        serverRequired = true
-        minecraftVersions.addAll("26.2")
     }
 }
