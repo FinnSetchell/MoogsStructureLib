@@ -63,9 +63,10 @@ loom {
     }
 }
 
-// MC range goes in archivesBaseName so the jar filename keeps it; the version field
-// (consumed by mods.toml) stays a plain SemVer "3.0.0" - see root build.gradle.
-archivesBaseName = "${rootProject.archives_base_name}-${rootProject.minecraft_version_range}"
+// Fleet artifact naming: {ModName}-{loader}-{mc}-{version}.jar. The loader and the MC
+// label live in archivesBaseName and remapJar carries no classifier, so the version
+// field (consumed by mods.toml) stays a plain SemVer "3.0.0" - see root build.gradle.
+archivesBaseName = "${rootProject.archives_base_name}-${project.name}-${rootProject.minecraft_version}"
 
 loom {
     accessWidenerPath = project(":common").loom.accessWidenerPath
@@ -115,7 +116,9 @@ shadowJar {
 remapJar {
     input.set shadowJar.archiveFile
     dependsOn shadowJar
-    archiveClassifier.set("forge")
+    // No classifier: the loader is already the second field of archivesBaseName, so the
+    // remapped artifact is {ModName}-{loader}-{mc}-{version}.jar per the fleet standard.
+    archiveClassifier.set("")
 }
 
 jar {
