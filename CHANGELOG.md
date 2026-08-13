@@ -6,6 +6,17 @@ _Pending. Update this header date and replace this line with the actual changes 
 
 # Changelog
 
+## [3.1.0] - 2026-08-13
+
+### Added
+- **Replace-vanilla presets**: consumer mods declare replacement presets in `data/<namespace>/moogs_structures/replace_vanilla.json`; MSL aggregates them from every loaded mod into `config/moogs_structures.json` as per-preset on/off toggles, so adding a new replacement needs no lib update. The config re-reads on world load.
+  - `vanilla_loot_swap_processor` - rewrites a container's loot table to a vanilla equivalent while its preset is enabled, so mods that inject into the vanilla loot table still fill the replacing structure's chests. No-op when the preset is off.
+  - `DisableVanillaStructureMixin` - cancels generation of a replaced vanilla structure while its preset is enabled.
+  - `/locate` on a replaced vanilla structure now reports which structure replaced it and points at the config instead of running the vanilla search.
+
+### Fixed
+- `always_false` json condition returned true instead of false.
+
 ## [3.0.2] - 2026-07-12
 
 ### Fixed
