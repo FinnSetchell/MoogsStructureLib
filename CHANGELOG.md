@@ -1,9 +1,3 @@
-## [3.0.3] - 2026-07-12
-
-_Pending. Update this header date and replace this line with the actual changes before tagging._
-
----
-
 # Changelog
 
 ## [3.1.0] - 2026-08-13
@@ -13,6 +7,8 @@ _Pending. Update this header date and replace this line with the actual changes 
   - `vanilla_loot_swap_processor` - rewrites a container's loot table to a vanilla equivalent while its preset is enabled, so mods that inject into the vanilla loot table still fill the replacing structure's chests. No-op when the preset is off.
   - `DisableVanillaStructureMixin` - cancels generation of a replaced vanilla structure while its preset is enabled.
   - `/locate` on a replaced vanilla structure now reports which structure replaced it and points at the config instead of running the vanilla search.
+  - `conditional_concentric_rings` structure placement - a concentric-rings placement whose ring count switches on a replacement preset (e.g. full density when replacing, a reduced density when coexisting). Extends the vanilla type so the special ring handling still applies.
+- **In-game config screen**: an optional Cloth Config screen listing every mod's replacement presets as toggles, reached from Mod Menu on Fabric and the mod-list config button on Forge. Cloth Config (and Mod Menu on Fabric) are soft dependencies - absent them, the mod still runs without a screen.
 
 ### Fixed
 - `always_false` json condition returned true instead of false.
