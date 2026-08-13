@@ -4,6 +4,7 @@ import com.finndog.moogs_structures.events.lifecycle.RegisterReloadListenerEvent
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStartEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStopEvent;
 import com.finndog.moogs_structures.events.lifecycle.SetupEvent;
+import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
@@ -29,6 +30,8 @@ public class MoogsStructuresCommon {
         MoogsStructuresStructurePieces.STRUCTURE_POOL_ELEMENT.init();
         MoogsStructuresStructurePlacementType.STRUCTURE_PLACEMENT_TYPE.init();
 
+        ReplaceVanillaManager.init();
+
         SetupEvent.EVENT.addListener(MoogsStructuresCommon::setup);
         RegisterReloadListenerEvent.EVENT.addListener(MoogsStructuresCommon::registerDatapackListener);
         ServerGoingToStartEvent.EVENT.addListener(MoogsStructuresCommon::serverAboutToStart);
@@ -39,7 +42,7 @@ public class MoogsStructuresCommon {
     }
 
     private static void serverAboutToStart(final ServerGoingToStartEvent event) {
-
+        ReplaceVanillaManager.reloadConfig();
         AsyncLocator.handleServerAboutToStartEvent();
     }
 
