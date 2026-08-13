@@ -7,7 +7,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -27,8 +29,13 @@ public final class ReplaceVanillaManager {
     public record Replacement(String modid, String presetId, boolean defaultEnabled,
                               ResourceLocation vanillaStructure, ResourceLocation replacementStructure) {}
 
+    /** A preset as shown in the in-game config screen. */
+    public record PresetInfo(String modid, String presetId, String name, String description, boolean defaultEnabled) {}
+
     // modid -> presetId -> default, handed to MslConfig so the file lists every known preset.
     private static final Map<String, Map<String, Boolean>> PRESET_DEFAULTS = new TreeMap<>();
+    // Ordered list of every discovered preset, for the config screen.
+    private static final List<PresetInfo> PRESETS = new ArrayList<>();
     // "modid/vanilla_key" -> owning presetId, so the loot processor can resolve enablement.
     private static final Map<String, Replacement> BY_VANILLA_KEY = new HashMap<>();
     // vanilla structure id -> replacement, for the disable mixin and locate command.
@@ -37,6 +44,7 @@ public final class ReplaceVanillaManager {
     /** Scans mod manifests once at mod init, then does an initial config read. */
     public static void init() {
         PRESET_DEFAULTS.clear();
+        PRESETS.clear();
         BY_VANILLA_KEY.clear();
         BY_VANILLA_STRUCTURE.clear();
 
@@ -74,6 +82,10 @@ public final class ReplaceVanillaManager {
             }
             boolean defaultEnabled = preset.has("default_enabled") && preset.get("default_enabled").getAsBoolean();
             PRESET_DEFAULTS.computeIfAbsent(modid, k -> new TreeMap<>()).put(presetId, defaultEnabled);
+
+            String name = preset.has("name") ? preset.get("name").getAsString() : presetId;
+            String description = preset.has("description") ? preset.get("description").getAsString() : "";
+            PRESETS.add(new PresetInfo(modid, presetId, name, description, defaultEnabled));
 
             if (!preset.has("replacements") || !preset.get("replacements").isJsonArray()) continue;
             for (JsonElement el : preset.getAsJsonArray("replacements")) {
@@ -115,5 +127,18 @@ public final class ReplaceVanillaManager {
     /** True when any replacement binding exists, letting the mixin skip work entirely when unused. */
     public static boolean hasAnyBindings() {
         return !BY_VANILLA_STRUCTURE.isEmpty();
+    }
+
+    /** Every discovered preset, for the in-game config screen. */
+    public static List<PresetInfo> getPresets() {
+        return List.copyOf(PRESETS);
+    }
+
+    public static boolean isPresetEnabled(PresetInfo preset) {
+        return MslConfig.get().presetEnabled(preset.modid(), preset.presetId(), preset.defaultEnabled());
+    }
+
+    public static void setPresetEnabled(PresetInfo preset, boolean value) {
+        MslConfig.get().setAndSave(preset.modid(), preset.presetId(), value);
     }
 }

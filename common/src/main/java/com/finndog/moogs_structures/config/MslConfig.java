@@ -31,6 +31,7 @@ public final class MslConfig {
     public static MslConfig get() { return INSTANCE; }
 
     private Map<String, Map<String, Boolean>> presets = Collections.emptyMap();
+    private Path file;
 
     private MslConfig() {}
 
@@ -39,7 +40,7 @@ public final class MslConfig {
      *                          used to seed and top up the config file.
      */
     public synchronized void loadAndSync(Path configDir, Map<String, Map<String, Boolean>> discoveredPresets) {
-        Path file = configDir.resolve(FILE_NAME);
+        this.file = configDir.resolve(FILE_NAME);
         Map<String, Map<String, Boolean>> stored = readStored(file);
 
         Map<String, Map<String, Boolean>> merged = new TreeMap<>();
@@ -60,6 +61,14 @@ public final class MslConfig {
         Map<String, Boolean> forMod = presets.get(modid);
         if (forMod == null) return defaultValue;
         return forMod.getOrDefault(presetId, defaultValue);
+    }
+
+    /** Sets one preset value in memory and rewrites the file. Used by the in-game config screen. */
+    public synchronized void setAndSave(String modid, String presetId, boolean value) {
+        if (file == null) return;
+        if (!(presets instanceof TreeMap)) presets = new TreeMap<>(presets);
+        presets.computeIfAbsent(modid, k -> new TreeMap<>()).put(presetId, value);
+        writeFile(file, presets);
     }
 
     private static Map<String, Map<String, Boolean>> readStored(Path file) {
