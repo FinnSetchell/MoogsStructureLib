@@ -9,6 +9,12 @@
   - `/locate` on a replaced vanilla structure now reports which structure replaced it and points at the config instead of running the vanilla search.
   - `conditional_concentric_rings` structure placement - a concentric-rings placement whose ring count switches on a replacement preset (e.g. full density when replacing, a reduced density when coexisting). Extends the vanilla type so the special ring handling still applies.
 - **In-game config screen**: an optional Cloth Config screen listing every mod's replacement presets as toggles, reached from Mod Menu on Fabric and the mod-list config button on Forge. Cloth Config (and Mod Menu on Fabric) are soft dependencies - absent them, the mod still runs without a screen.
+- **Structure controls in the config screen** (a "Structures" tab, driven by a per-mod `structures` block in `replace_vanilla.json`):
+  - **Spacing multipliers** - a universal rarity slider plus per-mod and per-structure sliders that scale a structure's spacing/separation (effective = universal x per_mod x per_structure). Applied by `advanced_random_spread` (via an optional `spacing_key`) and read once per world load.
+  - **Disable** - a per-structure toggle that stops any Moogs structure from generating, enforced by structure id at `tryGenerateStructure` (works for every placement type). `/locate` on a disabled structure reports it instead of searching.
+  - **Preview** - a per-structure button opening the online structure preview (built from a per-mod `preview_url_template`) via the vanilla confirm-link screen.
+- **Datapack-declared structures**: the config screen reads its `structures` blocks from loaded datapacks as well as mod jars (rescanned on datapack reload), so datapacks can expose their structures to the spacing/disable/preview controls.
+- Config changes now also re-read on `/reload`, not only on world load (they still affect newly generated chunks only).
 
 ### Fixed
 - `always_false` json condition returned true instead of false.
