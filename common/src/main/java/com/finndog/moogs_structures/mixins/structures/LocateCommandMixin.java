@@ -1,5 +1,6 @@
 package com.finndog.moogs_structures.mixins.structures;
 
+import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresTags;
 import com.google.common.base.Stopwatch;
@@ -34,8 +35,9 @@ public class LocateCommandMixin {
     private static DynamicCommandExceptionType ERROR_STRUCTURE_NOT_FOUND;
 
     /**
-     * When a vanilla structure has been replaced by a Moogs one, tell the player instead of
-     * running the vanilla search (which has nothing left to find).
+     * When a structure has been replaced or disabled via the Moogs Structures config, tell the
+     * player instead of running the vanilla search (which has nothing left to find, and would run
+     * the full - up to 2000 chunk - radius fruitlessly).
      */
     @Inject(
             method = "locateStructure(Lnet/minecraft/commands/CommandSourceStack;Lnet/minecraft/commands/arguments/ResourceOrTagKeyArgument$Result;)I",
@@ -46,14 +48,23 @@ public class LocateCommandMixin {
     private static void moogs_structures_interceptReplacedLocate(CommandSourceStack source,
                                                                 ResourceOrTagKeyArgument.Result<Structure> result,
                                                                 CallbackInfoReturnable<Integer> cir) {
-        result.unwrap().ifLeft(key -> ReplaceVanillaManager.getActiveReplacement(key.location()).ifPresent(replacement -> {
-            ResourceLocation replacementId = replacement.replacementStructure();
-            String replacementText = replacementId != null ? replacementId.toString() : "a Moogs structure";
-            source.sendSuccess(() -> Component.literal(
-                    key.location() + " has been replaced with " + replacementText +
-                    ". You can change this in the Moogs Structures config (config/moogs_structures.json)."), false);
-            cir.setReturnValue(1);
-        }));
+        result.unwrap().ifLeft(key -> {
+            ResourceLocation id = key.location();
+            if (MslConfig.get().isStructureDisabled(id)) {
+                source.sendSuccess(() -> Component.literal(
+                        id + " is disabled in the Moogs Structures config (config/moogs_structures.json)."), false);
+                cir.setReturnValue(1);
+                return;
+            }
+            ReplaceVanillaManager.getActiveReplacement(id).ifPresent(replacement -> {
+                ResourceLocation replacementId = replacement.replacementStructure();
+                String replacementText = replacementId != null ? replacementId.toString() : "a Moogs structure";
+                source.sendSuccess(() -> Component.literal(
+                        id + " has been replaced with " + replacementText +
+                        ". You can change this in the Moogs Structures config (config/moogs_structures.json)."), false);
+                cir.setReturnValue(1);
+            });
+        });
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.finndog.moogs_structures.world.structures.placements;
 
+import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -31,7 +32,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("spacing").forGetter(AdvancedRandomSpread::spacing),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("separation").forGetter(AdvancedRandomSpread::separation),
             RandomSpreadType.CODEC.optionalFieldOf("spread_type", RandomSpreadType.LINEAR).forGetter(AdvancedRandomSpread::spreadType),
-            Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("min_distance_from_world_origin").forGetter(AdvancedRandomSpread::minDistanceFromWorldOrigin)
+            Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("min_distance_from_world_origin").forGetter(AdvancedRandomSpread::minDistanceFromWorldOrigin),
+            Codec.STRING.optionalFieldOf("spacing_key").forGetter(p -> p.spacingKey)
     ).apply(instance, instance.stable(AdvancedRandomSpread::new)));
 
     private final int spacing;
@@ -39,6 +41,14 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     private final RandomSpreadType spreadType;
     private final Optional<Integer> minDistanceFromWorldOrigin;
     private final Optional<SuperExclusionZone> superExclusionZone;
+    private final Optional<String> spacingKey;
+
+    // Effective spacing/separation memoized against MslConfig's generation counter so they are
+    // recomputed once per world load, not per worldgen call, and stay identical across spacing(),
+    // separation() and getPotentialStructureChunk (see /locate grid-stride dependency).
+    private int memoGeneration = -1;
+    private int effSpacing;
+    private int effSeparation;
 
     public AdvancedRandomSpread(Vec3i locationOffset,
                                 FrequencyReductionMethod frequencyReductionMethod,
@@ -49,7 +59,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
                                 int spacing,
                                 int separation,
                                 RandomSpreadType spreadType,
-                                Optional<Integer> minDistanceFromWorldOrigin
+                                Optional<Integer> minDistanceFromWorldOrigin,
+                                Optional<String> spacingKey
     ) {
         super(locationOffset, frequencyReductionMethod, frequency, salt, exclusionZone, spacing, separation, spreadType);
         this.spacing = (int)Math.round(spacing * 1.65);
@@ -57,6 +68,7 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         this.spreadType = spreadType;
         this.minDistanceFromWorldOrigin = minDistanceFromWorldOrigin;
         this.superExclusionZone = superExclusionZone;
+        this.spacingKey = spacingKey;
 
         if (spacing <= separation) {
             throw new RuntimeException("""
@@ -68,14 +80,28 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         }
     }
 
+    private void refreshMemo() {
+        int gen = MslConfig.get().spacingGeneration();
+        if (gen == memoGeneration) return;
+        double m = MslConfig.get().getEffectiveSpacingMultiplier(spacingKey.orElse(null));
+        int es = Math.max(1, (int) Math.round(this.spacing * m));
+        int esep = (int) Math.round(this.separation * m);
+        if (esep >= es) esep = es - 1;   // keep spacing > separation so the grid diff stays >= 1
+        this.effSpacing = es;
+        this.effSeparation = esep;
+        this.memoGeneration = gen;
+    }
+
     @Override
     public int spacing() {
-        return this.spacing;
+        refreshMemo();
+        return this.effSpacing;
     }
 
     @Override
     public int separation() {
-        return this.separation;
+        refreshMemo();
+        return this.effSeparation;
     }
 
     @Override
@@ -103,14 +129,18 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
     @Override
     public ChunkPos getPotentialStructureChunk(long seed, int x, int z) {
-        int regionX = Math.floorDiv(x, this.spacing);
-        int regionZ = Math.floorDiv(z, this.spacing);
+        // Use the effective (config-scaled) values so this matches the spacing()/separation()
+        // accessors that /locate strides its search grid by.
+        int sp = this.spacing();
+        int sep = this.separation();
+        int regionX = Math.floorDiv(x, sp);
+        int regionZ = Math.floorDiv(z, sp);
         WorldgenRandom worldgenrandom = new WorldgenRandom(new LegacyRandomSource(0L));
         worldgenrandom.setLargeFeatureWithSalt(seed, regionX, regionZ, this.salt());
-        int diff = this.spacing - this.separation;
+        int diff = sp - sep;
         int offsetX = this.spreadType.evaluate(worldgenrandom, diff);
         int offsetZ = this.spreadType.evaluate(worldgenrandom, diff);
-        return new ChunkPos(regionX * this.spacing + offsetX, regionZ * this.spacing + offsetZ);
+        return new ChunkPos(regionX * sp + offsetX, regionZ * sp + offsetZ);
     }
 
     @Override

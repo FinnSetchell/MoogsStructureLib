@@ -1,5 +1,6 @@
 package com.finndog.moogs_structures.mixins.structures;
 
+import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
@@ -30,9 +31,9 @@ public class DisableVanillaStructureMixin {
             SectionPos sectionPos,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (!ReplaceVanillaManager.hasAnyBindings()) return;
+        if (!ReplaceVanillaManager.hasAnyBindings() && !MslConfig.get().hasAnyDisabled()) return;
         entry.structure().unwrapKey().ifPresent(key -> {
-            if (ReplaceVanillaManager.shouldCancelVanilla(key.location())) {
+            if (ReplaceVanillaManager.shouldCancelVanilla(key.location()) || MslConfig.get().isStructureDisabled(key.location())) {
                 cir.setReturnValue(false);
             }
         });

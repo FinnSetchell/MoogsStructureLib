@@ -5,6 +5,9 @@ import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStartEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStopEvent;
 import com.finndog.moogs_structures.events.lifecycle.SetupEvent;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
+import com.finndog.moogs_structures.config.StructureListManager;
+import com.finndog.moogs_structures.config.StructureManifestReloadListener;
+import net.minecraft.resources.ResourceLocation;
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
@@ -31,6 +34,7 @@ public class MoogsStructuresCommon {
         MoogsStructuresStructurePlacementType.STRUCTURE_PLACEMENT_TYPE.init();
 
         ReplaceVanillaManager.init();
+        StructureListManager.init();
 
         SetupEvent.EVENT.addListener(MoogsStructuresCommon::setup);
         RegisterReloadListenerEvent.EVENT.addListener(MoogsStructuresCommon::registerDatapackListener);
@@ -51,5 +55,6 @@ public class MoogsStructuresCommon {
     }
 
     public static void registerDatapackListener(final RegisterReloadListenerEvent event) {
+        event.register(new ResourceLocation(MODID, "structure_manifests"), new StructureManifestReloadListener());
     }
 }
