@@ -50,12 +50,17 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     private final Optional<String> structureId;
     private final ResourceLocation structureIdRL;
 
-    // Effective spacing/separation memoized against MslConfig's generation counter so they are
-    // recomputed once per world load, not per worldgen call, and stay identical across spacing(),
-    // separation() and getPotentialStructureChunk (see /locate grid-stride dependency).
-    private int memoGeneration = -1;
-    private int effSpacing;
-    private int effSeparation;
+    // Stamped once at world load so a set needs no spacing_key/structure_id in its JSON; the placement
+    // then resolves both from the set it belongs to. Volatile: published before any worldgen read.
+    private volatile String owningSetId;
+    private volatile ResourceLocation owningSetIdRL;
+
+    // Memoized against MslConfig's generation counter in one immutable holder behind a single volatile
+    // field, so concurrent structure-starts (C2ME) snapshot a consistent triple rather than ever
+    // observing a torn or spacing<=separation state.
+    private volatile Memo memo;
+
+    private record Memo(int generation, int spacing, int separation) {}
 
     public AdvancedRandomSpread(Vec3i locationOffset,
                                 FrequencyReductionMethod frequencyReductionMethod,
@@ -90,28 +95,42 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         }
     }
 
-    private void refreshMemo() {
+    private String effectiveSpacingKey() {
+        return spacingKey.orElse(this.owningSetId);
+    }
+
+    private Memo memo() {
         int gen = MslConfig.get().spacingGeneration();
-        if (gen == memoGeneration) return;
-        double m = MslConfig.get().getEffectiveSpacingMultiplier(spacingKey.orElse(null));
-        int es = Math.max(1, (int) Math.round(this.spacing * m));
-        int esep = (int) Math.round(this.separation * m);
+        Memo m = this.memo;
+        if (m != null && m.generation() == gen) return m;
+        double mult = MslConfig.get().getEffectiveSpacingMultiplier(effectiveSpacingKey());
+        int es = Math.max(1, (int) Math.round(this.spacing * mult));
+        int esep = (int) Math.round(this.separation * mult);
         if (esep >= es) esep = es - 1;   // keep spacing > separation so the grid diff stays >= 1
-        this.effSpacing = es;
-        this.effSeparation = esep;
-        this.memoGeneration = gen;
+        Memo nm = new Memo(gen, es, esep);
+        this.memo = nm;
+        return nm;
+    }
+
+    /** Resets the memo so the next read recomputes with the stamped key. */
+    public void setOwningSetId(ResourceLocation setId) {
+        this.owningSetIdRL = setId;
+        this.owningSetId = setId.toString();
+        this.memo = null;
+    }
+
+    private ResourceLocation effectiveDisableId() {
+        return structureIdRL != null ? structureIdRL : this.owningSetIdRL;
     }
 
     @Override
     public int spacing() {
-        refreshMemo();
-        return this.effSpacing;
+        return memo().spacing();
     }
 
     @Override
     public int separation() {
-        refreshMemo();
-        return this.effSeparation;
+        return memo().separation();
     }
 
     @Override
@@ -129,7 +148,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
     @Override
     public boolean isStructureChunk(ChunkGeneratorStructureState chunkGeneratorStructureState, int i, int j) {
-        if (structureIdRL != null && MslConfig.get().isStructureDisabled(structureIdRL)) {
+        ResourceLocation disableId = effectiveDisableId();
+        if (disableId != null && MslConfig.get().isStructureDisabled(disableId)) {
             return false;
         }
         if (!super.isStructureChunk(chunkGeneratorStructureState, i, j)) {
@@ -142,10 +162,11 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
     @Override
     public ChunkPos getPotentialStructureChunk(long seed, int x, int z) {
-        // Use the effective (config-scaled) values so this matches the spacing()/separation()
-        // accessors that /locate strides its search grid by.
-        int sp = this.spacing();
-        int sep = this.separation();
+        // One snapshot of the effective (config-scaled) values, matching the spacing()/separation()
+        // accessors that /locate strides its search grid by, and internally consistent under threads.
+        Memo m = memo();
+        int sp = m.spacing();
+        int sep = m.separation();
         int regionX = Math.floorDiv(x, sp);
         int regionZ = Math.floorDiv(z, sp);
         WorldgenRandom worldgenrandom = new WorldgenRandom(new LegacyRandomSource(0L));

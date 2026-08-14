@@ -20,9 +20,13 @@ public final class ConfigButtons {
     private ConfigButtons() {}
 
     public static Button preview(String url) {
-        return Button.builder(Component.literal("Preview"), b -> openLink(url))
+        boolean hasUrl = url != null && !url.isBlank();
+        Button button = Button.builder(Component.literal("Preview"), b -> { if (hasUrl) openLink(url); })
                 .bounds(0, 0, PREVIEW_WIDTH, 20)
                 .build();
+        // No online render for this row (e.g. a multi-structure set) - show the button greyed out.
+        button.active = hasUrl;
+        return button;
     }
 
     /**

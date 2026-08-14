@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -24,15 +25,22 @@ import java.util.concurrent.Executor;
 public class StructureManifestReloadListener implements PreparableReloadListener {
     private static final String DIR = "moogs_structures";
     private static final String FILE = "replace_vanilla.json";
+    private static final String SET_DIR = "worldgen/structure_set";
+
+    private record Prepared(Map<String, String> manifests, Map<String, Map<String, String>> setJsons) {}
 
     @Override
     public CompletableFuture<Void> reload(PreparationBarrier barrier, ResourceManager manager,
                                           ProfilerFiller prepProfiler, ProfilerFiller applyProfiler,
                                           Executor prepExecutor, Executor applyExecutor) {
-        return CompletableFuture.supplyAsync(() -> readManifests(manager), prepExecutor)
+        return CompletableFuture.supplyAsync(() -> {
+                    Map<String, String> manifests = readManifests(manager);
+                    Map<String, Map<String, String>> setJsons = readStructureSets(manager, manifests.keySet());
+                    return new Prepared(manifests, setJsons);
+                }, prepExecutor)
                 .thenCompose(barrier::wait)
-                .thenAcceptAsync(manifests -> {
-                    StructureListManager.reload(manifests);
+                .thenAcceptAsync(prepared -> {
+                    StructureListManager.reload(prepared.manifests(), prepared.setJsons());
                     // Re-read config on datapack reload so /reload applies preset/disable/spacing
                     // changes to newly generated chunks without a full world reload.
                     ReplaceVanillaManager.reloadConfig();
@@ -47,6 +55,30 @@ public class StructureManifestReloadListener implements PreparableReloadListener
                 out.put(e.getKey().getNamespace(), new String(is.readAllBytes(), StandardCharsets.UTF_8));
             } catch (IOException ex) {
                 MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not read {} ({})", e.getKey(), ex.getMessage());
+            }
+        }
+        return out;
+    }
+
+    /**
+     * namespace -&gt; (set id "ns:name" -&gt; raw JSON) for every structure_set of a namespace that declared
+     * a manifest, so datapack-added structures auto-derive their config rows just like bundled ones.
+     */
+    private static Map<String, Map<String, String>> readStructureSets(ResourceManager manager, Set<String> namespaces) {
+        Map<String, Map<String, String>> out = new HashMap<>();
+        if (namespaces.isEmpty()) return out;
+        for (Map.Entry<ResourceLocation, Resource> e :
+                manager.listResources(SET_DIR, loc -> loc.getPath().endsWith(".json")).entrySet()) {
+            ResourceLocation loc = e.getKey();
+            String ns = loc.getNamespace();
+            if (!namespaces.contains(ns)) continue;
+            String path = loc.getPath(); // worldgen/structure_set/<name>.json
+            String name = path.substring(SET_DIR.length() + 1, path.length() - ".json".length());
+            try (InputStream is = e.getValue().open()) {
+                out.computeIfAbsent(ns, k -> new HashMap<>())
+                        .put(ns + ":" + name, new String(is.readAllBytes(), StandardCharsets.UTF_8));
+            } catch (IOException ex) {
+                MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not read structure_set {} ({})", loc, ex.getMessage());
             }
         }
         return out;

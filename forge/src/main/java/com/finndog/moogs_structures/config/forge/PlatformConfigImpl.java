@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class PlatformConfigImpl {
 
@@ -27,6 +28,30 @@ public class PlatformConfigImpl {
             } catch (Exception e) {
                 MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not read optional_packs.json for '{}' ({})", modid, e.getMessage());
             }
+        }
+        return out;
+    }
+
+    public static Map<String, String> getStructureSetJsons(String modid) {
+        Map<String, String> out = new LinkedHashMap<>();
+        for (IModInfo mod : ModList.get().getMods()) {
+            if (!mod.getModId().equals(modid)) continue;
+            Path dir = mod.getOwningFile().getFile().findResource("data", modid, "worldgen", "structure_set");
+            if (dir == null || !Files.exists(dir)) return out;
+            try (Stream<Path> walk = Files.walk(dir)) {
+                walk.filter(p -> p.toString().endsWith(".json")).forEach(p -> {
+                    String rel = dir.relativize(p).toString().replace('\\', '/');
+                    String name = rel.substring(0, rel.length() - ".json".length());
+                    try {
+                        out.put(modid + ":" + name, Files.readString(p));
+                    } catch (Exception e) {
+                        MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not read structure_set '{}:{}' ({})", modid, name, e.getMessage());
+                    }
+                });
+            } catch (Exception e) {
+                MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not scan structure_sets for '{}' ({})", modid, e.getMessage());
+            }
+            return out;
         }
         return out;
     }

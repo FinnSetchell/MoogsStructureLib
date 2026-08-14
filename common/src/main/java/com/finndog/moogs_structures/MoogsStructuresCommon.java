@@ -7,7 +7,14 @@ import com.finndog.moogs_structures.events.lifecycle.SetupEvent;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.config.StructureListManager;
 import com.finndog.moogs_structures.config.StructureManifestReloadListener;
+import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
+import com.finndog.moogs_structures.world.structures.placements.ConditionalConcentricRings;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.levelgen.structure.StructureSet;
+import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
@@ -17,6 +24,8 @@ import com.finndog.moogs_structures.modinit.MoogsStructuresTags;
 import com.finndog.moogs_structures.utils.AsyncLocator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Map;
 
 
 public class MoogsStructuresCommon {
@@ -47,7 +56,27 @@ public class MoogsStructuresCommon {
 
     private static void serverAboutToStart(final ServerGoingToStartEvent event) {
         ReplaceVanillaManager.reloadConfig();
+        stampOwningSetIds(event.getServer());
         AsyncLocator.handleServerAboutToStartEvent();
+    }
+
+    /**
+     * Stamps each Moog's placement with the id of the structure_set it belongs to, so a set needs no
+     * explicit spacing_key/structure_id in its JSON to get a working spacing slider and disable toggle.
+     * Runs once on the server thread before any chunk generates; the placements' stamped fields are
+     * volatile, so worldgen threads see the values.
+     */
+    private static void stampOwningSetIds(MinecraftServer server) {
+        var registry = server.registryAccess().registryOrThrow(Registries.STRUCTURE_SET);
+        for (Map.Entry<ResourceKey<StructureSet>, StructureSet> entry : registry.entrySet()) {
+            ResourceLocation id = entry.getKey().location();
+            StructurePlacement placement = entry.getValue().placement();
+            if (placement instanceof AdvancedRandomSpread ars) {
+                ars.setOwningSetId(id);
+            } else if (placement instanceof ConditionalConcentricRings ccr) {
+                ccr.setOwningSetId(id);
+            }
+        }
     }
 
     private static void onServerStopping(final ServerGoingToStopEvent event) {

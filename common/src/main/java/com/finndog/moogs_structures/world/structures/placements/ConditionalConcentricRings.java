@@ -47,6 +47,9 @@ public class ConditionalConcentricRings extends ConcentricRingsStructurePlacemen
     private final int disabledCount;
     private final Optional<String> structureId;
     private final ResourceLocation structureIdRL;
+    // Owning structure_set id, stamped at world load so disable works without an explicit structure_id
+    // in the set JSON. Volatile: published on the load thread before worldgen reads it.
+    private volatile ResourceLocation owningSetIdRL;
 
     public ConditionalConcentricRings(Vec3i locateOffset, FrequencyReductionMethod frequencyReductionMethod, float frequency,
                                       int salt, Optional<ExclusionZone> exclusionZone, int distance, int spread,
@@ -61,11 +64,20 @@ public class ConditionalConcentricRings extends ConcentricRingsStructurePlacemen
         this.structureIdRL = structureId.map(ResourceLocation::tryParse).orElse(null);
     }
 
+    public void setOwningSetId(ResourceLocation setId) {
+        this.owningSetIdRL = setId;
+    }
+
+    private ResourceLocation effectiveDisableId() {
+        return structureIdRL != null ? structureIdRL : this.owningSetIdRL;
+    }
+
     @Override
     public int count() {
         // 0 rings when the structure is disabled - returns an empty ring list (never skips
         // registration), so /locate and eye-of-ender searches stay safe.
-        if (structureIdRL != null && MslConfig.get().isStructureDisabled(structureIdRL)) {
+        ResourceLocation disableId = effectiveDisableId();
+        if (disableId != null && MslConfig.get().isStructureDisabled(disableId)) {
             return 0;
         }
         return ReplaceVanillaManager.isEnabled(modid, vanillaKey) ? enabledCount : disabledCount;
