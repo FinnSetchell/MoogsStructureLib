@@ -9,6 +9,7 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.RegistryCodecs;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
@@ -33,7 +34,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("separation").forGetter(AdvancedRandomSpread::separation),
             RandomSpreadType.CODEC.optionalFieldOf("spread_type", RandomSpreadType.LINEAR).forGetter(AdvancedRandomSpread::spreadType),
             Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("min_distance_from_world_origin").forGetter(AdvancedRandomSpread::minDistanceFromWorldOrigin),
-            Codec.STRING.optionalFieldOf("spacing_key").forGetter(p -> p.spacingKey)
+            Codec.STRING.optionalFieldOf("spacing_key").forGetter(p -> p.spacingKey),
+            Codec.STRING.optionalFieldOf("structure_id").forGetter(p -> p.structureId)
     ).apply(instance, instance.stable(AdvancedRandomSpread::new)));
 
     private final int spacing;
@@ -42,6 +44,11 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     private final Optional<Integer> minDistanceFromWorldOrigin;
     private final Optional<SuperExclusionZone> superExclusionZone;
     private final Optional<String> spacingKey;
+    // Optional owning structure id; when set and that structure is disabled in the config this
+    // placement reports no positions, so a disabled structure never distorts neighbours' exclusion
+    // zones (the tryGenerateStructure mixin remains the universal net for the general case).
+    private final Optional<String> structureId;
+    private final ResourceLocation structureIdRL;
 
     // Effective spacing/separation memoized against MslConfig's generation counter so they are
     // recomputed once per world load, not per worldgen call, and stay identical across spacing(),
@@ -60,7 +67,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
                                 int separation,
                                 RandomSpreadType spreadType,
                                 Optional<Integer> minDistanceFromWorldOrigin,
-                                Optional<String> spacingKey
+                                Optional<String> spacingKey,
+                                Optional<String> structureId
     ) {
         super(locationOffset, frequencyReductionMethod, frequency, salt, exclusionZone, spacing, separation, spreadType);
         this.spacing = (int)Math.round(spacing * 1.65);
@@ -69,6 +77,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         this.minDistanceFromWorldOrigin = minDistanceFromWorldOrigin;
         this.superExclusionZone = superExclusionZone;
         this.spacingKey = spacingKey;
+        this.structureId = structureId;
+        this.structureIdRL = structureId.map(ResourceLocation::tryParse).orElse(null);
 
         if (spacing <= separation) {
             throw new RuntimeException("""
@@ -119,6 +129,9 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
     @Override
     public boolean isStructureChunk(ChunkGeneratorStructureState chunkGeneratorStructureState, int i, int j) {
+        if (structureIdRL != null && MslConfig.get().isStructureDisabled(structureIdRL)) {
+            return false;
+        }
         if (!super.isStructureChunk(chunkGeneratorStructureState, i, j)) {
             return false;
         }
