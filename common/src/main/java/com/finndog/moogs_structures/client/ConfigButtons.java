@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -21,10 +22,13 @@ public final class ConfigButtons {
 
     public static Button preview(String url) {
         boolean hasUrl = url != null && !url.isBlank();
-        Button button = Button.builder(Component.literal("Preview"), b -> { if (hasUrl) openLink(url); })
-                .bounds(0, 0, PREVIEW_WIDTH, 20)
-                .build();
-        // No online render for this row (e.g. a multi-structure set) - show the button greyed out.
+        Button.Builder builder = Button.builder(Component.literal("Preview"), b -> { if (hasUrl) openLink(url); })
+                .bounds(0, 0, PREVIEW_WIDTH, 20);
+        if (!hasUrl) {
+            // No preview link for this row - grey it out and say why on hover.
+            builder.tooltip(Tooltip.create(Component.literal("No preview: this mod hasn't set a preview link (mod_slug).")));
+        }
+        Button button = builder.build();
         button.active = hasUrl;
         return button;
     }

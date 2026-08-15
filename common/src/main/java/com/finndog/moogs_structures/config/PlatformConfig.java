@@ -4,6 +4,7 @@ import dev.architectury.injectables.annotations.ExpectPlatform;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 public class PlatformConfig {
@@ -26,6 +27,18 @@ public class PlatformConfig {
      */
     @ExpectPlatform
     public static Map<String, String> getStructureSetJsons(String modid) {
+        throw new NotImplementedException();
+    }
+
+    /** Every loaded mod id, so the config screen can auto-discover which ones ship MSL structures. */
+    @ExpectPlatform
+    public static List<String> getAllModIds() {
+        throw new NotImplementedException();
+    }
+
+    /** A mod's human-readable name from loader metadata, for the config screen group header. Null if unknown. */
+    @ExpectPlatform
+    public static String getModName(String modid) {
         throw new NotImplementedException();
     }
 }

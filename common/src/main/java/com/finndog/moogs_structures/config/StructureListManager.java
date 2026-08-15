@@ -8,37 +8,33 @@ import net.minecraft.SharedConstants;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
- * Aggregates the per-mod "structures" manifest blocks so the in-game config screen can list every
- * structure grouped by mod, each with a Disable toggle, an optional spacing slider, and an online
- * preview link. A mod declares, in data/&lt;modid&gt;/moogs_structures/replace_vanilla.json:
+ * Builds the config screen's Structures list. Every mod that ships structure_sets using an MSL
+ * placement type ({@code advanced_random_spread} / {@code conditional_concentric_rings}) is listed
+ * automatically - no opt-in file needed. Each structure gets a Disable toggle and, for
+ * {@code advanced_random_spread} sets, a spacing slider; both are keyed by the set id and enforced by
+ * the stamped placement, so they work with no MSL-specific fields in the set JSON. The group header is
+ * the mod's loader display name; the display name per row is the title-cased structure path.
+ *
+ * <p>A mod's {@code "structures"} block in data/&lt;modid&gt;/moogs_structures/replace_vanilla.json is
+ * optional and only <em>enriches</em> its group:
  * <pre>{@code
  * "structures": { "mod_slug": "temples-reimagined" }
  * }</pre>
- * That one line is usually enough: MSL auto-derives one config row per structure_set in the mod's jar
- * (see {@link #deriveEntries}). The set's contents give the structure id and preview path; the display
- * name is the title-cased path; the spacing slider is offered only for
- * {@code moogs_structures:advanced_random_spread} sets (keyed by the set id) and suppressed for other
- * placement types (e.g. concentric rings). Disable is keyed by the set id and enforced by the stamped
- * placement, so it works for every set including multi-structure ones.
- *
- * <p>A mod may instead hand-author an explicit {@code entries} array to override the derived rows:
- * <pre>{@code
- * "structures": {
- *   "mod_slug": "temples-reimagined",
- *   "entries": [ { "structure": "mtr:desert_temple", "name": "Desert Temple", "spacing_key": "mtr:desert_temple" } ]
- * }
- * }</pre>
- *
- * <p>Preview URLs are built from {@code mod_slug} as
- * {@code https://previews.moogsmods.com/<mod_slug>/<mc_version>/<structure_path>}, where
- * {@code <mc_version>} is the running game version - so the link tracks whatever version the pack is
- * played on. A mod may instead supply a full {@code preview_url_template} (with {@code {structure}}
- * and optional {@code {mc_version}} tokens) to override the default host/layout.
+ * {@code mod_slug} enables the online preview link (MSL cannot guess it, so without it a row has no
+ * preview); {@code mod_name} overrides the header; an explicit {@code entries} array overrides the
+ * derived rows. Preview URLs resolve to
+ * {@code https://previews.moogsmods.com/<mod_slug>/<mc_version>/<structure_path>} with the running
+ * game version, or a full {@code preview_url_template} ({@code {structure}} / {@code {mc_version}}
+ * tokens) overrides the host/layout.
  */
 public final class StructureListManager {
     private StructureListManager() {}
@@ -48,52 +44,93 @@ public final class StructureListManager {
 
     private static final List<ModGroup> GROUPS = new ArrayList<>();
 
-    /** modid -&gt; the raw JSON of every structure_set that mod bundles, used to auto-derive rows. */
-    public interface SetJsonProvider extends Function<String, Map<String, String>> {}
+    private static final String PLACEMENT_SPREAD = "moogs_structures:advanced_random_spread";
+    private static final String PLACEMENT_RINGS = "moogs_structures:conditional_concentric_rings";
 
-    /** Baseline scan of mod-jar manifests at mod init (available before any world loads). */
+    /** Baseline scan at mod init: every loaded mod's bundled MSL structure_sets (before any world loads). */
     public static void init() {
-        populate(PlatformConfig.getOptionalPackManifests(), PlatformConfig::getStructureSetJsons);
+        Map<String, Map<String, String>> setsByMod = new TreeMap<>();
+        for (String modid : PlatformConfig.getAllModIds()) {
+            Map<String, String> msl = mslSetsOnly(PlatformConfig.getStructureSetJsons(modid));
+            if (!msl.isEmpty()) setsByMod.put(modid, msl);
+        }
+        populate(PlatformConfig.getOptionalPackManifests(), setsByMod);
     }
 
     /**
-     * Re-scan from the server data resource manager on datapack (re)load, so structures declared by
-     * datapacks - not just mod jars - show up in the config screen. Called by the reload listener,
-     * which supplies the structure_set JSON per namespace it read from the resource manager.
+     * Re-scan on datapack (re)load. The reload listener passes every namespace's MSL structure_sets it
+     * found in the resource manager, so datapack-added structures appear alongside bundled ones.
      */
-    public static void reload(Map<String, String> manifests, Map<String, Map<String, String>> setJsons) {
-        populate(manifests, modid -> setJsons.getOrDefault(modid, Map.of()));
+    public static void reload(Map<String, String> manifests, Map<String, Map<String, String>> setsByNamespace) {
+        populate(manifests, setsByNamespace);
     }
 
-    private static void populate(Map<String, String> manifests, SetJsonProvider setProvider) {
+    private static void populate(Map<String, String> manifests, Map<String, Map<String, String>> setsByMod) {
         GROUPS.clear();
-        for (Map.Entry<String, String> entry : manifests.entrySet()) {
+        Map<String, JsonObject> markers = parseMarkers(manifests);
+
+        // Every mod with MSL structure_sets, plus any that hand-authored explicit entries.
+        Set<String> modids = new TreeSet<>(setsByMod.keySet());
+        markers.forEach((modid, block) -> { if (block.has("entries")) modids.add(modid); });
+
+        for (String modid : modids) {
             try {
-                parseManifest(entry.getKey(), entry.getValue(), setProvider);
+                JsonObject marker = markers.get(modid);
+                String template = marker != null ? resolveTemplate(marker) : null;
+                List<StructureEntry> entries = marker != null && marker.has("entries") && marker.get("entries").isJsonArray()
+                        ? parseExplicitEntries(marker.getAsJsonArray("entries"), template)
+                        : deriveEntries(setsByMod.getOrDefault(modid, Map.of()), template);
+                if (entries.isEmpty()) continue;
+                String modName = marker != null && marker.has("mod_name")
+                        ? marker.get("mod_name").getAsString()
+                        : orElse(PlatformConfig.getModName(modid), modid);
+                GROUPS.add(new ModGroup(modid, modName, entries));
             } catch (RuntimeException e) {
-                MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not parse structures block for '{}' ({}: {})",
-                        entry.getKey(), e.getClass().getSimpleName(), e.getMessage());
+                MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not build structure list for '{}' ({}: {})",
+                        modid, e.getClass().getSimpleName(), e.getMessage());
             }
         }
+        GROUPS.sort(Comparator.comparing(ModGroup::modName));
     }
 
-    private static void parseManifest(String modid, String json, SetJsonProvider setProvider) {
-        JsonElement rootEl = JsonParser.parseString(json);
-        if (!rootEl.isJsonObject()) return;
-        JsonObject root = rootEl.getAsJsonObject();
-        if (!root.has("structures") || !root.get("structures").isJsonObject()) return;
-        JsonObject structures = root.getAsJsonObject("structures");
-
-        String modName = structures.has("mod_name") ? structures.get("mod_name").getAsString() : modid;
-        String template = resolveTemplate(structures);
-
-        List<StructureEntry> entries = structures.has("entries") && structures.get("entries").isJsonArray()
-                ? parseExplicitEntries(structures.getAsJsonArray("entries"), template)
-                : deriveEntries(setProvider.apply(modid), template);
-
-        if (!entries.isEmpty()) {
-            GROUPS.add(new ModGroup(modid, modName, entries));
+    /** modid -&gt; its "structures" manifest block, for the optional enrichment (slug / name / entries). */
+    private static Map<String, JsonObject> parseMarkers(Map<String, String> manifests) {
+        Map<String, JsonObject> out = new HashMap<>();
+        for (Map.Entry<String, String> e : manifests.entrySet()) {
+            try {
+                JsonElement root = JsonParser.parseString(e.getValue());
+                if (root.isJsonObject() && root.getAsJsonObject().has("structures")
+                        && root.getAsJsonObject().get("structures").isJsonObject()) {
+                    out.put(e.getKey(), root.getAsJsonObject().getAsJsonObject("structures"));
+                }
+            } catch (RuntimeException ignored) {
+            }
         }
+        return out;
+    }
+
+    private static Map<String, String> mslSetsOnly(Map<String, String> sets) {
+        Map<String, String> out = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : sets.entrySet()) {
+            if (isMslStructureSet(e.getValue())) out.put(e.getKey(), e.getValue());
+        }
+        return out;
+    }
+
+    /** True when a structure_set JSON is placed by an MSL placement type (spread or rings). */
+    public static boolean isMslStructureSet(String rawJson) {
+        try {
+            JsonObject set = JsonParser.parseString(rawJson).getAsJsonObject();
+            if (!set.has("placement") || !set.get("placement").isJsonObject()) return false;
+            String type = optString(set.getAsJsonObject("placement"), "type");
+            return PLACEMENT_SPREAD.equals(type) || PLACEMENT_RINGS.equals(type);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private static String orElse(String value, String fallback) {
+        return value != null ? value : fallback;
     }
 
     private static List<StructureEntry> parseExplicitEntries(com.google.gson.JsonArray arr, String template) {
@@ -133,7 +170,8 @@ public final class StructureListManager {
                         }
                     }
                 }
-                boolean spread = "moogs_structures:advanced_random_spread".equals(type);
+                boolean spread = PLACEMENT_SPREAD.equals(type);
+                if (!spread && !PLACEMENT_RINGS.equals(type)) continue;   // non-MSL placement: not ours to list
                 boolean single = structs.size() == 1;
                 String spacingKey = spread ? setId : null;
                 String name = titleCase(single ? pathOf(structs.get(0)) : pathOf(setId));

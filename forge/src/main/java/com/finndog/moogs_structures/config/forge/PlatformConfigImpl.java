@@ -7,7 +7,9 @@ import net.minecraftforge.forgespi.language.IModInfo;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -54,5 +56,19 @@ public class PlatformConfigImpl {
             return out;
         }
         return out;
+    }
+
+    public static List<String> getAllModIds() {
+        List<String> out = new ArrayList<>();
+        for (IModInfo mod : ModList.get().getMods()) {
+            out.add(mod.getModId());
+        }
+        return out;
+    }
+
+    public static String getModName(String modid) {
+        return ModList.get().getModContainerById(modid)
+                .map(c -> c.getModInfo().getDisplayName())
+                .orElse(null);
     }
 }

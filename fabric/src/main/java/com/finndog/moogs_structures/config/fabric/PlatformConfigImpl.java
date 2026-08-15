@@ -6,7 +6,9 @@ import net.fabricmc.loader.api.ModContainer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -53,5 +55,19 @@ public class PlatformConfigImpl {
             MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not scan structure_sets for '{}' ({})", modid, e.getMessage());
         }
         return out;
+    }
+
+    public static List<String> getAllModIds() {
+        List<String> out = new ArrayList<>();
+        for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
+            out.add(mod.getMetadata().getId());
+        }
+        return out;
+    }
+
+    public static String getModName(String modid) {
+        return FabricLoader.getInstance().getModContainer(modid)
+                .map(m -> m.getMetadata().getName())
+                .orElse(null);
     }
 }
