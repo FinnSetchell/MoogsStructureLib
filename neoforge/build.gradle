@@ -49,6 +49,10 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
+    // In-game config screen: compiled against but not bundled (soft dependency).
+    // transitive=false so only the cloth jar lands on the classpath, not a second loader runtime.
+    compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_neoforge_version}") { transitive = false }
+
     runtimeOnly "curse.maven:mtr-moogs-temples-reimagined-1339737:${mtr_file}"
     runtimeOnly "curse.maven:mss-moogs-soaring-structures-1040210:${mss_file}"
     runtimeOnly "curse.maven:moogs-end-structures-892382:${mes_file}"

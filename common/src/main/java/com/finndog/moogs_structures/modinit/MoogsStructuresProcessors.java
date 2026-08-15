@@ -13,6 +13,7 @@ import com.finndog.moogs_structures.world.processors.RemoveFloatingBlocksProcess
 import com.finndog.moogs_structures.world.processors.SpawnerRandomizingProcessor;
 import com.finndog.moogs_structures.world.processors.SuperGravityProcessor;
 import com.finndog.moogs_structures.world.processors.TrialSpawnerRandomizingProcessor;
+import com.finndog.moogs_structures.world.processors.VanillaLootSwapProcessor;
 import com.finndog.moogs_structures.world.processors.VaultRandomizingProcessor;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
@@ -30,4 +31,5 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<StructureProcessorType<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> () -> EquipArmorStandProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<TrialSpawnerRandomizingProcessor>> TRIAL_SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("trial_spawner_randomizing_processor", () -> () -> TrialSpawnerRandomizingProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<VaultRandomizingProcessor>> VAULT_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("vault_randomizing_processor", () -> () -> VaultRandomizingProcessor.CODEC);
+    public static final RegistryEntry<StructureProcessorType<VanillaLootSwapProcessor>> VANILLA_LOOT_SWAP_PROCESSOR = STRUCTURE_PROCESSOR.register("vanilla_loot_swap_processor", () -> () -> VanillaLootSwapProcessor.CODEC);
 }
