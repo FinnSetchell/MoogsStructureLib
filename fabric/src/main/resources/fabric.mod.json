@@ -17,6 +17,9 @@
     "entrypoints": {
         "main": [
             "com.finndog.moogs_structures.fabric.MoogsStructuresFabric"
+        ],
+        "modmenu": [
+            "com.finndog.moogs_structures.fabric.client.ModMenuIntegration"
         ]
     },
     "mixins": [

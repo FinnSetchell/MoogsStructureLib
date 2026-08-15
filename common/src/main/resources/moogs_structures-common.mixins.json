@@ -8,6 +8,7 @@
         "features.NoBasaltColumnsInStructuresMixin",
         "features.NoDeltasInStructuresMixin",
         "resources.NamespaceResourceManagerAccessor",
+        "structures.DisableVanillaStructureMixin",
         "structures.JigsawReplacementProcessorMixin",
         "structures.ListPoolElementAccessor",
         "structures.LocateCommandMixin",
