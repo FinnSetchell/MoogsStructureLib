@@ -1,7 +1,6 @@
 package com.finndog.moogs_structures.misc.structurepiececounter;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
-import com.finndog.moogs_structures.modinit.MoogsStructuresConditionsRegistry;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -37,10 +36,6 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
             StructurePieceCountsObj entry = piecesSpawnCounts.get(i);
             if(entry.alwaysSpawnThisMany != null && entry.neverSpawnMoreThanThisMany != null && entry.alwaysSpawnThisMany > entry.neverSpawnMoreThanThisMany) {
                 throw new Exception("Moog's Structure Lib Error: Found " + entry.nbtPieceName + " entry has alwaysSpawnThisMany greater than neverSpawnMoreThanThisMany which is invalid.");
-            }
-            // Drop entries whose "condition" json_condition is currently off (e.g. a mod's config toggle).
-            if(!MoogsStructuresConditionsRegistry.isConditionMet(entry.condition)) {
-                piecesSpawnCounts.remove(i);
             }
         }
         return piecesSpawnCounts;

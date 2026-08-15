@@ -17,21 +17,6 @@ public final class MoogsStructuresConditionsRegistry {
     public static final RegistryEntry<Supplier<Boolean>> ALWAYS_TRUE = MoogsStructures_JSON_CONDITIONS_REGISTRY.register("always_true", () -> () -> true);
     public static final RegistryEntry<Supplier<Boolean>> ALWAYS_FALSE = MoogsStructures_JSON_CONDITIONS_REGISTRY.register("always_false", () -> () -> false);
 
-    /**
-     * Whether a json_conditions id (e.g. "moogs_structures:always_false") is currently met, for the
-     * optional "condition" field on datapack entries. Absent/blank/unparseable, or an id no loaded mod
-     * registered, defaults to met - a typo or missing optional dependency never silently deletes
-     * content. The value is a live Supplier, so it reflects the config at the moment it is evaluated
-     * (for datapack entries that is each reload, since the result is baked in when the pack loads).
-     */
-    public static boolean isConditionMet(String conditionId) {
-        if (conditionId == null || conditionId.isBlank()) return true;
-        ResourceLocation id = ResourceLocation.tryParse(conditionId);
-        if (id == null) return true;
-        Supplier<Boolean> condition = MoogsStructures_JSON_CONDITIONS_REGISTRY.lookup().get(id);
-        return condition == null || Boolean.TRUE.equals(condition.get());
-    }
-
     /*
      * This registry is for hooking up the pool_additions json files to a code base config to enable/disable it.
      * Best for direct mod compat where a mod wants to add houses to Repurposed Structures by the pool_additions
