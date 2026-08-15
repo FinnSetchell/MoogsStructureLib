@@ -94,6 +94,16 @@ jarJar.enable()
 
 dependencies {
     minecraft "net.minecraftforge:forge:${forge_minecraft_version}-${forge_version}"
+
+    // Cloth Config dropped Forge support after 1.21.3, so there is no cloth-config-forge jar for this
+    // branch. The shared common source set still contains the Cloth-based config-screen widgets
+    // (SpacingPreviewSliderEntry/StructureActionsEntry), so the loader-agnostic Cloth API classes must
+    // be on Forge's COMPILE classpath for those common sources to compile. transitive=false keeps only
+    // the cloth jar (not a second loader runtime) on the classpath, and it is compileOnly so nothing is
+    // bundled - at runtime on Forge no Cloth is present and the Forge in-game config screen is disabled
+    // (Forge config is file-only on this branch); those widget classes are never classloaded there.
+    compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_neoforge_version}") { transitive = false }
+
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
     implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.4.1")) {
