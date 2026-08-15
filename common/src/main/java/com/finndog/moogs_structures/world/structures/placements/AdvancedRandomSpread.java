@@ -1,5 +1,6 @@
 package com.finndog.moogs_structures.world.structures.placements;
 
+import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -18,6 +19,7 @@ import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadType;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacementType;
+
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashSet;
@@ -35,7 +37,9 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("spacing").forGetter(AdvancedRandomSpread::spacing),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("separation").forGetter(AdvancedRandomSpread::separation),
             RandomSpreadType.CODEC.optionalFieldOf("spread_type", RandomSpreadType.LINEAR).forGetter(AdvancedRandomSpread::spreadType),
-            Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("min_distance_from_world_origin").forGetter(AdvancedRandomSpread::minDistanceFromWorldOrigin)
+            Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("min_distance_from_world_origin").forGetter(AdvancedRandomSpread::minDistanceFromWorldOrigin),
+            Codec.STRING.optionalFieldOf("spacing_key").forGetter(p -> p.spacingKey),
+            Codec.STRING.optionalFieldOf("structure_id").forGetter(p -> p.structureId)
     ).apply(instance, instance.stable(AdvancedRandomSpread::new)));
 
     private final int spacing;
@@ -43,6 +47,24 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     private final RandomSpreadType spreadType;
     private final Optional<Integer> minDistanceFromWorldOrigin;
     private final Optional<SuperExclusionZone> superExclusionZone;
+    private final Optional<String> spacingKey;
+    // Optional owning structure id; when set and that structure is disabled in the config this
+    // placement reports no positions, so a disabled structure never distorts neighbours' exclusion
+    // zones (the tryGenerateStructure mixin remains the universal net for the general case).
+    private final Optional<String> structureId;
+    private final ResourceLocation structureIdRL;
+
+    // Stamped once at world load so a set needs no spacing_key/structure_id in its JSON; the placement
+    // then resolves both from the set it belongs to. Volatile: published before any worldgen read.
+    private volatile String owningSetId;
+    private volatile ResourceLocation owningSetIdRL;
+
+    // Memoized against MslConfig's generation counter in one immutable holder behind a single volatile
+    // field, so concurrent structure-starts (C2ME) snapshot a consistent triple rather than ever
+    // observing a torn or spacing<=separation state.
+    private volatile Memo memo;
+
+    private record Memo(int generation, int spacing, int separation) {}
 
     public AdvancedRandomSpread(Vec3i locationOffset,
                                 FrequencyReductionMethod frequencyReductionMethod,
@@ -53,7 +75,9 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
                                 int spacing,
                                 int separation,
                                 RandomSpreadType spreadType,
-                                Optional<Integer> minDistanceFromWorldOrigin
+                                Optional<Integer> minDistanceFromWorldOrigin,
+                                Optional<String> spacingKey,
+                                Optional<String> structureId
     ) {
         super(locationOffset, frequencyReductionMethod, frequency, salt, exclusionZone, spacing, separation, spreadType);
         this.spacing = (int)Math.round(spacing * 1.65);
@@ -61,6 +85,9 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         this.spreadType = spreadType;
         this.minDistanceFromWorldOrigin = minDistanceFromWorldOrigin;
         this.superExclusionZone = superExclusionZone;
+        this.spacingKey = spacingKey;
+        this.structureId = structureId;
+        this.structureIdRL = structureId.map(ResourceLocation::tryParse).orElse(null);
 
         if (spacing <= separation) {
             throw new RuntimeException("""
@@ -72,14 +99,42 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         }
     }
 
+    private String effectiveSpacingKey() {
+        return spacingKey.orElse(this.owningSetId);
+    }
+
+    private Memo memo() {
+        int gen = MslConfig.get().spacingGeneration();
+        Memo m = this.memo;
+        if (m != null && m.generation() == gen) return m;
+        double mult = MslConfig.get().getEffectiveSpacingMultiplier(effectiveSpacingKey());
+        int es = Math.max(1, (int) Math.round(this.spacing * mult));
+        int esep = (int) Math.round(this.separation * mult);
+        if (esep >= es) esep = es - 1;   // keep spacing > separation so the grid diff stays >= 1
+        Memo nm = new Memo(gen, es, esep);
+        this.memo = nm;
+        return nm;
+    }
+
+    /** Resets the memo so the next read recomputes with the stamped key. */
+    public void setOwningSetId(ResourceLocation setId) {
+        this.owningSetIdRL = setId;
+        this.owningSetId = setId.toString();
+        this.memo = null;
+    }
+
+    private ResourceLocation effectiveDisableId() {
+        return structureIdRL != null ? structureIdRL : this.owningSetIdRL;
+    }
+
     @Override
     public int spacing() {
-        return this.spacing;
+        return memo().spacing();
     }
 
     @Override
     public int separation() {
-        return this.separation;
+        return memo().separation();
     }
 
     @Override
@@ -97,6 +152,10 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
     @Override
     public boolean isStructureChunk(ChunkGeneratorStructureState chunkGeneratorStructureState, int i, int j) {
+        ResourceLocation disableId = effectiveDisableId();
+        if (disableId != null && MslConfig.get().isStructureDisabled(disableId)) {
+            return false;
+        }
         if (!super.isStructureChunk(chunkGeneratorStructureState, i, j)) {
             return false;
         }
@@ -107,14 +166,19 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
     @Override
     public ChunkPos getPotentialStructureChunk(long seed, int x, int z) {
-        int regionX = Math.floorDiv(x, this.spacing);
-        int regionZ = Math.floorDiv(z, this.spacing);
+        // One snapshot of the effective (config-scaled) values, matching the spacing()/separation()
+        // accessors that /locate strides its search grid by, and internally consistent under threads.
+        Memo m = memo();
+        int sp = m.spacing();
+        int sep = m.separation();
+        int regionX = Math.floorDiv(x, sp);
+        int regionZ = Math.floorDiv(z, sp);
         WorldgenRandom worldgenrandom = new WorldgenRandom(new LegacyRandomSource(0L));
         worldgenrandom.setLargeFeatureWithSalt(seed, regionX, regionZ, this.salt());
-        int diff = this.spacing - this.separation;
+        int diff = sp - sep;
         int offsetX = this.spreadType.evaluate(worldgenrandom, diff);
         int offsetZ = this.spreadType.evaluate(worldgenrandom, diff);
-        return new ChunkPos(regionX * this.spacing + offsetX, regionZ * this.spacing + offsetZ);
+        return new ChunkPos(regionX * sp + offsetX, regionZ * sp + offsetZ);
     }
 
     @Override
@@ -149,16 +213,11 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
         boolean isPlacementForbidden(ChunkGeneratorStructureState chunkGeneratorStructureState, int l, int j) {
             Set<ResourceLocation> evaluating = EVALUATING_SETS.get();
-            
+
             for (Holder<StructureSet> holder : this.otherSet) {
                 ResourceLocation setId = holder.unwrapKey().map(key -> key.location()).orElse(null);
                 if (setId == null) continue;
-                
-                // Check if we're already evaluating this structure set (circular dependency detected)
-                if (evaluating.contains(setId)) {
-                    continue;
-                }
-                
+                if (evaluating.contains(setId)) continue;
                 evaluating.add(setId);
                 try {
                     if (chunkGeneratorStructureState.hasStructureChunkInRange(holder, l, j, this.chunkCount)) {
@@ -174,11 +233,7 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
                 for (Holder<StructureSet> holder : this.otherSet) {
                     ResourceLocation setId = holder.unwrapKey().map(key -> key.location()).orElse(null);
                     if (setId == null) continue;
-                    
-                    if (evaluating.contains(setId)) {
-                        continue;
-                    }
-                    
+                    if (evaluating.contains(setId)) continue;
                     evaluating.add(setId);
                     try {
                         if (chunkGeneratorStructureState.hasStructureChunkInRange(holder, l, j, this.allowedChunkCount.get())) {
