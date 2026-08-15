@@ -49,6 +49,10 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
+    // In-game config screen - soft dependency, compiled against but not bundled or required at runtime.
+    // transitive=false so only the cloth jar lands on the classpath, not a second loader runtime.
+    compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_neoforge_version}") { transitive = false }
+
     //runtimeOnly "curse.maven:moogs-voyager-structures-656977:${mvs_file}" // TODO: fix biome tag incompatibility in mvs for 1.21.2
     runtimeOnly "curse.maven:mtr-moogs-temples-reimagined-1339737:${mtr_file}"
     runtimeOnly "curse.maven:mss-moogs-soaring-structures-1040210:${mss_file}"
