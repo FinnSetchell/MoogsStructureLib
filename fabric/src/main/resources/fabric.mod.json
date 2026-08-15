@@ -1,35 +1,37 @@
 {
-    "schemaVersion": 1,
-    "id": "moogs_structures",
-    "version": "${version}+fabric",
-    "name": "Moog's Structure Lib",
-    "description": "A library mod for generating structures",
-    "authors": [
-        "FinnDog"
+  "schemaVersion": 1,
+  "id": "moogs_structures",
+  "version": "${version}+fabric",
+  "name": "Moog's Structure Lib",
+  "description": "A library mod for generating structures",
+  "authors": [
+    "FinnDog"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib",
+    "sources": "https://github.com/FinnSetchell/MoogsStructureLib"
+  },
+  "license": "GNU Lesser General Public License v3.0",
+  "icon": "assets/moogs_structures/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.finndog.moogs_structures.fabric.MoogsStructuresFabric"
     ],
-    "contact": {
-        "homepage": "https://www.curseforge.com/minecraft/mc-mods/moogs-structure-lib",
-        "sources": "https://github.com/FinnSetchell/MoogsStructureLib"
-    },
-    "license": "GNU Lesser General Public License v3.0",
-    "icon": "assets/moogs_structures/icon.png",
-    "environment": "*",
-    "entrypoints": {
-        "main": [
-            "com.finndog.moogs_structures.fabric.MoogsStructuresFabric"
-        ]
-    },
-    "mixins": [
-        "moogs_structures-fabric.mixins.json",
-        "moogs_structures-common.mixins.json"
-    ],
-    "depends": {
-        "fabricloader": "*",
-        "minecraft": ">=1.21",
-        "fabric": "*"
-    },
-    "suggests": {
-        "another-mod": "*"
-    }
+    "modmenu": [
+      "com.finndog.moogs_structures.fabric.client.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "moogs_structures-fabric.mixins.json",
+    "moogs_structures-common.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "*",
+    "minecraft": ">=1.21",
+    "fabric": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
 }
-  
