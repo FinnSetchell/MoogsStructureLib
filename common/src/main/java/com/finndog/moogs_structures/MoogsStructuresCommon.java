@@ -7,6 +7,7 @@ import com.finndog.moogs_structures.events.lifecycle.SetupEvent;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.config.StructureListManager;
 import com.finndog.moogs_structures.config.StructureManifestReloadListener;
+import com.finndog.moogs_structures.misc.structurepiececounter.StructurePieceCountsManager;
 import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
 import com.finndog.moogs_structures.world.structures.placements.ConditionalConcentricRings;
 import net.minecraft.core.registries.Registries;
@@ -85,5 +86,7 @@ public class MoogsStructuresCommon {
 
     public static void registerDatapackListener(final RegisterReloadListenerEvent event) {
         event.register(new ResourceLocation(MODID, "structure_manifests"), new StructureManifestReloadListener());
+        // Without this the msl_pieces_spawn_counts data is never loaded, so per-piece spawn counts are inert.
+        event.register(new ResourceLocation(MODID, "msl_pieces_spawn_counts"), StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER);
     }
 }
