@@ -17,6 +17,10 @@ dependencies {
     // fabric and neoforge both bundle mixinextras, so it is safe to use it in common
     compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.5.3'
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.5.3'
+
+    // In-game config screen widget - compiled against the Cloth API but not bundled or required at runtime.
+    // transitive=false so the NeoForm-based common classpath only gets the cloth jar, not a loader runtime.
+    compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_neoforge_version}") { transitive = false }
 }
 
 configurations {
