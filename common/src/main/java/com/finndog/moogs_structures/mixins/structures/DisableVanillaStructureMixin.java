@@ -4,6 +4,8 @@ import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -29,6 +31,9 @@ public class DisableVanillaStructureMixin {
             ChunkAccess chunk,
             ChunkPos chunkPos,
             SectionPos sectionPos,
+            // tryGenerateStructure carries a trailing ResourceKey<Level> dimension param on this version;
+            // the HEAD inject must mirror the full target signature or mixin apply fails.
+            ResourceKey<Level> dimension,
             CallbackInfoReturnable<Boolean> cir
     ) {
         if (!ReplaceVanillaManager.hasAnyBindings() && !MslConfig.get().hasAnyDisabled()) return;
