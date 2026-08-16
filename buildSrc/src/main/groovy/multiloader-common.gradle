@@ -33,7 +33,8 @@ repositories {
         }
     }
     maven { url "https://nexus.resourcefulbees.com/repository/telepathicgrunt/" }
-    maven { url "https://maven.shedaniel.me" }
+    maven { url "https://maven.shedaniel.me" }                  // Cloth Config (in-game config screen)
+    maven { url "https://maven.terraformersmc.com/releases/" }  // Mod Menu (Fabric config screen entry)
     maven { url "https://jitpack.io" }
     exclusiveContent {
         forRepository {
