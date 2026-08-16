@@ -15,7 +15,7 @@ public final class MoogsStructuresConditionsRegistry {
     public static final ResourceKey<Registry<Supplier<Boolean>>> MoogsStructures_JSON_CONDITIONS_KEY = ResourceKey.createRegistryKey(Identifier.fromNamespaceAndPath(MoogsStructuresCommon.MODID, "json_conditions"));
     public static final CustomRegistry<Supplier<Boolean>> MoogsStructures_JSON_CONDITIONS_REGISTRY = CustomRegistry.of(MoogsStructuresCommon.MODID, MoogsStructures_JSON_CONDITIONS_KEY, false, false, true);
     public static final RegistryEntry<Supplier<Boolean>> ALWAYS_TRUE = MoogsStructures_JSON_CONDITIONS_REGISTRY.register("always_true", () -> () -> true);
-    public static final RegistryEntry<Supplier<Boolean>> ALWAYS_FALSE = MoogsStructures_JSON_CONDITIONS_REGISTRY.register("always_false", () -> () -> true);
+    public static final RegistryEntry<Supplier<Boolean>> ALWAYS_FALSE = MoogsStructures_JSON_CONDITIONS_REGISTRY.register("always_false", () -> () -> false);
 
     /*
      * This registry is for hooking up the pool_additions json files to a code base config to enable/disable it.
