@@ -6,6 +6,31 @@ _Pending. Update this header date and replace this line with the actual changes 
 
 # Changelog
 
+---
+
+## [3.1.0] - 2026-08-13
+
+### Added
+- **Replace-vanilla presets**: consumer mods declare replacement presets in `data/<namespace>/moogs_structures/replace_vanilla.json`; MSL aggregates them from every loaded mod into `config/moogs_structures.json` as per-preset on/off toggles, so adding a new replacement needs no lib update. The config re-reads on world load.
+  - `vanilla_loot_swap_processor` - rewrites a container's loot table to a vanilla equivalent while its preset is enabled, so mods that inject into the vanilla loot table still fill the replacing structure's chests. No-op when the preset is off.
+  - `DisableVanillaStructureMixin` - cancels generation of a replaced vanilla structure while its preset is enabled.
+  - `/locate` on a replaced vanilla structure now reports which structure replaced it and points at the config instead of running the vanilla search.
+  - `conditional_concentric_rings` structure placement - a concentric-rings placement whose ring count switches on a replacement preset (e.g. full density when replacing, a reduced density when coexisting). Extends the vanilla type so the special ring handling still applies.
+- **In-game config screen**: an optional Cloth Config screen listing every mod's replacement presets as toggles, reached from Mod Menu on Fabric and the mod-list config button on Forge. Cloth Config (and Mod Menu on Fabric) are soft dependencies - absent them, the mod still runs without a screen.
+- **Structure controls in the config screen** (a "Structures" tab): every loaded mod and datapack that ships structures placed by an MSL placement type (`advanced_random_spread` / `conditional_concentric_rings`) is listed automatically, grouped by mod, with no opt-in file required (rescanned on datapack reload). Each structure gets:
+  - **Spacing multipliers** - a universal rarity slider plus per-mod and per-structure sliders that scale a structure's spacing/separation (effective = universal x per_mod x per_structure), applied by `advanced_random_spread` and read once per world load. The owning structure_set id is stamped onto each placement at world load, so a set needs no `spacing_key`/`structure_id` in its JSON for the slider and disable toggle to work.
+  - **Disable** - a per-structure toggle that stops a structure from generating, enforced both by structure id at `tryGenerateStructure` and at the placement, so a disabled structure also stops reporting placement positions (no longer influencing neighbours' exclusion zones or computing concentric rings). `/locate` on a disabled structure reports it instead of searching.
+  - **Preview** - a per-structure button opening the online structure preview via the vanilla confirm-link screen. The URL is built from an optional per-mod `mod_slug` and the running game version, so the link tracks whatever Minecraft version the pack is played on. A mod that sets no `mod_slug` shows the button disabled with a note.
+- **Config auto-derivation**: a mod exposes its structures to these controls by declaring a single `mod_slug` line in its `structures` block (or nothing at all, for spacing and disable without previews) rather than hand-listing every structure. Display names, spacing keys and preview paths are derived from each structure_set; an explicit `entries` array still overrides the derived rows.
+- Config changes now also re-read on `/reload`, not only on world load (they still affect newly generated chunks only).
+
+### Fixed
+- `msl_pieces_spawn_counts` per-piece spawn counts never applied: the reload listener was never registered, so the data was never loaded. It is now registered, and the per-piece max-count cache is cleared on reload so `/reload` updates it.
+- `advanced_random_spread` could compute torn spacing/separation values under concurrent chunk generation (e.g. with C2ME), risking a divide-by-zero during worldgen or misplaced structures; the effective values are now read from a single immutable snapshot.
+- `always_false` json condition returned true instead of false.
+
+---
+
 ## [3.0.2] - 2026-07-12
 
 ### Fixed
