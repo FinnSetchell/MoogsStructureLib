@@ -5,8 +5,11 @@ import com.finndog.moogs_structures.events.lifecycle.RegisterReloadListenerEvent
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStartEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStopEvent;
 import com.finndog.moogs_structures.events.lifecycle.SetupEvent;
+import com.finndog.moogs_structures.forge.client.MoogsStructuresForgeClient;
 import com.finndog.moogs_structures.modinit.registry.forge.ResourcefulRegistriesImpl;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
@@ -37,6 +40,8 @@ public class MoogsStructuresForge {
         eventBus.addListener(MoogsStructuresForge::onServerStopping);
         eventBus.addListener(MoogsStructuresForge::onAddReloadListeners);
         eventBus.addListener(MoogsStructuresForge::onRegisterCommands);
+
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> MoogsStructuresForgeClient::registerConfigScreen);
     }
 
     private static void onSetup(FMLCommonSetupEvent event) {
