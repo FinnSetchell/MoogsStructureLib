@@ -92,6 +92,16 @@ processResources {
 
 jarJar.enable()
 
+// This branch's Forge targets a newer Minecraft than Fabric/NeoForge, where the GUI blitSprite and
+// click APIs differ, so the Discord/Ko-fi support-button widgets (a Cloth config-screen feature) can't
+// compile against it. Cloth has no Forge build past 1.21.3 and the Forge config is file-only here, so
+// those widgets are never used on Forge - exclude them from the Forge compile rather than keep a second
+// API-specific copy. ScreenInvoker uses only stable APIs and still compiles.
+tasks.named('compileJava', JavaCompile) {
+    exclude '**/client/SupportButton.java'
+    exclude '**/client/SupportLinks.java'
+}
+
 dependencies {
     minecraft "net.minecraftforge:forge:${forge_minecraft_version}-${forge_version}"
 

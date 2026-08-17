@@ -53,7 +53,7 @@ public final class ConfigButtons {
                 : Component.literal("Enabled").withStyle(ChatFormatting.GREEN);
     }
 
-    private static void openLink(String url) {
+    public static void openLink(String url) {
         Minecraft mc = Minecraft.getInstance();
         Screen previous = mc.screen;
         mc.setScreen(new ConfirmLinkScreen(open -> {
