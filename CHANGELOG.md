@@ -23,6 +23,10 @@
 - `advanced_random_spread` could compute torn spacing/separation values under concurrent chunk generation (e.g. with C2ME), risking a divide-by-zero during worldgen or misplaced structures; the effective values are now read from a single immutable snapshot.
 - `always_false` json condition returned true instead of false.
 
+![structure_settings](https://pub-24a4e0e7ea8544a5b6f73c3a23512589.r2.dev/images/1e6791907ddb4befa6891dcf9e335ae5.png)
+
+![replace_vanilla_config](https://pub-24a4e0e7ea8544a5b6f73c3a23512589.r2.dev/images/b3ae11317f2b45819bf8b002be2e4ff0.png)
+
 ---
 
 ## [3.0.6] - 2026-07-24
