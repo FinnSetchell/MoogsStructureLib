@@ -2,6 +2,7 @@ package com.finndog.moogs_structures.forge.client;
 
 import com.finndog.moogs_structures.client.SpacingPreviewSliderEntry;
 import com.finndog.moogs_structures.client.StructureActionsEntry;
+import com.finndog.moogs_structures.client.SupportLinks;
 import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.config.StructureListManager;
@@ -26,7 +27,8 @@ public final class MoogsStructuresConfigScreenForge {
     public static Screen create(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
-                .setTitle(Component.literal("Moog's Structures"));
+                .setTitle(Component.literal("Moog's Structures"))
+                .setAfterInitConsumer(SupportLinks::addTo);
         ConfigEntryBuilder eb = builder.entryBuilder();
 
         buildPresets(builder, eb);
