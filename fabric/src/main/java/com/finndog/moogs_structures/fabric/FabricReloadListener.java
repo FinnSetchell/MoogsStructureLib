@@ -27,8 +27,10 @@ public class FabricReloadListener implements IdentifiableResourceReloadListener 
 
 
 
+    // 1.21.10 reworked PreparableReloadListener.reload to take a SharedState first (dropping the direct
+    // ResourceManager arg); the wrapper must mirror the new signature or it fails to implement the interface.
     @Override
-    public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, Executor executor, Executor executor2) {
-        return listener.reload(preparationBarrier, resourceManager, executor, executor2);
+    public CompletableFuture<Void> reload(SharedState sharedState, Executor executor, PreparationBarrier preparationBarrier, Executor executor2) {
+        return listener.reload(sharedState, executor, preparationBarrier, executor2);
     }
 }

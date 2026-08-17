@@ -13,6 +13,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -186,7 +188,8 @@ public class EntityProcessorMixin {
     @Unique
     private static Optional<Entity> moogs_structures$tryCreateEntity(ServerLevelAccessor serverLevelAccessor, CompoundTag compoundTag) {
         try {
-            return EntityType.create(compoundTag, serverLevelAccessor.getLevel(), EntitySpawnReason.STRUCTURE);
+            ValueInput valueInput = TagValueInput.create(ProblemReporter.DISCARDING, serverLevelAccessor.registryAccess(), compoundTag);
+            return EntityType.create(valueInput, serverLevelAccessor.getLevel(), EntitySpawnReason.STRUCTURE);
         } catch (Exception exception) {
             return Optional.empty();
         }

@@ -3,16 +3,16 @@ package com.finndog.moogs_structures.config.neoforge;
 import com.finndog.moogs_structures.MoogsStructuresCommon;
 import com.finndog.moogs_structures.config.PlatformConfig;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforgespi.language.IModInfo;
 
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class PlatformConfigImpl implements PlatformConfig {
 
@@ -26,10 +26,11 @@ public class PlatformConfigImpl implements PlatformConfig {
         Map<String, String> out = new LinkedHashMap<>();
         for (IModInfo mod : ModList.get().getMods()) {
             String modid = mod.getModId();
-            Path path = mod.getOwningFile().getFile().findResource("data", modid, "moogs_structures", "replace_vanilla.json");
-            if (path == null || !Files.exists(path)) continue;
+            JarContents contents = mod.getOwningFile().getFile().getContents();
+            String rel = "data/" + modid + "/moogs_structures/replace_vanilla.json";
+            if (!contents.containsFile(rel)) continue;
             try {
-                out.put(modid, Files.readString(path));
+                out.put(modid, new String(contents.readFile(rel), StandardCharsets.UTF_8));
             } catch (Exception e) {
                 MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not read optional_packs.json for '{}' ({})", modid, e.getMessage());
             }
@@ -42,21 +43,20 @@ public class PlatformConfigImpl implements PlatformConfig {
         Map<String, String> out = new LinkedHashMap<>();
         for (IModInfo mod : ModList.get().getMods()) {
             if (!mod.getModId().equals(modid)) continue;
-            Path dir = mod.getOwningFile().getFile().findResource("data", modid, "worldgen", "structure_set");
-            if (dir == null || !Files.exists(dir)) return out;
-            try (Stream<Path> walk = Files.walk(dir)) {
-                walk.filter(p -> p.toString().endsWith(".json")).forEach(p -> {
-                    String rel = dir.relativize(p).toString().replace('\\', '/');
-                    String name = rel.substring(0, rel.length() - ".json".length());
-                    try {
-                        out.put(modid + ":" + name, Files.readString(p));
-                    } catch (Exception e) {
-                        MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not read structure_set '{}:{}' ({})", modid, name, e.getMessage());
-                    }
-                });
-            } catch (Exception e) {
-                MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not scan structure_sets for '{}' ({})", modid, e.getMessage());
-            }
+            JarContents contents = mod.getOwningFile().getFile().getContents();
+            String prefix = "data/" + modid + "/worldgen/structure_set/";
+            contents.visitContent(prefix, (relPath, resource) -> {
+                if (!relPath.endsWith(".json")) return;
+                String name = relPath;
+                int idx = name.indexOf(prefix);
+                if (idx >= 0) name = name.substring(idx + prefix.length());
+                name = name.substring(0, name.length() - ".json".length());
+                try {
+                    out.put(modid + ":" + name, new String(resource.readAllBytes(), StandardCharsets.UTF_8));
+                } catch (Exception e) {
+                    MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not read structure_set '{}' ({})", relPath, e.getMessage());
+                }
+            });
             return out;
         }
         return out;
