@@ -53,7 +53,7 @@ public final class ConfigButtons {
                 : Component.literal("Enabled").withStyle(ChatFormatting.GREEN);
     }
 
-    private static void openLink(String url) {
+    public static void openLink(String url) {
         Minecraft mc = Minecraft.getInstance();
         // 26.2: the current screen moved off Minecraft onto its Gui (Minecraft.screen ->
         // Minecraft.gui.screen()), and setScreen was renamed to setScreenAndShow.

@@ -50,6 +50,7 @@ public final class MslConfig {
     private Map<String, Double> perModSpacing = new TreeMap<>();
     private Map<String, Double> perStructureSpacing = new TreeMap<>();
     private Set<String> disabledStructures = new TreeSet<>();
+    private Set<String> hiddenButtons = new TreeSet<>();
     // Immutable snapshot read by the worldgen mixin off multiple threads; swapped only at world load.
     private volatile Set<Identifier> disabledSnapshot = Set.of();
     private int generation = 0;
@@ -76,6 +77,7 @@ public final class MslConfig {
         this.perModSpacing = stored.perModSpacing;
         this.perStructureSpacing = stored.perStructureSpacing;
         this.disabledStructures = stored.disabledStructures;
+        this.hiddenButtons = stored.hiddenButtons;
         this.disabledSnapshot = buildSnapshot(stored.disabledStructures);
         this.generation++;
         writeFile();
@@ -168,11 +170,25 @@ public final class MslConfig {
         writeFile();
     }
 
+    // --- dismissible support buttons (Discord/Ko-fi on the config screen) ---
+
+    /** Whether the user has permanently dismissed a support-link button. Instance-global, so it sticks across worlds. */
+    public boolean isButtonHidden(String buttonId) {
+        return hiddenButtons.contains(buttonId);
+    }
+
+    public synchronized void setButtonHiddenAndSave(String buttonId, boolean hidden) {
+        if (file == null) return;
+        if (hidden) hiddenButtons.add(buttonId);
+        else hiddenButtons.remove(buttonId);
+        writeFile();
+    }
+
     // --- io ---
 
     private record Stored(Map<String, Map<String, Boolean>> presets, double universalSpacing,
                           Map<String, Double> perModSpacing, Map<String, Double> perStructureSpacing,
-                          Set<String> disabledStructures) {}
+                          Set<String> disabledStructures, Set<String> hiddenButtons) {}
 
     private static Stored readStored(Path file) {
         Map<String, Map<String, Boolean>> presets = new HashMap<>();
@@ -180,6 +196,7 @@ public final class MslConfig {
         Map<String, Double> perMod = new TreeMap<>();
         Map<String, Double> perStructure = new TreeMap<>();
         Set<String> disabled = new TreeSet<>();
+        Set<String> hiddenButtons = new TreeSet<>();
         if (Files.exists(file)) {
             try (Reader r = Files.newBufferedReader(file)) {
                 JsonObject root = JsonParser.parseReader(r).getAsJsonObject();
@@ -187,6 +204,12 @@ public final class MslConfig {
                     JsonArray arr = root.getAsJsonArray("disabled_structures");
                     for (int i = 0; i < arr.size(); i++) {
                         if (arr.get(i).isJsonPrimitive()) disabled.add(arr.get(i).getAsString());
+                    }
+                }
+                if (root.has("hidden_buttons") && root.get("hidden_buttons").isJsonArray()) {
+                    JsonArray arr = root.getAsJsonArray("hidden_buttons");
+                    for (int i = 0; i < arr.size(); i++) {
+                        if (arr.get(i).isJsonPrimitive()) hiddenButtons.add(arr.get(i).getAsString());
                     }
                 }
                 if (root.has("presets") && root.get("presets").isJsonObject()) {
@@ -214,7 +237,7 @@ public final class MslConfig {
                         file, e.getClass().getSimpleName(), e.getMessage());
             }
         }
-        return new Stored(presets, universal, perMod, perStructure, disabled);
+        return new Stored(presets, universal, perMod, perStructure, disabled, hiddenButtons);
     }
 
     private static void readMultiplierMap(JsonObject parent, String key, Map<String, Double> out) {
@@ -256,6 +279,10 @@ public final class MslConfig {
             JsonArray disabled = new JsonArray();
             disabledStructures.forEach(disabled::add);
             root.add("disabled_structures", disabled);
+
+            JsonArray hidden = new JsonArray();
+            hiddenButtons.forEach(hidden::add);
+            root.add("hidden_buttons", hidden);
 
             try (Writer w = Files.newBufferedWriter(file)) {
                 GSON.toJson(root, w);

@@ -20,6 +20,7 @@
         "terrainadaptation.BeardifierMixin"
     ],
     "client": [
+        "client.ScreenInvoker"
     ],
     "server": [
     ],
