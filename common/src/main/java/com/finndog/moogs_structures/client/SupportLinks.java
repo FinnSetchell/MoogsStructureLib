@@ -13,8 +13,8 @@ import net.minecraft.resources.Identifier;
  */
 public final class SupportLinks {
     private static final int H = 20;          // button height; each icon's width follows its aspect ratio
-    private static final int DISCORD_W = 20;   // discord.png is square (128x128)
-    private static final int KOFI_W = 51;      // kofi.png is 128x50, so ~2.56x wide at height 20
+    private static final int DISCORD_W = 20;   // discord.png is square (118x118)
+    private static final int KOFI_W = 20;      // kofi.png is square (50x50)
     private static final int GAP = 4;
     private static final int PAD = 3;
     private static final int TOP = 2;
