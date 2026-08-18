@@ -23,6 +23,7 @@ _Pending. Update this header date and replace this line with the actual changes 
   - **Preview** - a per-structure button opening the online structure preview via the vanilla confirm-link screen. The URL is built from an optional per-mod `mod_slug` and the running game version, so the link tracks whatever Minecraft version the pack is played on. A mod that sets no `mod_slug` shows the button disabled with a note.
 - **Config auto-derivation**: a mod exposes its structures to these controls by declaring a single `mod_slug` line in its `structures` block (or nothing at all, for spacing and disable without previews) rather than hand-listing every structure. Display names, spacing keys and preview paths are derived from each structure_set; an explicit `entries` array still overrides the derived rows.
 - Config changes now also re-read on `/reload`, not only on world load (they still affect newly generated chunks only).
+- **Config screen support links**: Discord and Ko-fi icon buttons in the top-right of the config screen, each with a close (×) that hides it for good.
 
 ### Fixed
 - `msl_pieces_spawn_counts` per-piece spawn counts never applied: the reload listener was never registered, so the data was never loaded. It is now registered, and the per-piece max-count cache is cleared on reload so `/reload` updates it.
