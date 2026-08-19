@@ -8,6 +8,13 @@ _Pending. Update this header date and replace this line with the actual changes 
 
 ---
 
+## [3.1.1] - 2026-08-18
+
+### Fixed
+- The mod-list config button did nothing when Cloth Config was not installed. It now opens a short screen telling the player the in-game config screen requires Cloth Config.
+
+---
+
 ## [3.1.0] - 2026-08-13
 
 ### Added
