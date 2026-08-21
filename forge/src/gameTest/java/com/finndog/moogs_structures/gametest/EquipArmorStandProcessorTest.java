@@ -10,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.RegisterGameTestsEvent;
@@ -56,6 +57,33 @@ public class EquipArmorStandProcessorTest {
 		ListTag armorItems = resultNbt.getList("ArmorItems", 10);
 		if (armorItems.size() < 3 || armorItems.getCompound(2).isEmpty()) {
 			helper.fail("chest slot (index 2) of ArmorItems is empty");
+			return;
+		}
+		helper.succeed();
+	}
+
+	// Calls Forge's NATIVE processEntity signature (the one structure placement invokes), NOT MSL's
+	// overload. Before a forge bridge this runs Forge's no-op default and the stand stays unequipped.
+	@GameTest(templateNamespace = "moogs_structures", template = "armor_stand_processor_test_empty")
+	public static void forgeNativeHookEquips(GameTestHelper helper) {
+		var ops = RegistryOps.create(JsonOps.INSTANCE, helper.getLevel().registryAccess());
+		EquipArmorStandProcessor processor = EquipArmorStandProcessor.CODEC
+			.parse(ops, JsonParser.parseString(PROCESSOR_JSON))
+			.result()
+			.orElseThrow(() -> new AssertionError("processor decode failed"));
+
+		CompoundTag armorStandNbt = new CompoundTag();
+		armorStandNbt.putString("id", "minecraft:armor_stand");
+		StructureTemplate.StructureEntityInfo info = new StructureTemplate.StructureEntityInfo(
+			Vec3.ZERO, BlockPos.ZERO, armorStandNbt);
+
+		StructureTemplate.StructureEntityInfo result = ((StructureProcessor) processor).processEntity(
+			helper.getLevel(), BlockPos.ZERO, info, info, new StructurePlaceSettings(), new StructureTemplate());
+
+		if (result == null || !result.nbt.contains("ArmorItems")
+			|| result.nbt.getList("ArmorItems", 10).size() < 3
+			|| result.nbt.getList("ArmorItems", 10).getCompound(2).isEmpty()) {
+			helper.fail("Forge processEntity hook left the stand unequipped -- entity processors are not wired on Forge");
 			return;
 		}
 		helper.succeed();
