@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -42,7 +43,7 @@ public class EquipArmorStandProcessorTest {
 			new GameTestInstance(data) {
 				@Override
 				public void run(GameTestHelper helper) {
-					equipmentKeyIsWritten(helper);
+					equipArmorStand(helper);
 				}
 
 				@Override
@@ -58,34 +59,47 @@ public class EquipArmorStandProcessorTest {
 		);
 	}
 
-	private static void equipmentKeyIsWritten(GameTestHelper helper) {
-		EquipArmorStandProcessor processor = EquipArmorStandProcessor.MAP_CODEC
+	private static EquipArmorStandProcessor decode() {
+		return EquipArmorStandProcessor.MAP_CODEC
 			.codec()
 			.parse(JsonOps.INSTANCE, JsonParser.parseString(PROCESSOR_JSON))
 			.result()
 			.orElseThrow(() -> new AssertionError("processor decode failed"));
+	}
 
-		CompoundTag armorStandNbt = new CompoundTag();
-		armorStandNbt.putString("id", "minecraft:armor_stand");
+	private static StructureTemplate.StructureEntityInfo standInfo() {
+		CompoundTag nbt = new CompoundTag();
+		nbt.putString("id", "minecraft:armor_stand");
+		return new StructureTemplate.StructureEntityInfo(Vec3.ZERO, BlockPos.ZERO, nbt);
+	}
 
-		StructureTemplate.StructureEntityInfo info = new StructureTemplate.StructureEntityInfo(
-			Vec3.ZERO, BlockPos.ZERO, armorStandNbt
-		);
+	private static boolean equipped(StructureTemplate.StructureEntityInfo info) {
+		return info != null && info.nbt.contains("equipment")
+			&& info.nbt.getCompoundOrEmpty("equipment").contains("chest");
+	}
 
-		StructureTemplate.StructureEntityInfo result = processor.processEntity(
-			helper.getLevel(), BlockPos.ZERO, BlockPos.ZERO, info, info, new StructurePlaceSettings()
-		);
+	private static void equipArmorStand(GameTestHelper helper) {
+		EquipArmorStandProcessor processor = decode();
 
-		CompoundTag resultNbt = result.nbt;
-		if (!resultNbt.contains("equipment")) {
-			helper.fail("equipment key missing -- processor wrote wrong key for this MC version");
+		// (1) MSL's own overload. Always works even when the NeoForge hook is unwired, which is why
+		// the old test passed while structures still generated unequipped (card 272's blind spot).
+		StructureTemplate.StructureEntityInfo direct = processor.processEntity(
+			helper.getLevel(), BlockPos.ZERO, BlockPos.ZERO, standInfo(), standInfo(), new StructurePlaceSettings());
+		if (!equipped(direct)) {
+			helper.fail("MSL processEntity overload did not equip the stand");
 			return;
 		}
-		CompoundTag equipment = resultNbt.getCompoundOrEmpty("equipment");
-		if (!equipment.contains("chest")) {
-			helper.fail("chest slot missing from equipment compound");
+
+		// (2) NeoForge's NATIVE processEntity signature -- the one StructureTemplate placement
+		// actually invokes. Before the neoforge bridge this runs NeoForge's no-op default and the
+		// stand comes back unequipped (card 271: entity processors dead on NeoForge).
+		StructureTemplate.StructureEntityInfo viaHook = ((StructureProcessor) processor).processEntity(
+			helper.getLevel(), BlockPos.ZERO, standInfo(), standInfo(), new StructurePlaceSettings(), new StructureTemplate());
+		if (!equipped(viaHook)) {
+			helper.fail("NeoForge processEntity hook left the stand unequipped -- entity processors are not wired on NeoForge");
 			return;
 		}
+
 		helper.succeed();
 	}
 }

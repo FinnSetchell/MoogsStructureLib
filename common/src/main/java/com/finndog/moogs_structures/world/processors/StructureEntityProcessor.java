@@ -11,11 +11,11 @@ import org.jetbrains.annotations.Nullable;
  * A {@link StructureProcessor} that processes entities within a structure/jigsaw piece.
  * May or may not also process blocks normally (override {@code processBlock} for that).
  *
- * <p>Vanilla {@link StructureProcessor} declares a {@code processEntity} hook, but on Fabric
- * the vanilla {@code StructureTemplate.placeEntities} path never invokes it. MSL's
- * {@code EntityProcessorMixin} (fabric) wires this up by running every
- * {@link StructureEntityProcessor} over a structure's entity list at placement time and
- * spawning the processed results. Ported/adapted from YUNG's API.
+ * <p>This method's descriptor differs from the {@code processEntity} hook the loaders actually
+ * call, so MSL wires it per loader: on Fabric, {@code EntityProcessorMixin} runs every processor
+ * during {@code StructureTemplate.placeEntities} (which never fires a vanilla entity hook) and
+ * spawns the results; on NeoForge, {@code StructureEntityProcessorMixin} overrides NeoForge's
+ * native {@code processEntity} and forwards to this method. Ported/adapted from YUNG's API.
  */
 public abstract class StructureEntityProcessor implements StructureProcessor {
 
