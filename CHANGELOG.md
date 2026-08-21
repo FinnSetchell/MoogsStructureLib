@@ -8,6 +8,14 @@ _Pending. Update this header date and replace this line with the actual changes 
 
 ---
 
+## [3.1.2] - 2026-08-19
+
+### Fixed
+- Fixed a possible crash during world generation or `/reload` when a structure with piece-count limits was being placed on several threads at once.
+- Armour stands in structures now equip correctly across all 1.20 versions.
+
+---
+
 ## [3.1.1] - 2026-08-18
 
 ### Fixed
