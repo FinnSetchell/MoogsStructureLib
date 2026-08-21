@@ -1,13 +1,3 @@
-## [3.0.3] - 2026-07-12
-
-_Pending. Update this header date and replace this line with the actual changes before tagging._
-
----
-
-# Changelog
-
----
-
 ## [3.1.2] - 2026-08-19
 
 ### Fixed
