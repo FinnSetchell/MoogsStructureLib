@@ -16,14 +16,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class StructurePieceCountsManager extends SimpleJsonResourceReloadListener {
     private static final Gson GSON = (new GsonBuilder()).setPrettyPrinting().setLenient().disableHtmlEscaping().excludeFieldsWithoutExposeAnnotation().create();
     public final static StructurePieceCountsManager STRUCTURE_PIECE_COUNTS_MANAGER = new StructurePieceCountsManager();
 
-    private Map<ResourceLocation, List<StructurePieceCountsObj>> StructureToPieceCountsObjs = new HashMap<>();
-    private final Map<ResourceLocation, Map<ResourceLocation, RequiredPieceNeeds>> cachedRequirePiecesMap = new HashMap<>();
-    private final Map<ResourceLocation, Map<ResourceLocation, Integer>> cachedMaxCountPiecesMap = new HashMap<>();
+    // Worldgen reads these off-thread while a reload swaps them out; volatile publishes the swap safely.
+    private volatile Map<ResourceLocation, List<StructurePieceCountsObj>> StructureToPieceCountsObjs = new HashMap<>();
+    // Memoized lazily from parallel worldgen threads, so concurrent maps rather than plain HashMaps.
+    private volatile Map<ResourceLocation, Map<ResourceLocation, RequiredPieceNeeds>> cachedRequirePiecesMap = new ConcurrentHashMap<>();
+    private volatile Map<ResourceLocation, Map<ResourceLocation, Integer>> cachedMaxCountPiecesMap = new ConcurrentHashMap<>();
 
     public StructurePieceCountsManager() {
         super(GSON, "msl_pieces_spawn_counts");
@@ -53,8 +56,8 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
             }
         });
         this.StructureToPieceCountsObjs = mapBuilder;
-        cachedRequirePiecesMap.clear();
-        cachedMaxCountPiecesMap.clear();
+        this.cachedRequirePiecesMap = new ConcurrentHashMap<>();
+        this.cachedMaxCountPiecesMap = new ConcurrentHashMap<>();
         StructurePieceCountsAdditionsMerger.performCountsAdditionsDetectionAndMerger(manager);
     }
 
@@ -71,48 +74,38 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
 
     @Nullable
     public Map<ResourceLocation, RequiredPieceNeeds> getRequirePieces(ResourceLocation structureRL) {
+        Map<ResourceLocation, List<StructurePieceCountsObj>> counts = this.StructureToPieceCountsObjs;
         // check to make sure we do have entries for this structure
-        if(!this.StructureToPieceCountsObjs.containsKey(structureRL))
+        if(!counts.containsKey(structureRL))
             return null;
 
-        // if cached, return cached map
-        if(cachedRequirePiecesMap.containsKey(structureRL)) {
-            return cachedRequirePiecesMap.get(structureRL);
-        }
-        // otherwise, compute the required pieces map to return and cache
-        else {
+        return cachedRequirePiecesMap.computeIfAbsent(structureRL, rl -> {
             Map<ResourceLocation, RequiredPieceNeeds> requirePiecesMap = new HashMap<>();
-            List<StructurePieceCountsObj> structurePieceCountsObjs = this.StructureToPieceCountsObjs.get(structureRL);
+            List<StructurePieceCountsObj> structurePieceCountsObjs = counts.get(rl);
             if(structurePieceCountsObjs != null) {
                 structurePieceCountsObjs.forEach(entry -> {
                     if (entry.alwaysSpawnThisMany != null)
                         requirePiecesMap.put(ResourceLocation.tryParse(entry.nbtPieceName), new RequiredPieceNeeds(entry.alwaysSpawnThisMany, entry.minimumDistanceFromCenterPiece != null ? entry.minimumDistanceFromCenterPiece : 0));
                 });
             }
-            cachedRequirePiecesMap.put(structureRL, requirePiecesMap);
             return requirePiecesMap;
-        }
+        });
     }
 
     @MethodsReturnNonnullByDefault
     public Map<ResourceLocation, Integer> getMaximumCountForPieces(ResourceLocation structureRL) {
-        // if cached, return cached map
-        if(cachedMaxCountPiecesMap.containsKey(structureRL)) {
-            return cachedMaxCountPiecesMap.get(structureRL);
-        }
-        // otherwise, compute the max count pieces map to return and cache
-        else {
+        Map<ResourceLocation, List<StructurePieceCountsObj>> counts = this.StructureToPieceCountsObjs;
+        return cachedMaxCountPiecesMap.computeIfAbsent(structureRL, rl -> {
             Map<ResourceLocation, Integer> maxCountPiecesMap = new HashMap<>();
-            List<StructurePieceCountsObj> structurePieceCountsObjs = this.StructureToPieceCountsObjs.get(structureRL);
+            List<StructurePieceCountsObj> structurePieceCountsObjs = counts.get(rl);
             if(structurePieceCountsObjs != null) {
                 structurePieceCountsObjs.forEach(entry -> {
                     if(entry.neverSpawnMoreThanThisMany != null)
                         maxCountPiecesMap.put(ResourceLocation.tryParse(entry.nbtPieceName), entry.neverSpawnMoreThanThisMany);
                 });
             }
-            cachedMaxCountPiecesMap.put(structureRL, maxCountPiecesMap);
             return maxCountPiecesMap;
-        }
+        });
     }
 
     public record RequiredPieceNeeds(int maxLimit, int minDistanceFromCenter) {
