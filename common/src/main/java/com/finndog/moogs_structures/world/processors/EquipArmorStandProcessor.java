@@ -30,6 +30,9 @@ import java.util.Optional;
  * processor. Item slots are full {@link ItemStack}s (via {@link ItemStack#SINGLE_ITEM_CODEC}), so
  * enchantments and trims are expressed with the vanilla item-component format.
  *
+ * <p>Items may also be authored in the pre-1.20.5 {@code tag} shape; {@link ItemComponentsCompatCodec}
+ * upgrades those to components on load, so one processor JSON works across the 1.20.5 split.
+ *
  * <p>Being a {@link StructureEntityProcessor}, it is invoked by MSL's fabric
  * {@code EntityProcessorMixin} during entity placement.
  */
@@ -40,11 +43,15 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
      * so enchantments/trims/etc. are authored via the {@code components} field.
      */
     public record ArmorSet(Optional<ItemStack> head, Optional<ItemStack> chest, Optional<ItemStack> legs, Optional<ItemStack> feet) {
+        // Also accepts the pre-1.20.5 item shape ({id, Count, tag}), upgrading it to components, so
+        // one processor JSON works on both sides of the 1.20.5 data-components split.
+        private static final Codec<ItemStack> ITEM_CODEC = ItemComponentsCompatCodec.wrap(ItemStack.SINGLE_ITEM_CODEC);
+
         public static final Codec<ArmorSet> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                ItemStack.SINGLE_ITEM_CODEC.optionalFieldOf("head").forGetter(ArmorSet::head),
-                ItemStack.SINGLE_ITEM_CODEC.optionalFieldOf("chest").forGetter(ArmorSet::chest),
-                ItemStack.SINGLE_ITEM_CODEC.optionalFieldOf("legs").forGetter(ArmorSet::legs),
-                ItemStack.SINGLE_ITEM_CODEC.optionalFieldOf("feet").forGetter(ArmorSet::feet)
+                ITEM_CODEC.optionalFieldOf("head").forGetter(ArmorSet::head),
+                ITEM_CODEC.optionalFieldOf("chest").forGetter(ArmorSet::chest),
+                ITEM_CODEC.optionalFieldOf("legs").forGetter(ArmorSet::legs),
+                ITEM_CODEC.optionalFieldOf("feet").forGetter(ArmorSet::feet)
         ).apply(instance, ArmorSet::new));
     }
 
