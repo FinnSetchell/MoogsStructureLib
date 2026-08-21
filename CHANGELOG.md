@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2] - 2026-08-19
+
+### Fixed
+- Fixed a possible crash during world generation or `/reload` when a structure with piece-count limits was being placed on several threads at once.
+
+---
+
 ## [3.1.1] - 2026-08-18
 
 ### Fixed
