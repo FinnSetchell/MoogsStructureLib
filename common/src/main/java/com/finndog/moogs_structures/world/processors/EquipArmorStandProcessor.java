@@ -26,8 +26,8 @@ import java.util.Optional;
  * authored on them) are written into the stand's {@code ArmorItems} NBT.
  *
  * <p>Targets every {@code minecraft:armor_stand} in any piece whose processor list includes this
- * processor. Item slots are full {@link ItemStack}s (via {@link ItemStack#SINGLE_ITEM_CODEC}), so
- * enchantments and trims are expressed with the vanilla item-component format.
+ * processor. Item slots are full {@link ItemStack}s (via {@link ItemStack#CODEC}), so enchantments
+ * and trims are expressed in the vanilla item NBT format.
  *
  * <p>Being a {@link StructureEntityProcessor}, it is invoked by MSL's fabric
  * {@code EntityProcessorMixin} during entity placement.
@@ -36,7 +36,7 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
 
     /**
      * One full set of armor. Any slot may be omitted (left empty). Each item is a full ItemStack,
-     * so enchantments/trims/etc. are authored via the {@code components} field.
+     * so enchantments/trims/etc. are authored via the item's {@code tag} NBT.
      */
     public record ArmorSet(Optional<ItemStack> head, Optional<ItemStack> chest, Optional<ItemStack> legs, Optional<ItemStack> feet) {
         public static final Codec<ArmorSet> CODEC = RecordCodecBuilder.create(instance -> instance.group(
