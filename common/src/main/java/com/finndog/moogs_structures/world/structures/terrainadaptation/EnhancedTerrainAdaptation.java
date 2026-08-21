@@ -15,8 +15,8 @@ import java.util.Optional;
  * A reduced port of YUNG's API "enhanced terrain adaptation" (LGPL, attribution to YungNickYoung /
  * TelepathicGrunt). Uses a 3-D Gaussian kernel to smoothly modify terrain noise density around a
  * structure's pieces, allowing the terrain above/below the structure to be carved or buried with a
- * natural falloff. The aquifer-override and per-pool-element-override features of the original are
- * intentionally omitted from this port.
+ * natural falloff. Per-pool-element overrides are supported (PoolElementAdaptationOverride); only the
+ * original's aquifer-override feature is left out of this port.
  */
 public class EnhancedTerrainAdaptation {
     /** Sentinel meaning "no adaptation". Kernel radius 0, so it is skipped everywhere. */
