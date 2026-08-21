@@ -25,7 +25,7 @@ import java.util.Optional;
 /**
  * Static helpers used by the Beardifier mixin to apply {@link EnhancedTerrainAdaptation} to
  * structures implementing {@link EnhancedTerrainAdaptationStructure}.
- * Reduced port of YUNG's API EnhancedBeardifierHelper (aquifer override + per-element override removed).
+ * Reduced port of YUNG's API EnhancedBeardifierHelper (aquifer override removed; per-element overrides kept).
  */
 public class EnhancedBeardifierHelper {
 
