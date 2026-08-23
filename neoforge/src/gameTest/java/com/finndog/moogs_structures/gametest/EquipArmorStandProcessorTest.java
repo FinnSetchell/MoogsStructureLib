@@ -15,6 +15,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -86,6 +87,15 @@ public class EquipArmorStandProcessorTest {
 		CompoundTag equipment = resultNbt.getCompoundOrEmpty("equipment");
 		if (!equipment.contains("chest")) {
 			helper.fail("chest slot missing from equipment compound");
+			return;
+		}
+
+		// NeoForge's NATIVE processEntity signature -- the hook structure placement actually invokes.
+		// Before the neoforge bridge this runs NeoForge's no-op default and the stand stays unequipped.
+		StructureTemplate.StructureEntityInfo viaHook = ((StructureProcessor) processor).processEntity(
+			helper.getLevel(), BlockPos.ZERO, info, info, new StructurePlaceSettings(), new StructureTemplate());
+		if (viaHook == null || !viaHook.nbt.getCompoundOrEmpty("equipment").contains("chest")) {
+			helper.fail("NeoForge processEntity hook left the stand unequipped -- entity processors are not wired on NeoForge");
 			return;
 		}
 		helper.succeed();
