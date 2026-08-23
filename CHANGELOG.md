@@ -6,6 +6,7 @@
 
 ### Fixed
 - Fixed a possible crash during world generation or `/reload` when a structure with piece-count limits was being placed on several threads at once.
+- Armour stands and other structure entity processors now generate correctly on every loader, not only Fabric.
 
 ---
 
