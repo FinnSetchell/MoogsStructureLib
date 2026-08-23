@@ -6,6 +6,7 @@ import com.finndog.moogs_structures.utils.DebugFlags;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionEntry;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionNumber;
+import com.finndog.moogs_structures.world.processors.HangingEntityAnchorProcessor;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Codec;
@@ -15,6 +16,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElementType;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -140,6 +144,18 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement {
 
     private Optional<ResourceLocation> singleLocation() {
         return Optional.ofNullable(this.singleLocation);
+    }
+
+    /**
+     * Pre-1.21 hanging entities need their {@code TileX/Y/Z} anchor rewritten to world
+     * coordinates at placement time (see {@link HangingEntityAnchorProcessor}); appending the
+     * processor here gives every versioned structure the fix with no datapack changes.
+     */
+    @Override
+    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox boundingBox, boolean replaceJigsaw) {
+        StructurePlaceSettings settings = super.getSettings(rotation, boundingBox, replaceJigsaw);
+        settings.addProcessor(HangingEntityAnchorProcessor.INSTANCE);
+        return settings;
     }
 
     @Override
