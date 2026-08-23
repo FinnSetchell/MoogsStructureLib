@@ -11,6 +11,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -93,6 +94,34 @@ public class EquipArmorStandProcessorTest {
 		// The old tag.Enchantments must survive the upgrade into the component shape.
 		if (!armorItems.getCompound(2).toString().contains("protection")) {
 			helper.fail("enchantment lost while upgrading legacy item to components");
+			return;
+		}
+		helper.succeed();
+	}
+
+	// Calls NeoForge's NATIVE processEntity signature (the one structure placement invokes), NOT MSL's
+	// overload. Before the neoforge bridge this runs NeoForge's no-op default and the stand stays unequipped.
+	@GameTest(templateNamespace = "moogs_structures", template = "armor_stand_processor_test_empty")
+	public static void neoforgeNativeHookEquips(GameTestHelper helper) {
+		var ops = RegistryOps.create(JsonOps.INSTANCE, helper.getLevel().registryAccess());
+		EquipArmorStandProcessor processor = EquipArmorStandProcessor.CODEC
+			.codec()
+			.parse(ops, JsonParser.parseString(PROCESSOR_JSON))
+			.result()
+			.orElseThrow(() -> new AssertionError("processor decode failed"));
+
+		CompoundTag armorStandNbt = new CompoundTag();
+		armorStandNbt.putString("id", "minecraft:armor_stand");
+		StructureTemplate.StructureEntityInfo info = new StructureTemplate.StructureEntityInfo(
+			Vec3.ZERO, BlockPos.ZERO, armorStandNbt);
+
+		StructureTemplate.StructureEntityInfo result = ((StructureProcessor) processor).processEntity(
+			helper.getLevel(), BlockPos.ZERO, info, info, new StructurePlaceSettings(), new StructureTemplate());
+
+		if (result == null || !result.nbt.contains("ArmorItems")
+			|| result.nbt.getList("ArmorItems", 10).size() < 3
+			|| result.nbt.getList("ArmorItems", 10).getCompound(2).isEmpty()) {
+			helper.fail("NeoForge processEntity hook left the stand unequipped -- entity processors are not wired on NeoForge");
 			return;
 		}
 		helper.succeed();

@@ -3,6 +3,7 @@
   "package": "com.finndog.moogs_structures.mixins.neoforge",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "structures.StructureEntityProcessorMixin",
     "structures.StructurePoolMixin"
   ],
   "client": [],
