@@ -18,6 +18,10 @@ jar {
     manifest {
         attributes["MixinConfigs"] = "moogs_structures-common.mixins.json,moogs_structures-forge.mixins.json"
     }
+    // Dev-only gametests live in the main source set (Forge only scans main for its @GameTestNamespace) --
+    // keep them and their template out of the published jar.
+    exclude 'com/finndog/moogs_structures/gametest/**'
+    exclude 'data/moogs_structures/structure/armor_stand_processor_test_empty.nbt'
 }
 
 sourcesJar {
@@ -66,6 +70,19 @@ minecraft {
             taskName 'Data'
             mods {
                 modDataRun {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        gameTestServer {
+            workingDirectory file('runs/gameTestServer')
+            ideaModule "${rootProject.name}.${project.name}.main"
+            property 'forge.enabledGameTestNamespaces', mod_id
+            property 'forge.enableGameTest', 'true'
+            property 'forge.gameTestServer', 'true'
+            mods {
+                moogs_structures {
                     source sourceSets.main
                 }
             }
@@ -135,5 +152,9 @@ sourceSets.each {
 
 // Make ./gradlew build produce the JiJ jar (with bundled mixinextras), not the plain one.
 tasks.named('jar').configure { archiveClassifier.set('slim') }
-tasks.named('jarJar').configure { archiveClassifier.set('') }
+tasks.named('jarJar').configure {
+    archiveClassifier.set('')
+    exclude 'com/finndog/moogs_structures/gametest/**'
+    exclude 'data/moogs_structures/structure/armor_stand_processor_test_empty.nbt'
+}
 tasks.named('assemble').configure { dependsOn(tasks.named('jarJar')) }
