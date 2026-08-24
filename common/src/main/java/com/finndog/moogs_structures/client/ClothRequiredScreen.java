@@ -14,14 +14,13 @@ import net.minecraft.util.FormattedCharSequence;
  * split and drawn by hand.
  */
 public class ClothRequiredScreen extends Screen {
-    private static final Component MESSAGE = Component.literal(
-            "Moog's Structure Lib's config screen requires Cloth Config API. Install it to configure in game.");
+    private static final Component MESSAGE = Component.translatable("moogs_structures.cloth_required.message");
     private static final int MAX_WIDTH = 310;
 
     private final Screen parent;
 
     public ClothRequiredScreen(Screen parent) {
-        super(Component.literal("Moog's Structure Lib"));
+        super(Component.translatable("moogs_structures.cloth_required.title"));
         this.parent = parent;
     }
 
