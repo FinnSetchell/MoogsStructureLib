@@ -1,7 +1,6 @@
 package com.finndog.moogs_structures.config;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
