@@ -20,6 +20,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Optional;
+import com.finndog.moogs_structures.world.processors.HangingEntityAnchorProcessor;
 
 public class LegacyOceanBottomSinglePoolElement extends SinglePoolElement implements PoolElementAdaptationOverride {
     public static final MapCodec<LegacyOceanBottomSinglePoolElement> CODEC = RecordCodecBuilder.mapCodec(
@@ -49,6 +50,7 @@ public class LegacyOceanBottomSinglePoolElement extends SinglePoolElement implem
         StructurePlaceSettings structureplacesettings = super.getSettings(rotation, mutableBoundingBox, liquidSettings, doNotReplaceJigsaw);
         structureplacesettings.popProcessor(BlockIgnoreProcessor.STRUCTURE_BLOCK);
         structureplacesettings.addProcessor(BlockIgnoreProcessor.STRUCTURE_AND_AIR);
+        structureplacesettings.addProcessor(HangingEntityAnchorProcessor.INSTANCE);
         return structureplacesettings;
     }
 

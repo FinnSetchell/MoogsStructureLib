@@ -7,6 +7,7 @@
 ### Fixed
 - Fixed a possible crash during world generation or `/reload` when a structure with piece-count limits was being placed on several threads at once.
 - Armour stands and other structure entity processors now generate correctly on every loader, not only Fabric.
+- Structures containing item frames, paintings or leash knots no longer spam "invalid position" errors into the log.
 - Removed a harmless "Reference map 'moogs_structures.refmap.json' could not be read" warning that appeared on every Fabric launch.
 
 ---
