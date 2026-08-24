@@ -18,6 +18,7 @@ import com.finndog.moogs_structures.world.processors.VaultRandomizingProcessor;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
+import com.finndog.moogs_structures.world.processors.HangingEntityAnchorProcessor;
 
 public final class MoogsStructuresProcessors {
     public static final ResourcefulRegistry<MapCodec<? extends StructureProcessor>> STRUCTURE_PROCESSOR = ResourcefulRegistries.create(BuiltInRegistries.STRUCTURE_PROCESSOR, MoogsStructuresCommon.MODID);
@@ -30,6 +31,7 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<MapCodec<FloodWithWaterProcessor>> FLOOD_WITH_WATER_PROCESSOR = STRUCTURE_PROCESSOR.register("flood_with_water_processor", () -> FloodWithWaterProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<SpawnerRandomizingProcessor>> SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("spawner_randomizing_processor", () -> SpawnerRandomizingProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> EquipArmorStandProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<HangingEntityAnchorProcessor>> HANGING_ENTITY_ANCHOR_PROCESSOR = STRUCTURE_PROCESSOR.register("hanging_entity_anchor_processor", () -> HangingEntityAnchorProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<TrialSpawnerRandomizingProcessor>> TRIAL_SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("trial_spawner_randomizing_processor", () -> TrialSpawnerRandomizingProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<VaultRandomizingProcessor>> VAULT_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("vault_randomizing_processor", () -> VaultRandomizingProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<VanillaLootSwapProcessor>> VANILLA_LOOT_SWAP_PROCESSOR = STRUCTURE_PROCESSOR.register("vanilla_loot_swap_processor", () -> VanillaLootSwapProcessor.MAP_CODEC);
