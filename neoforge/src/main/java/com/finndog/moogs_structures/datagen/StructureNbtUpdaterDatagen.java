@@ -2,7 +2,6 @@ package com.finndog.moogs_structures.datagen;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
 import net.minecraft.data.DataGenerator;
-import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
