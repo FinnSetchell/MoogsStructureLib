@@ -12,13 +12,12 @@ import net.minecraft.network.chat.Component;
  * button guides them instead of doing nothing.
  */
 public class ClothRequiredScreen extends Screen {
-    private static final Component MESSAGE = Component.literal(
-            "Moog's Structure Lib's config screen requires Cloth Config API. Install it to configure in game.");
+    private static final Component MESSAGE = Component.translatable("moogs_structures.cloth_required.message");
 
     private final Screen parent;
 
     public ClothRequiredScreen(Screen parent) {
-        super(Component.literal("Moog's Structure Lib"));
+        super(Component.translatable("moogs_structures.cloth_required.title"));
         this.parent = parent;
     }
 

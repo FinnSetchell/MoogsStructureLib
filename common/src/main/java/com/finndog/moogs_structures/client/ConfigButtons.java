@@ -22,11 +22,11 @@ public final class ConfigButtons {
 
     public static Button preview(String url) {
         boolean hasUrl = url != null && !url.isBlank();
-        Button.Builder builder = Button.builder(Component.literal("Preview"), b -> { if (hasUrl) openLink(url); })
+        Button.Builder builder = Button.builder(Component.translatable("moogs_structures.config.preview"), b -> { if (hasUrl) openLink(url); })
                 .bounds(0, 0, PREVIEW_WIDTH, 20);
         if (!hasUrl) {
             // No preview link for this row - grey it out and say why on hover.
-            builder.tooltip(Tooltip.create(Component.literal("No preview: this mod hasn't set a preview link (mod_slug).")));
+            builder.tooltip(Tooltip.create(Component.translatable("moogs_structures.config.preview.unavailable")));
         }
         Button button = builder.build();
         button.active = hasUrl;
@@ -49,8 +49,8 @@ public final class ConfigButtons {
 
     private static Component label(boolean disabled) {
         return disabled
-                ? Component.literal("Disabled").withStyle(ChatFormatting.RED)
-                : Component.literal("Enabled").withStyle(ChatFormatting.GREEN);
+                ? Component.translatable("moogs_structures.config.disabled").withStyle(ChatFormatting.RED)
+                : Component.translatable("moogs_structures.config.enabled").withStyle(ChatFormatting.GREEN);
     }
 
     public static void openLink(String url) {
