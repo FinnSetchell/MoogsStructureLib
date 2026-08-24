@@ -1,6 +1,5 @@
 package com.finndog.moogs_structures.world.processors;
 
-import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.world.randomize.BlockStateRandomizer;
 import com.mojang.datafixers.util.Pair;

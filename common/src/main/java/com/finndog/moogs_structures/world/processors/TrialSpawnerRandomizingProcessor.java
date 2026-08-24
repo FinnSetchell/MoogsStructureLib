@@ -1,6 +1,5 @@
 package com.finndog.moogs_structures.world.processors;
 
-import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;

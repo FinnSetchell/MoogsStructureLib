@@ -1,7 +1,6 @@
 package com.finndog.moogs_structures.world.processors;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
-import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
