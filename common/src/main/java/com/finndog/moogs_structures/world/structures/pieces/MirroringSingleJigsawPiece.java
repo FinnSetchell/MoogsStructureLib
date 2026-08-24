@@ -29,6 +29,9 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import com.finndog.moogs_structures.world.processors.HangingEntityAnchorProcessor;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 
 public class MirroringSingleJigsawPiece extends SinglePoolElement implements PoolElementAdaptationOverride {
     public static final MapCodec<MirroringSingleJigsawPiece> CODEC = RecordCodecBuilder.mapCodec((jigsawPieceInstance) ->
@@ -148,6 +151,7 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
 
         this.processors.value().list().forEach(placementsettings::addProcessor);
         this.getProjection().getProcessors().forEach(placementsettings::addProcessor);
+        placementsettings.addProcessor(HangingEntityAnchorProcessor.INSTANCE);
         return placementsettings;
     }
 
