@@ -25,6 +25,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.finndog.moogs_structures.world.processors.HangingEntityAnchorProcessor;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 
 /**
  * A {@link SinglePoolElement} that can resolve different structure templates based
@@ -158,6 +162,15 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
     @Override
     public Optional<EnhancedTerrainAdaptation> moogs_structures_getAdaptationOverride() {
         return this.adaptationOverride;
+    }
+
+    // Block-attached entities need their anchor rewritten at placement time; attaching the
+    // processor here means structures get the fix without touching their datapacks.
+    @Override
+    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox boundingBox, LiquidSettings liquidSettings, boolean replaceJigsaw) {
+        StructurePlaceSettings settings = super.getSettings(rotation, boundingBox, liquidSettings, replaceJigsaw);
+        settings.addProcessor(HangingEntityAnchorProcessor.INSTANCE);
+        return settings;
     }
 
     @Override

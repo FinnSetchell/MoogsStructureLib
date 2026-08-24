@@ -1,5 +1,6 @@
 package com.finndog.moogs_structures.gametest;
 
+import com.finndog.moogs_structures.world.processors.HangingEntityAnchorProcessor;
 import com.finndog.moogs_structures.world.processors.EquipArmorStandProcessor;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
@@ -98,6 +99,20 @@ public class EquipArmorStandProcessorTest {
 			helper.fail("NeoForge processEntity hook left the stand unequipped -- entity processors are not wired on NeoForge");
 			return;
 		}
+		// Block-attached entity anchors (issue 17). A template's baked anchor is stale wherever the
+		// structure lands, so it must come back rewritten to the entity's placed position.
+		CompoundTag frameNbt = new CompoundTag();
+		frameNbt.putString("id", "minecraft:item_frame");
+		StructureTemplate.StructureEntityInfo frameInfo = new StructureTemplate.StructureEntityInfo(
+			new Vec3(5.0, 6.0, 7.0), new BlockPos(5, 6, 7), frameNbt);
+		StructureTemplate.StructureEntityInfo anchored = HangingEntityAnchorProcessor.INSTANCE.processEntity(
+			helper.getLevel(), BlockPos.ZERO, BlockPos.ZERO, frameInfo, frameInfo, new StructurePlaceSettings());
+		if (anchored == null || !anchored.nbt.read("block_pos", BlockPos.CODEC)
+				.map(new BlockPos(5, 6, 7)::equals).orElse(false)) {
+			helper.fail("item frame anchor was not rewritten to its placed position");
+			return;
+		}
+
 		helper.succeed();
 	}
 }
