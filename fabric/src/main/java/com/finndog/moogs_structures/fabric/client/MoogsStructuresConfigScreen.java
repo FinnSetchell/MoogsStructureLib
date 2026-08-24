@@ -27,7 +27,7 @@ public final class MoogsStructuresConfigScreen {
     public static Screen create(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
-                .setTitle(Component.literal("Moog's Structures"))
+                .setTitle(Component.translatable("moogs_structures.config.title"))
                 .setAfterInitConsumer(SupportLinks::addTo);
         ConfigEntryBuilder eb = builder.entryBuilder();
 
@@ -38,13 +38,12 @@ public final class MoogsStructuresConfigScreen {
     }
 
     private static void reloadNotice(ConfigCategory category, ConfigEntryBuilder eb) {
-        category.addEntry(eb.startTextDescription(Component.literal(
-                "Changes apply after you reload the world (quit to title and re-enter, or run /reload), and only affect newly generated chunks.")
+        category.addEntry(eb.startTextDescription(Component.translatable("moogs_structures.config.reload_notice")
                 .withStyle(ChatFormatting.YELLOW)).build());
     }
 
     private static void buildPresets(ConfigBuilder builder, ConfigEntryBuilder eb) {
-        ConfigCategory category = builder.getOrCreateCategory(Component.literal("Replace Vanilla Structures"));
+        ConfigCategory category = builder.getOrCreateCategory(Component.translatable("moogs_structures.config.category.replace_vanilla"));
         reloadNotice(category, eb);
         for (ReplaceVanillaManager.PresetInfo preset : ReplaceVanillaManager.getPresets()) {
             String tooltip = preset.description().isEmpty() ? preset.modid() : preset.description();
@@ -57,21 +56,21 @@ public final class MoogsStructuresConfigScreen {
     }
 
     private static void buildStructures(ConfigBuilder builder, ConfigEntryBuilder eb) {
-        ConfigCategory category = builder.getOrCreateCategory(Component.literal("Structures"));
+        ConfigCategory category = builder.getOrCreateCategory(Component.translatable("moogs_structures.config.category.structures"));
         reloadNotice(category, eb);
-        category.addEntry(eb.startIntSlider(Component.literal("Universal rarity"), toPercent(MslConfig.get().getUniversalSpacingMultiplier()), 25, 400)
+        category.addEntry(eb.startIntSlider(Component.translatable("moogs_structures.config.universal_rarity"), toPercent(MslConfig.get().getUniversalSpacingMultiplier()), 25, 400)
                 .setDefaultValue(100)
                 .setTextGetter(MoogsStructuresConfigScreen::multiplierLabel)
-                .setTooltip(Component.literal("Multiplies the spacing of every Moog's structure. Higher = rarer, lower = more common."))
+                .setTooltip(Component.translatable("moogs_structures.config.universal_rarity.tooltip"))
                 .setSaveConsumer(v -> MslConfig.get().setUniversalSpacingAndSave(v / 100.0))
                 .build());
 
         for (StructureListManager.ModGroup group : StructureListManager.getGroups()) {
             List<AbstractConfigListEntry> entries = new ArrayList<>();
-            entries.add(eb.startIntSlider(Component.literal("All " + group.modName()), toPercent(MslConfig.get().getModSpacingMultiplier(group.modid())), 25, 400)
+            entries.add(eb.startIntSlider(Component.translatable("moogs_structures.config.all_of_mod", group.modName()), toPercent(MslConfig.get().getModSpacingMultiplier(group.modid())), 25, 400)
                     .setDefaultValue(100)
                     .setTextGetter(MoogsStructuresConfigScreen::multiplierLabel)
-                    .setTooltip(Component.literal("Multiplies the spacing of every " + group.modName() + " structure."))
+                    .setTooltip(Component.translatable("moogs_structures.config.mod_rarity.tooltip", group.modName()))
                     .setSaveConsumer(v -> MslConfig.get().setModSpacingAndSave(group.modid(), v / 100.0))
                     .build());
             for (StructureListManager.StructureEntry s : group.structures()) {
