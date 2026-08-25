@@ -30,6 +30,12 @@ public class EquipArmorStandProcessorTest {
 
 	@SubscribeEvent
 	public static void register(RegisterGameTestsEvent event) {
+		// Only register inside an actual gametest run. The gameTest classes sit on the dev
+		// client/server classpath too, and a registered test instance has to be encodable for
+		// the test_instance registry sync (1.21.5+) - otherwise joining clients get dropped.
+		if (System.getProperty("neoforge.enabledGameTestNamespaces") == null) {
+			return;
+		}
 		var env = event.registerEnvironment(
 			ResourceLocation.fromNamespaceAndPath("moogs_structures", "armor_stand_processor_test"),
 			new TestEnvironmentDefinition.AllOf()
