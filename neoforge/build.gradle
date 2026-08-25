@@ -18,7 +18,6 @@ neoForge {
     }
     runs {
         configureEach {
-            systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
             ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
         }
         client {
@@ -35,6 +34,10 @@ neoForge {
         }
         gameTestServer {
             type = "gameTestServer"
+            // Only this run enables gametests. Leaving it on every run made the dev client/server
+            // register test instances too, and since 1.21.5 syncs the test_instance registry that
+            // broke registry sync for joining clients.
+            systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
             gameDirectory = this.mkdir(this.file("runs/gameTestServer"))
         }
     }
