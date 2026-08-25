@@ -5,7 +5,17 @@
 ### Fixed
 - Fixed a possible crash during world generation or `/reload` when a structure with piece-count limits was being placed on several threads at once.
 - Armour stands and other structure entity processors now generate correctly on every loader, not only Fabric.
-- Structures containing item frames, paintings or leash knots no longer spam "invalid position" errors into the log.
+- Structures containing item frames, glow item frames, paintings or leash knots no
+  longer spam "invalid position" errors into the log.
+  - Applied automatically to any piece placed through one of MSL's pool element types
+    (`versioned_single_pool_element`, `mirroring_single_pool_element`,
+    `legacy_ocean_bottom_single_pool_element`).
+  - Pieces that still use vanilla's `minecraft:single_pool_element` are unaffected and
+    will keep logging. Moog's structures are moving onto the MSL element types over
+    time, so these errors will thin out release by release.
+  - A pack can opt a piece in early by adding
+    `moogs_structures:hanging_entity_anchor_processor` to its processor list. This also
+    covers modded entities that store a `TileX` anchor, not just the vanilla four.
 
 ---
 
