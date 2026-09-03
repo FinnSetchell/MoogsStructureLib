@@ -365,7 +365,8 @@ public class GenericJigsawStructure extends Structure {
 
     private void offsetToNewHeight(GenerationContext context, int offsetY, List<PoolElementStructurePiece> pieces, BoundingBox box, int highestLandPos) {
         if (this.yAllowance.isPresent()) {
-            if(this.yAllowance.get().maxYAllowed.isPresent() && (box.maxY() + offsetY) < this.yAllowance.get().minYAllowed.get()) {
+            if(this.yAllowance.get().maxYAllowed.isPresent() && this.yAllowance.get().minYAllowed.isPresent()
+                    && (box.maxY() + offsetY) < this.yAllowance.get().minYAllowed.get()) {
                 highestLandPos = Math.max(highestLandPos, this.yAllowance.get().maxYAllowed.get());
             }
 
