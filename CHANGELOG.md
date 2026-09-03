@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.1.3] - 2026-09-03
+
+### Fixed
+- Fixed a world generation crash when a structure sets `burying_type` alongside only one of
+  `min_y_allowed` / `max_y_allowed`. The absent bound is now ignored rather than throwing,
+  matching how the surrounding y-allowance checks already behave. Packs that set both bounds
+  are unaffected.
+
+---
+
 ## [3.1.2] - 2026-08-19
 
 ### Fixed
