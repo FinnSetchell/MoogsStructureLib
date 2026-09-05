@@ -65,12 +65,13 @@ targets:
     displaySuffix: "[FABRIC + FORGE + NEOFORGE]"
   - branch: 26.1.0-26.1.2
     # gradle.properties says start=26.1.0; platform version lists use "26.1" (26.1 ≡ 26.1.0 under plan version-compare)
+    # Forge only exists from 26.1.1 (63.x); the forge jar declares [26.1.1,26.1.2] itself.
     mc: { start: "26.1.0", end: "26.1.2" }
-    loaders: [fabric, neoforge]
+    loaders: [fabric, forge, neoforge]
     java: 25
-    displaySuffix: "[FABRIC + NEOFORGE]"
+    displaySuffix: "[FABRIC + FORGE + NEOFORGE]"
   - branch: 26.2.0
     mc: { start: "26.2", end: "26.2" }
-    loaders: [fabric, neoforge]
+    loaders: [fabric, forge, neoforge]
     java: 25
-    displaySuffix: "[FABRIC + NEOFORGE]"
+    displaySuffix: "[FABRIC + FORGE + NEOFORGE]"
