@@ -1,25 +1,23 @@
 plugins {
     // see https://fabricmc.net/develop/ for new versions
-    id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT' apply false
+    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT' apply false
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.141' apply false
 }
 
-def loaderProjectsForCollect = subprojects.findAll { it.name in ['fabric', 'neoforge', 'forge'] && new File(it.projectDir, 'build.gradle').exists() }
+def loaderProjects = subprojects.findAll { it.name in ['fabric', 'neoforge', 'forge'] && new File(it.projectDir, 'build.gradle').exists() }
 
 tasks.register('collectJars', Copy) {
-    loaderProjectsForCollect.each { sub ->
-        dependsOn "${sub.path}:jar"
-        from(sub.tasks.named('jar').flatMap { it.archiveFile })
+    loaderProjects.each { sub ->
+        // forge ships the JiJ jar (bundled MixinExtras); its plain 'jar' is the -slim variant
+        def jarTask = sub.name == 'forge' ? 'jarJar' : 'jar'
+        dependsOn "${sub.path}:${jarTask}"
+        from(sub.tasks.named(jarTask).flatMap { it.archiveFile })
     }
     into layout.buildDirectory.dir('libs')
 }
 
-if (tasks.findByName('build') == null) {
-    tasks.register('build') {
-        loaderProjectsForCollect.each { sub -> dependsOn "${sub.path}:build" }
-        finalizedBy 'collectJars'
-    }
-} else {
-    tasks.named('build').configure { finalizedBy 'collectJars' }
+tasks.register('build') {
+    loaderProjects.each { sub -> dependsOn "${sub.path}:build" }
+    finalizedBy 'collectJars'
 }

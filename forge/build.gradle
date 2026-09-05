@@ -1,0 +1,82 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.minecraftforge.gradle' version '[7.0.29,8.0)'
+    id 'net.minecraftforge.jarjar' version '0.2.3'
+    id 'idea'
+}
+
+base {
+    archivesName = "${archives_base_name}-forge-${minecraft_version}"
+}
+
+minecraft {
+    // Forge 26.x runs official mappings in dev and production, so there is no reobf step and no refmap;
+    // the common AT is applied directly.
+    accessTransformers = files(project(':common').file('src/main/resources/META-INF/accesstransformer.cfg'))
+
+    runs {
+        configureEach {
+            workingDir.convention layout.projectDirectory.dir('runs/server')
+            args "--mixin.config=moogs_structures-common.mixins.json", "--mixin.config=moogs_structures-forge.mixins.json"
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
+        }
+        register('client')
+        register('server') { args '--nogui' }
+    }
+}
+
+repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+    mavenCentral()
+}
+
+jar {
+    manifest {
+        attributes["MixinConfigs"] = "moogs_structures-common.mixins.json,moogs_structures-forge.mixins.json"
+    }
+}
+
+sourcesJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Ship the JiJ jar (bundled MixinExtras) as the main artifact.
+jarJar.register()
+tasks.named('jar') { archiveClassifier = 'slim' }
+tasks.named('jarJar') { archiveClassifier = null }
+tasks.named('assemble') { dependsOn(tasks.named('jarJar')) }
+
+dependencies {
+    implementation minecraft.dependency("net.minecraftforge:forge:${forge_minecraft_version}-${forge_version}")
+
+    // Cloth Config has no Forge build past 1.21.3. The common config-screen widgets still need the Cloth API on
+    // the compile classpath; nothing is bundled and those classes are never loaded on Forge (file-only config).
+    compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_neoforge_version}") { transitive = false }
+
+    // No Mixin annotation processor here on purpose: with official mappings everywhere there is nothing to
+    // refmap, and the processor fails hard on every common mixin target without mapping data.
+    compileOnly("io.github.llamalad7:mixinextras-common:0.5.3")
+    implementation("io.github.llamalad7:mixinextras-forge:0.5.3")
+    jarJar("io.github.llamalad7:mixinextras-forge:0.5.3")
+}
+
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'forge')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'forge')
+            }
+        }
+    }
+}

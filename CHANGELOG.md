@@ -2,7 +2,10 @@
 
 ---
 
-## [3.1.3] - 2026-09-03
+## [3.2.0-alpha.1] - 2026-09-05
+
+### Added
+- Forge is now supported
 
 ### Fixed
 - Fixed a world generation crash when a structure sets `burying_type` alongside only one of

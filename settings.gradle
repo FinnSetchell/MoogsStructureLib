@@ -13,6 +13,17 @@ pluginManagement {
                 includeGroupAndSubgroups('net.fabricmc')
             }
         }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'Forge'
+                    url = uri('https://maven.minecraftforge.net')
+                }
+            }
+            filter {
+                includeGroupAndSubgroups('net.minecraftforge')
+            }
+        }
     }
 }
 
@@ -25,3 +36,4 @@ rootProject.name = 'MoogsStructureLib'
 include('common')
 include('fabric')
 include('neoforge')
+include('forge')
