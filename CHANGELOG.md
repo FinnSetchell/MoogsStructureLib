@@ -2,7 +2,7 @@
 
 ---
 
-## [3.2.0-alpha.1] - 2026-09-05
+## [3.2.0] - 2026-09-05
 
 ### Added
 - Forge is now supported on Minecraft 26.1.1 and 26.1.2 (Forge itself does not exist for 26.1.0)
