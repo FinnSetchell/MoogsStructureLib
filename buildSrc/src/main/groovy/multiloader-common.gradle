@@ -28,6 +28,7 @@ repositories {
         filter { includeGroupAndSubgroups('org.spongepowered') }
     }
     maven { url 'https://maven.neoforged.net/releases/' }
+    maven { url 'https://maven.minecraftforge.net/' }
     maven {
         url = 'https://maven.cafeteria.dev/releases'
         content {
@@ -81,7 +82,11 @@ processResources {
             'description'                  : description,
             'neo_version'                  : neo_version,
             'neoforge_loader_version_range': neoforge_loader_version_range,
-            'java_version'                 : java_version
+            'java_version'                 : java_version,
+            'forge_loader_version_range'   : forge_loader_version_range,
+            'forge_minecraft_version_range': forge_minecraft_version_range,
+            // Per-loader Mixin compatibility level; forge/gradle.properties lowers it (stock Mixin lacks JAVA_25).
+            'mixin_compat_level'           : project.findProperty('mixin_compat_level') ?: 'JAVA_25'
     ]
 
     var jsonExpandProps = expandProps.collectEntries {

@@ -2,7 +2,7 @@
     "required": true,
     "minVersion": "0.8",
     "package": "com.finndog.moogs_structures.mixins",
-    "compatibilityLevel": "JAVA_25",
+    "compatibilityLevel": "${mixin_compat_level}",
     "mixins": [
         "features.NoBasaltColumnsInStructuresMixin",
         "features.NoDeltasInStructuresMixin",

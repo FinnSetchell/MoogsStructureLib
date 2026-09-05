@@ -9,8 +9,10 @@ def loaderProjects = subprojects.findAll { it.name in ['fabric', 'neoforge', 'fo
 
 tasks.register('collectJars', Copy) {
     loaderProjects.each { sub ->
-        dependsOn "${sub.path}:jar"
-        from(sub.tasks.named('jar').flatMap { it.archiveFile })
+        // forge ships the JiJ jar (bundled MixinExtras); its plain 'jar' is the -slim variant
+        def jarTask = sub.name == 'forge' ? 'jarJar' : 'jar'
+        dependsOn "${sub.path}:${jarTask}"
+        from(sub.tasks.named(jarTask).flatMap { it.archiveFile })
     }
     into layout.buildDirectory.dir('libs')
 }
