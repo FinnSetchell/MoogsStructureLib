@@ -13,9 +13,8 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/main/LICENSE"
     authors="FinnDog"
     credits="Thanks to TelepathicGrunt for their structure mod template and rs"
     description='''
-    Moog's Structure Lib is a library mod used to generate the structures from the
-    Moog's Voyager Structures mod. This mod provides the core functionality for
-    structure generation and is required by Moog's Voyager Structures.
+    Moogs Structure Lib is a library mod used to generate the structures from the
+    moog structure mods. Feel free to use it for your own projects and mods.
     '''
 
 [[mixins]]
