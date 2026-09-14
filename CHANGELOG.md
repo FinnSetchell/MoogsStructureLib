@@ -2,6 +2,21 @@
 
 ---
 
+## [3.3.0] - 2026-09-14
+
+### Added
+- **Replacement fidelity**: a replaced vanilla structure's stand-in now counts as that structure wherever the game or other mods look for it, so a player loses nothing by turning a preset on. Each replacement in `replace_vanilla.json` can carry an optional `options` block; every option defaults to on.
+  - `alias_lookups` - structure lookups for the vanilla id also match the replacement. Vanilla advancements (such as "A Terrible Fortress"), the nether-brick fortress spawn rule and any mod asking "is this position inside a fortress?" keep working inside the replacement.
+  - `inherit_spawn_overrides` - mobs that other mods add to the vanilla structure's spawn list also spawn in the replacement.
+  - `redirect_locate` - `/locate`, explorer maps, dolphins, eyes of ender and mod compasses searching for the vanilla structure find the replacement.
+  - `mirror_tags` - structure tags that list the vanilla structure also include the replacement. Applies on the next `/reload` or world load after a preset changes.
+- `advanced_random_spread` accepts an optional `when_replacing` block (`modid`, `vanilla_key`, `spacing`, `separation`) so a structure set can match the vanilla structure's density while its preset is on. Rarity multipliers still apply on top.
+
+### Changed
+- `/locate` on a replaced vanilla structure now finds the replacement when `redirect_locate` is on, instead of printing a message.
+
+---
+
 ## [3.1.3] - 2026-09-03
 
 ### Fixed
