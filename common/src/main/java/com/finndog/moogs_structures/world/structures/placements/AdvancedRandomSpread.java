@@ -1,6 +1,7 @@
 package com.finndog.moogs_structures.world.structures.placements;
 
 import com.finndog.moogs_structures.config.MslConfig;
+import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -36,7 +37,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             RandomSpreadType.CODEC.optionalFieldOf("spread_type", RandomSpreadType.LINEAR).forGetter(AdvancedRandomSpread::spreadType),
             Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("min_distance_from_world_origin").forGetter(AdvancedRandomSpread::minDistanceFromWorldOrigin),
             Codec.STRING.optionalFieldOf("spacing_key").forGetter(p -> p.spacingKey),
-            Codec.STRING.optionalFieldOf("structure_id").forGetter(p -> p.structureId)
+            Codec.STRING.optionalFieldOf("structure_id").forGetter(p -> p.structureId),
+            ReplacementSpacing.CODEC.optionalFieldOf("when_replacing").forGetter(p -> p.whenReplacing)
     ).apply(instance, instance.stable(AdvancedRandomSpread::new)));
 
     private final int spacing;
@@ -50,6 +52,9 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     // zones (the tryGenerateStructure mixin remains the universal net for the general case).
     private final Optional<String> structureId;
     private final ResourceLocation structureIdRL;
+    // Spacing pair used instead of the declared one while the named replacement preset is on, so a
+    // set that stands in for a vanilla structure can match its density only when it is replacing it.
+    private final Optional<ReplacementSpacing> whenReplacing;
 
     // Stamped once at world load so a set needs no spacing_key/structure_id in its JSON; the placement
     // then resolves both from the set it belongs to. Volatile: published before any worldgen read.
@@ -61,7 +66,7 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     // observing a torn or spacing<=separation state.
     private volatile Memo memo;
 
-    private record Memo(int generation, int spacing, int separation) {}
+    private record Memo(int generation, boolean replacing, int spacing, int separation) {}
 
     public AdvancedRandomSpread(Vec3i locationOffset,
                                 FrequencyReductionMethod frequencyReductionMethod,
@@ -74,7 +79,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
                                 RandomSpreadType spreadType,
                                 Optional<Integer> minDistanceFromWorldOrigin,
                                 Optional<String> spacingKey,
-                                Optional<String> structureId
+                                Optional<String> structureId,
+                                Optional<ReplacementSpacing> whenReplacing
     ) {
         super(locationOffset, frequencyReductionMethod, frequency, salt, exclusionZone, spacing, separation, spreadType);
         this.spacing = (int)Math.round(spacing * 1.65);
@@ -85,6 +91,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         this.spacingKey = spacingKey;
         this.structureId = structureId;
         this.structureIdRL = structureId.map(ResourceLocation::tryParse).orElse(null);
+        this.whenReplacing = whenReplacing.map(w -> new ReplacementSpacing(w.modid(), w.vanillaKey(),
+                (int)Math.round(w.spacing() * 1.65), (int)Math.round(w.separation() * 1.65)));
 
         if (spacing <= separation) {
             throw new RuntimeException("""
@@ -94,21 +102,40 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
                     Separation: %s.
             """.formatted(spacing, separation));
         }
+
+        if (whenReplacing.isPresent() && whenReplacing.get().spacing() <= whenReplacing.get().separation()) {
+            throw new RuntimeException("""
+                Moog's Structure Lib: when_replacing spacing cannot be less or equal to separation.
+                Please correct this error as there's no way to spawn this structure properly
+                    Spacing: %s
+                    Separation: %s.
+            """.formatted(whenReplacing.get().spacing(), whenReplacing.get().separation()));
+        }
     }
 
     private String effectiveSpacingKey() {
         return spacingKey.orElse(this.owningSetId);
     }
 
+    private boolean isReplacing() {
+        return this.whenReplacing.isPresent()
+                && ReplaceVanillaManager.isEnabled(this.whenReplacing.get().modid(), this.whenReplacing.get().vanillaKey());
+    }
+
     private Memo memo() {
         int gen = MslConfig.get().spacingGeneration();
+        // Part of the memo key, not just its value: an in-game preset toggle swaps the base pair
+        // without bumping the generation counter.
+        boolean replacing = isReplacing();
         Memo m = this.memo;
-        if (m != null && m.generation() == gen) return m;
+        if (m != null && m.generation() == gen && m.replacing() == replacing) return m;
+        int baseSpacing = replacing ? this.whenReplacing.get().spacing() : this.spacing;
+        int baseSeparation = replacing ? this.whenReplacing.get().separation() : this.separation;
         double mult = MslConfig.get().getEffectiveSpacingMultiplier(effectiveSpacingKey());
-        int es = Math.max(1, (int) Math.round(this.spacing * mult));
-        int esep = (int) Math.round(this.separation * mult);
+        int es = Math.max(1, (int) Math.round(baseSpacing * mult));
+        int esep = (int) Math.round(baseSeparation * mult);
         if (esep >= es) esep = es - 1;   // keep spacing > separation so the grid diff stays >= 1
-        Memo nm = new Memo(gen, es, esep);
+        Memo nm = new Memo(gen, replacing, es, esep);
         this.memo = nm;
         return nm;
     }
@@ -197,6 +224,15 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     @Override
     public StructurePlacementType<?> type() {
         return MoogsStructuresStructurePlacementType.ADVANCED_RANDOM_SPREAD.get();
+    }
+
+    public record ReplacementSpacing(String modid, String vanillaKey, int spacing, int separation) {
+        public static final Codec<ReplacementSpacing> CODEC = RecordCodecBuilder.create(builder -> builder.group(
+                Codec.STRING.fieldOf("modid").forGetter(ReplacementSpacing::modid),
+                Codec.STRING.fieldOf("vanilla_key").forGetter(ReplacementSpacing::vanillaKey),
+                Codec.intRange(0, Integer.MAX_VALUE).fieldOf("spacing").forGetter(ReplacementSpacing::spacing),
+                Codec.intRange(0, Integer.MAX_VALUE).fieldOf("separation").forGetter(ReplacementSpacing::separation)
+        ).apply(builder, ReplacementSpacing::new));
     }
 
     public record SuperExclusionZone(HolderSet<StructureSet> otherSet, int chunkCount, Optional<Integer> allowedChunkCount) {
