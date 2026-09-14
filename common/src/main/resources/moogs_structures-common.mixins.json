@@ -8,6 +8,7 @@
         "features.NoBasaltColumnsInStructuresMixin",
         "features.NoDeltasInStructuresMixin",
         "resources.NamespaceResourceManagerAccessor",
+        "resources.TagLoaderMixin",
         "structures.ChunkGeneratorMixin",
         "structures.DisableVanillaStructureMixin",
         "structures.JigsawReplacementProcessorMixin",
