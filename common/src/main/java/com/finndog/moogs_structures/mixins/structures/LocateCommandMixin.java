@@ -58,6 +58,8 @@ public class LocateCommandMixin {
             }
             ReplaceVanillaManager.getActiveReplacement(id).ifPresent(replacement -> {
                 ResourceLocation replacementId = replacement.replacementStructure();
+                // The generator redirects the search to the replacement, so vanilla finds something.
+                if (replacementId != null && replacement.options().redirectLocate()) return;
                 String replacementText = replacementId != null ? replacementId.toString() : "a Moogs structure";
                 source.sendSuccess(() -> Component.literal(
                         id + " has been replaced with " + replacementText +
