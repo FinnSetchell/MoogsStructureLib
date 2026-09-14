@@ -1,8 +1,10 @@
 package com.finndog.moogs_structures.mixins.structures;
 
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
+import com.finndog.moogs_structures.replacement.AliasedStructurePredicate;
 import com.finndog.moogs_structures.replacement.ReplacementAliases;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -13,6 +15,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.function.Predicate;
 
 /**
  * Makes a "is this position inside structure X" question answer yes when X has been replaced and the
@@ -49,6 +53,23 @@ public class StructureManagerMixin {
 
         StructureStart start = self.getStructureWithPieceAt(blockPos, replacement);
         if (start.isValid()) cir.setReturnValue(start);
+    }
+
+    /**
+     * The tag and holder-set overloads both narrow to this one, so location predicates never reach
+     * the single-structure aliasing above.
+     */
+    @Inject(
+            method = "getStructureWithPieceAt(Lnet/minecraft/core/BlockPos;Ljava/util/function/Predicate;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void moogs_structures_aliasStructureWithPieceMatching(BlockPos blockPos, Predicate<Holder<Structure>> predicate, CallbackInfoReturnable<StructureStart> cir) {
+        if (!ReplacementAliases.hasAny() || predicate instanceof AliasedStructurePredicate) return;
+
+        StructureManager self = (StructureManager) (Object) this;
+        Registry<Structure> registry = self.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        cir.setReturnValue(self.getStructureWithPieceAt(blockPos, new AliasedStructurePredicate(predicate, registry)));
     }
 
     private static Structure moogs_structures_aliasFor(StructureManager manager, Structure asked, StructureStart found) {
