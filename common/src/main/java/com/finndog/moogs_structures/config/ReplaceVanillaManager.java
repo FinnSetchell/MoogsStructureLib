@@ -1,12 +1,15 @@
 package com.finndog.moogs_structures.config;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
+import com.finndog.moogs_structures.replacement.ReplacementAliases;
+import com.finndog.moogs_structures.replacement.ReplacementOptions;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +29,8 @@ public final class ReplaceVanillaManager {
     private ReplaceVanillaManager() {}
 
     public record Replacement(String modid, String presetId, boolean defaultEnabled,
-                              ResourceLocation vanillaStructure, ResourceLocation replacementStructure) {}
+                              ResourceLocation vanillaStructure, ResourceLocation replacementStructure,
+                              ReplacementOptions options) {}
 
     /** A preset as shown in the in-game config screen. */
     public record PresetInfo(String modid, String presetId, String name, String description, boolean defaultEnabled) {}
@@ -63,6 +67,7 @@ public final class ReplaceVanillaManager {
     /** Re-reads the config file. Called on every world load so edits apply without a full restart. */
     public static void reloadConfig() {
         MslConfig.get().loadAndSync(PlatformConfig.getConfigDir(), PRESET_DEFAULTS);
+        ReplacementAliases.rebuild();
     }
 
     private static void parseManifest(String modid, String json) {
@@ -97,7 +102,9 @@ public final class ReplaceVanillaManager {
                     MoogsStructuresCommon.LOGGER.warn("Moogs Structures: skipping malformed replacement in preset '{}' of '{}'", presetId, modid);
                     continue;
                 }
-                Replacement r = new Replacement(modid, presetId, defaultEnabled, vanillaStructure, replacementStructure);
+                JsonObject optionsObj = obj.has("options") && obj.get("options").isJsonObject() ? obj.getAsJsonObject("options") : null;
+                ReplacementOptions options = ReplacementOptions.parse(optionsObj, modid, presetId);
+                Replacement r = new Replacement(modid, presetId, defaultEnabled, vanillaStructure, replacementStructure, options);
                 BY_VANILLA_KEY.put(modid + "/" + vanillaKey, r);
                 BY_VANILLA_STRUCTURE.put(vanillaStructure, r);
             }
@@ -117,10 +124,16 @@ public final class ReplaceVanillaManager {
     /** The replacement for this vanilla structure, only if its preset is currently enabled. */
     public static Optional<Replacement> getActiveReplacement(ResourceLocation vanillaStructure) {
         Replacement r = BY_VANILLA_STRUCTURE.get(vanillaStructure);
-        if (r != null && MslConfig.get().presetEnabled(r.modid(), r.presetId(), r.defaultEnabled())) {
-            return Optional.of(r);
-        }
-        return Optional.empty();
+        return r != null && isActive(r) ? Optional.of(r) : Optional.empty();
+    }
+
+    public static boolean isActive(Replacement replacement) {
+        return MslConfig.get().presetEnabled(replacement.modid(), replacement.presetId(), replacement.defaultEnabled());
+    }
+
+    /** Every parsed replacement, enabled or not, for the alias table to filter. */
+    public static Collection<Replacement> getReplacements() {
+        return List.copyOf(BY_VANILLA_STRUCTURE.values());
     }
 
     /** True when any replacement binding exists, letting the mixin skip work entirely when unused. */
@@ -139,5 +152,6 @@ public final class ReplaceVanillaManager {
 
     public static void setPresetEnabled(PresetInfo preset, boolean value) {
         MslConfig.get().setAndSave(preset.modid(), preset.presetId(), value);
+        ReplacementAliases.rebuild();
     }
 }
