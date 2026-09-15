@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1] - 2026-09-15
+
+### Fixed
+- The server no longer freezes when a structure places a wandering trader or villager whose trades include an explorer map, such as Moog's Voyager Structures' carts alongside Repurposed Structures. Trades are now rolled when the trader is first used instead of during world generation.
+
+---
+
 ## [3.3.0] - 2026-09-14
 
 ### Added
