@@ -5,6 +5,8 @@
 ## [3.3.0] - 2026-09-14
 
 ### Added
+- Minecraft 26.3 support (Fabric and NeoForge)
+- Structure mods built for earlier 1.21 versions keep working on 26.3: their structures, mob spawns and chest loot are upgraded as they load
 - **Replacement fidelity**: a replaced vanilla structure's stand-in now counts as that structure wherever the game or other mods look for it, so a player loses nothing by turning a preset on. Each replacement in `replace_vanilla.json` can carry an optional `options` block; every option defaults to on.
   - `alias_lookups` - structure lookups for the vanilla id also match the replacement. Vanilla advancements (such as "A Terrible Fortress"), the nether-brick fortress spawn rule and any mod asking "is this position inside a fortress?" keep working inside the replacement.
   - `inherit_spawn_overrides` - mobs that other mods add to the vanilla structure's spawn list also spawn in the replacement.

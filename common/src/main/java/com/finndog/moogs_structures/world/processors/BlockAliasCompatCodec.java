@@ -31,7 +31,8 @@ import java.util.Optional;
  *
  * <p>Handles both input shapes:
  * <ul>
- *   <li>Map with a {@code Name} field — the shape consumed by {@code BlockState.CODEC}.</li>
+ *   <li>Map with a {@code Name} field (pre-26.3) or an {@code id} field (26.3+) — the shape
+ *       consumed by {@code BlockState.CODEC}.</li>
  *   <li>Raw string — the shape consumed by {@code BuiltInRegistries.BLOCK.byNameCodec()}.</li>
  * </ul>
  *
@@ -47,7 +48,8 @@ public final class BlockAliasCompatCodec {
             "minecraft:chain", "minecraft:iron_chain"
     );
 
-    private static final String NAME_FIELD = "Name";
+    // Block state id key: "Name" before 26.3, "id" from 26.3 (DataVersion 5006).
+    private static final String[] ID_FIELDS = { "Name", "id" };
 
     private BlockAliasCompatCodec() {}
 
@@ -86,10 +88,19 @@ public final class BlockAliasCompatCodec {
         Optional<MapLike<T>> rootOpt = ops.getMap(input).result();
         if (rootOpt.isPresent()) {
             MapLike<T> root = rootOpt.get();
-            T nameValue = root.get(NAME_FIELD);
+            String idField = null;
+            T nameValue = null;
+            for (String field : ID_FIELDS) {
+                nameValue = root.get(field);
+                if (nameValue != null) {
+                    idField = field;
+                    break;
+                }
+            }
             if (nameValue == null) {
                 return input;
             }
+            final String matchedField = idField;
             String name = ops.getStringValue(nameValue).result().orElse(null);
             if (name == null) {
                 return input;
@@ -101,7 +112,7 @@ public final class BlockAliasCompatCodec {
             Map<T, T> rewritten = new LinkedHashMap<>();
             root.entries().forEach(pair -> {
                 String key = ops.getStringValue(pair.getFirst()).result().orElse(null);
-                if (NAME_FIELD.equals(key)) {
+                if (matchedField.equals(key)) {
                     rewritten.put(pair.getFirst(), ops.createString(renamed));
                 } else {
                     rewritten.put(pair.getFirst(), pair.getSecond());
@@ -126,7 +137,7 @@ public final class BlockAliasCompatCodec {
      * Returns the modern alias for {@code name} if a rename is defined AND the
      * target block exists in the runtime registry; otherwise returns {@code name}.
      */
-    private static String aliasIfRegistered(String name) {
+    public static String aliasIfRegistered(String name) {
         String target = RENAMES.get(name);
         if (target == null) {
             return name;
