@@ -114,11 +114,10 @@ public class PieceLimitedJigsawManager {
 
         int yAdjustment = pieceBoundingBox.minY() + startPiece.getGroundLevelDelta();
         startPiece.move(0, pieceCenterY - yAdjustment, 0);
-        if (!context.validBiome().test(context.chunkGenerator().getBiomeSource().getNoiseBiome(
+        if (!context.validBiome().test(context.biomeResolver().getNoiseBiome(
                 QuartPos.fromBlock(pieceCenterX),
                 QuartPos.fromBlock(pieceCenterY),
-                QuartPos.fromBlock(pieceCenterZ),
-                context.randomState().sampler()))) {
+                QuartPos.fromBlock(pieceCenterZ)))) {
             return Optional.empty();
         }
 
@@ -302,13 +301,13 @@ public class PieceLimitedJigsawManager {
 
             for (StructureTemplate.JigsawBlockInfo jigsawBlock : pieceJigsawBlocks) {
                 // Gather jigsaw block information
-                Direction direction = JigsawBlock.getFrontFacing(jigsawBlock.info().state());
-                BlockPos jigsawBlockPos = jigsawBlock.info().pos();
+                Direction direction = JigsawBlock.getFrontFacing(jigsawBlock.state());
+                BlockPos jigsawBlockPos = jigsawBlock.pos();
                 BlockPos jigsawBlockTargetPos = jigsawBlockPos.relative(direction);
 
                 // Get the jigsaw block's piece pool
                 // Resolve pool from NBT via HolderGetter
-                String poolStr = jigsawBlock.info().nbt().getString("pool").get();
+                String poolStr = jigsawBlock.pool().identifier().toString();
                 Identifier poolId = Identifier.tryParse(poolStr);
                 if (poolId == null) {
                     MoogsStructuresCommon.LOGGER.warn("Invalid pool id in jigsaw NBT: '{}'", poolStr);
@@ -524,10 +523,10 @@ public class PieceLimitedJigsawManager {
                     int candidateHeightAdjustments;
                     if (doBoundaryAdjustments && tempCandidateBoundingBox.getYSpan() <= 16) {
                         candidateHeightAdjustments = candidateJigsawBlocks.stream().mapToInt((pieceCandidateJigsawBlock) -> {
-                            if (!tempCandidateBoundingBox.isInside(pieceCandidateJigsawBlock.info().pos().relative(JigsawBlock.getFrontFacing(pieceCandidateJigsawBlock.info().state())))) {
+                            if (!tempCandidateBoundingBox.isInside(pieceCandidateJigsawBlock.pos().relative(JigsawBlock.getFrontFacing(pieceCandidateJigsawBlock.state())))) {
                                 return 0;
                             } else {
-                                String tgt = pieceCandidateJigsawBlock.info().nbt().getString("pool").get();
+                                String tgt = pieceCandidateJigsawBlock.pool().identifier().toString();
                                 Identifier targetPoolId = Identifier.tryParse(tgt);
                                 if (targetPoolId == null) return 0;
                                 ResourceKey<StructureTemplatePool> targetKey =
@@ -554,8 +553,8 @@ public class PieceLimitedJigsawManager {
 
                     // Check for each of the candidate's jigsaw blocks for a match
                     for (StructureTemplate.JigsawBlockInfo candidateJigsawBlock : candidateJigsawBlocks) {
-                        if (GeneralUtils.canJigsawsAttach(jigsawBlock.info(), candidateJigsawBlock.info())) {
-                            BlockPos candidateJigsawBlockPos = candidateJigsawBlock.info().pos();
+                        if (JigsawBlock.canAttach(jigsawBlock, candidateJigsawBlock)) {
+                            BlockPos candidateJigsawBlockPos = candidateJigsawBlock.pos();
                             BlockPos candidateJigsawBlockRelativePos = new BlockPos(
                                     jigsawBlockTargetPos.getX() - candidateJigsawBlockPos.getX(),
                                     jigsawBlockTargetPos.getY() - candidateJigsawBlockPos.getY(),
@@ -572,7 +571,7 @@ public class PieceLimitedJigsawManager {
 
                             int candidateJigsawBlockRelativeY = candidateJigsawBlockPos.getY();
                             int candidateJigsawYOffsetNeeded =
-                                    jigsawBlockRelativeY - candidateJigsawBlockRelativeY + JigsawBlock.getFrontFacing(jigsawBlock.info().state()).getStepY();
+                                    jigsawBlockRelativeY - candidateJigsawBlockRelativeY + JigsawBlock.getFrontFacing(jigsawBlock.state()).getStepY();
 
                             // Determine how much we need to offset the candidate piece itself in order to have the jigsaw blocks aligned.
                             // Depends on if the placement of both pieces is rigid or not

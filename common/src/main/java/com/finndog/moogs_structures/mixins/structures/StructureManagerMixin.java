@@ -41,17 +41,18 @@ public class StructureManagerMixin {
         if (start.isValid()) cir.setReturnValue(start);
     }
 
+    // 26.3: the single-structure overload takes raw coordinates; the BlockPos one is gone.
     @Inject(
-            method = "getStructureWithPieceAt(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/Structure;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;",
+            method = "getStructureWithPieceAt(IIILnet/minecraft/world/level/levelgen/structure/Structure;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;",
             at = @At("RETURN"),
             cancellable = true
     )
-    private void moogs_structures_aliasStructureWithPieceAt(BlockPos blockPos, Structure structure, CallbackInfoReturnable<StructureStart> cir) {
+    private void moogs_structures_aliasStructureWithPieceAt(int x, int y, int z, Structure structure, CallbackInfoReturnable<StructureStart> cir) {
         StructureManager self = (StructureManager) (Object) this;
         Structure replacement = moogs_structures_aliasFor(self, structure, cir.getReturnValue());
         if (replacement == null) return;
 
-        StructureStart start = self.getStructureWithPieceAt(blockPos, replacement);
+        StructureStart start = self.getStructureWithPieceAt(x, y, z, replacement);
         if (start.isValid()) cir.setReturnValue(start);
     }
 

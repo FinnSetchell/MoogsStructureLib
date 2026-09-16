@@ -2,19 +2,17 @@ package com.finndog.moogs_structures.world.structures.placements;
 
 import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
-import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderSet;
-import net.minecraft.core.RegistryCodecs;
+import net.minecraft.core.registries.codec.RegistryCodecs;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.structure.placement.ConcentricRingsStructurePlacement;
-import net.minecraft.world.level.levelgen.structure.placement.StructurePlacementType;
 
 import java.util.Optional;
 
@@ -34,7 +32,7 @@ public class ConditionalConcentricRings extends ConcentricRingsStructurePlacemen
             ExclusionZone.CODEC.optionalFieldOf("exclusion_zone").forGetter(ConditionalConcentricRings::exclusionZone),
             Codec.intRange(0, 1023).fieldOf("distance").forGetter(ConditionalConcentricRings::distance),
             Codec.intRange(0, 1023).fieldOf("spread").forGetter(ConditionalConcentricRings::spread),
-            RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("preferred_biomes").forGetter(ConditionalConcentricRings::preferredBiomes),
+            RegistryCodecs.holderSet(Registries.BIOME).fieldOf("preferred_biomes").forGetter(ConditionalConcentricRings::preferredBiomes),
             Codec.STRING.fieldOf("modid").forGetter(p -> p.modid),
             Codec.STRING.fieldOf("vanilla_key").forGetter(p -> p.vanillaKey),
             Codec.intRange(1, 4095).fieldOf("enabled_count").forGetter(p -> p.enabledCount),
@@ -85,7 +83,8 @@ public class ConditionalConcentricRings extends ConcentricRingsStructurePlacemen
     }
 
     @Override
-    public StructurePlacementType<?> type() {
-        return MoogsStructuresStructurePlacementType.CONDITIONAL_CONCENTRIC_RINGS.get();
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public MapCodec<ConcentricRingsStructurePlacement> codec() {
+        return (MapCodec) CODEC;
     }
 }

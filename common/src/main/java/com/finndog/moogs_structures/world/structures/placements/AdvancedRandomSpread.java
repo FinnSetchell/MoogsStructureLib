@@ -2,13 +2,12 @@ package com.finndog.moogs_structures.world.structures.placements;
 
 import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
-import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
-import net.minecraft.core.RegistryCodecs;
+import net.minecraft.core.registries.codec.RegistryCodecs;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.util.ExtraCodecs;
@@ -19,7 +18,6 @@ import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadType;
-import net.minecraft.world.level.levelgen.structure.placement.StructurePlacementType;
 
 import net.minecraft.resources.Identifier;
 
@@ -224,9 +222,13 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         return chunkpos.x() == x && chunkpos.z() == z;
     }
 
+    // Vanilla's codec() returns MapCodec<RandomSpreadStructurePlacement> rather than a wildcard, so a
+    // subclass has to cast. StructurePlacement.CODEC dispatches on the returned instance's identity,
+    // which the cast keeps.
     @Override
-    public StructurePlacementType<?> type() {
-        return MoogsStructuresStructurePlacementType.ADVANCED_RANDOM_SPREAD.get();
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public MapCodec<RandomSpreadStructurePlacement> codec() {
+        return (MapCodec) CODEC;
     }
 
     public record ReplacementSpacing(String modid, String vanillaKey, int spacing, int separation) {
@@ -242,7 +244,7 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         private static final ThreadLocal<Set<Identifier>> EVALUATING_SETS = ThreadLocal.withInitial(HashSet::new);
 
         public static final Codec<SuperExclusionZone> CODEC = RecordCodecBuilder.create(builder -> builder.group(
-                RegistryCodecs.homogeneousList(Registries.STRUCTURE_SET, StructureSet.DIRECT_CODEC).fieldOf("other_set").forGetter(SuperExclusionZone::otherSet),
+                RegistryCodecs.holderSet(Registries.STRUCTURE_SET, StructureSet.DIRECT_CODEC).fieldOf("other_set").forGetter(SuperExclusionZone::otherSet),
                 Codec.intRange(1, Integer.MAX_VALUE).fieldOf("chunk_count").forGetter(SuperExclusionZone::chunkCount),
                 Codec.intRange(1, Integer.MAX_VALUE).optionalFieldOf("allowed_chunk_count").forGetter(SuperExclusionZone::allowedChunkCount)
         ).apply(builder, SuperExclusionZone::new));

@@ -12,7 +12,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.Beardifier;
-import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
@@ -36,7 +35,7 @@ public class EnhancedBeardifierHelper {
         int chunkMinBlockX = chunkPos.getMinBlockX();
         int chunkMinBlockZ = chunkPos.getMinBlockZ();
 
-        List<StructureStart> structureStarts = structureManager.startsForStructure(chunkPos,
+        List<StructureStart> structureStarts = structureManager.startsForStructure(chunkPos.x(), chunkPos.z(),
                 structure -> structure instanceof EnhancedTerrainAdaptationStructure);
 
         for (StructureStart structureStart : structureStarts) {
@@ -109,11 +108,11 @@ public class EnhancedBeardifierHelper {
             }
         }
 
-        // 1.21.11's Beardifier is List-based with a nullable affectedBox; both compute() and
-        // fillArray() short-circuit to 0 when affectedBox is null. So the returned Beardifier
-        // must carry an affectedBox covering the enhanced regions, or the enhanced density (added
-        // via the compute mixin) would never be evaluated. Union the original box with the enhanced
-        // pieces/junctions (inflated by their kernel radius) to keep enhanced adaptation active.
+        // The Beardifier is List-based with a nullable affectedBox; both sampleValue() and
+        // sampleVolume() short-circuit to 0 outside it. So the returned Beardifier must carry an
+        // affectedBox covering the enhanced regions, or the enhanced density (added via the
+        // sampleValueUnchecked mixin) would never be evaluated. Union the original box with the
+        // enhanced pieces/junctions (inflated by their kernel radius) to keep enhanced adaptation active.
         BoundingBox affectedBox = computeEnhancedAffectedBox(
                 enhancedBeardifierRigidList,
                 enhancedJunctionList,
@@ -143,7 +142,7 @@ public class EnhancedBeardifierHelper {
         // is never EMPTY and we never take the replacement branch above.
         ((BeardifierAccessor) target).setAffectedBox(affectedBox);
         EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) target;
-        // Store the lists themselves, never iterators: compute() is called from world-gen worker
+        // Store the lists themselves, never iterators: sampling is called from world-gen worker
         // threads and re-entrantly per noise cell, so a shared cursor gets advanced out from under
         // a running loop (hasNext() passes, next() throws NoSuchElementException). computeDensity()
         // takes a fresh local cursor per call instead.
@@ -173,12 +172,8 @@ public class EnhancedBeardifierHelper {
         return box;
     }
 
-    public static double computeDensity(DensityFunction.FunctionContext ctx, double density, EnhancedBeardifierData data) {
-        int x = ctx.blockX();
-        int y = ctx.blockY();
-        int z = ctx.blockZ();
-
-        // Iterate with local cursors over the stored lists. compute() runs on world-gen worker
+    public static double computeDensity(int x, int y, int z, double density, EnhancedBeardifierData data) {
+        // Iterate with local cursors over the stored lists. Sampling runs on world-gen worker
         // threads, so anything cursor-shaped kept on the Beardifier would be shared mutable state.
         ObjectList<EnhancedBeardifierRigid> pieces = data.moogs_structures_getEnhancedPieces();
         if (pieces != null) {

@@ -16,8 +16,8 @@ import net.minecraft.util.random.Weighted;
 import net.minecraft.util.random.WeightedList;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.StructureManager;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -44,12 +44,13 @@ import java.util.function.Predicate;
 @Mixin(ChunkGenerator.class)
 public class ChunkGeneratorMixin {
 
+    // 26.3: biome spawn data moved to environment attributes, so getMobsAt takes the Level instead of a biome holder.
     @Inject(
-            method = "getMobsAt(Lnet/minecraft/core/Holder;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/entity/MobCategory;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/util/random/WeightedList;",
+            method = "getMobsAt(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/entity/MobCategory;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/util/random/WeightedList;",
             at = @At("HEAD"),
             cancellable = true
     )
-    private void moogs_structures_inheritSpawnOverrides(Holder<Biome> biome, StructureManager structureManager, MobCategory mobCategory, BlockPos blockPos,
+    private void moogs_structures_inheritSpawnOverrides(Level level, StructureManager structureManager, MobCategory mobCategory, BlockPos blockPos,
                                                         CallbackInfoReturnable<WeightedList<MobSpawnSettings.SpawnerData>> cir) {
         if (!ReplacementAliases.hasAny()) return;
 

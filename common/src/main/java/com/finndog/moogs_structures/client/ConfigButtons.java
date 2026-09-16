@@ -1,7 +1,7 @@
 package com.finndog.moogs_structures.client;
 
+import com.mojang.blaze3d.Blaze3D;
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -9,6 +9,7 @@ import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+import java.net.URI;
 import java.util.function.Consumer;
 
 /**
@@ -58,9 +59,11 @@ public final class ConfigButtons {
         // 26.2: the current screen moved off Minecraft onto its Gui (Minecraft.screen ->
         // Minecraft.gui.screen()), and setScreen was renamed to setScreenAndShow.
         Screen previous = mc.gui.screen();
+        // 26.3: links are URIs, and opening one moved off Util.OS onto Blaze3D with the SDL switch.
+        URI uri = URI.create(url);
         mc.setScreenAndShow(new ConfirmLinkScreen(open -> {
-            if (open) Util.getPlatform().openUri(url);
+            if (open) Blaze3D.openUri(uri);
             mc.setScreenAndShow(previous);
-        }, url, true));
+        }, uri, true));
     }
 }

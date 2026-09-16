@@ -1,17 +1,15 @@
 package com.finndog.moogs_structures.world.placements;
 
-import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.placement.PlacementContext;
 import net.minecraft.world.level.levelgen.placement.PlacementModifier;
-import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
-public class SnapToLowerNonAirPlacement extends PlacementModifier {
+public class SnapToLowerNonAirPlacement implements PlacementModifier {
 	private static final SnapToLowerNonAirPlacement INSTANCE = new SnapToLowerNonAirPlacement();
 	public static final MapCodec<SnapToLowerNonAirPlacement> CODEC = MapCodec.unit(() -> INSTANCE);
 
@@ -20,16 +18,16 @@ public class SnapToLowerNonAirPlacement extends PlacementModifier {
 	}
 
 	@Override
-	public final Stream<BlockPos> getPositions(PlacementContext placementContext, RandomSource random, BlockPos blockPos) {
+	public void modify(PlacementContext placementContext, RandomSource random, BlockPos blockPos, Consumer<BlockPos> output) {
 		BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos().set(blockPos);
-		while(placementContext.getBlockState(mutable).isAir() && mutable.getY() > placementContext.getMinGenY()) {
+		while(placementContext.getBlockState(mutable).isAir() && mutable.getY() > placementContext.getMinY()) {
 			mutable.move(Direction.DOWN);
 		}
-		return Stream.of(mutable.immutable());
+		output.accept(mutable.immutable());
 	}
 
 	@Override
-	public PlacementModifierType<?> type() {
-		return MoogsStructuresPlacements.SNAP_TO_LOWER_NON_AIR_PLACEMENT.get();
+	public MapCodec<SnapToLowerNonAirPlacement> codec() {
+		return CODEC;
 	}
 }

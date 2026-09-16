@@ -96,7 +96,7 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
 
         ObjectArrayList<StructureTemplate.JigsawBlockInfo> out = new ObjectArrayList<>(raw.size());
         for (StructureTemplate.StructureBlockInfo info : raw) {
-            out.add(StructureTemplate.JigsawBlockInfo.of(info));
+            out.add(StructureTemplate.JigsawBlockInfo.parse(info));
         }
 
         Util.shuffle(out, random);

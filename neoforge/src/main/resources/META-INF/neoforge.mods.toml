@@ -5,7 +5,7 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 
 [[mods]]
     modId="moogs_structures"
-    logoFile="assets/moogs_structures/icon.png"
+    iconFile="assets/moogs_structures/icon.png"
     logoBlur=false
     version="${version}"
     displayName="Moog's Structure Lib"
@@ -26,6 +26,6 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 [[dependencies.moogs_structures]]
     modId="minecraft"
     mandatory = true
-    versionRange="[26.2,26.2]"
+    versionRange="[26.3,26.3]"
     ordering = "NONE"
     side = "BOTH"

@@ -1,16 +1,16 @@
 package com.finndog.moogs_structures.world.placements;
 
-import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.placement.PlacementContext;
 import net.minecraft.world.level.levelgen.placement.PlacementModifier;
-import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
-public class MinusEightPlacement extends PlacementModifier {
+// 26.3: PlacementModifier is an interface that pushes positions to a consumer instead of
+// returning a stream, and the type registry holds MapCodecs directly (codec() replaces type()).
+public class MinusEightPlacement implements PlacementModifier {
 	private static final MinusEightPlacement INSTANCE = new MinusEightPlacement();
 	public static final MapCodec<MinusEightPlacement> CODEC = MapCodec.unit(() -> INSTANCE);
 
@@ -19,12 +19,12 @@ public class MinusEightPlacement extends PlacementModifier {
 	}
 
 	@Override
-	public Stream<BlockPos> getPositions(PlacementContext placementContext, RandomSource random, BlockPos blockPos) {
-		return Stream.of(new BlockPos(blockPos.getX() - 8, blockPos.getY(), blockPos.getZ() - 8));
+	public void modify(PlacementContext placementContext, RandomSource random, BlockPos blockPos, Consumer<BlockPos> output) {
+		output.accept(new BlockPos(blockPos.getX() - 8, blockPos.getY(), blockPos.getZ() - 8));
 	}
 
 	@Override
-	public PlacementModifierType<?> type() {
-		return MoogsStructuresPlacements.MINUS_EIGHT_PLACEMENT.get();
+	public MapCodec<MinusEightPlacement> codec() {
+		return CODEC;
 	}
 }

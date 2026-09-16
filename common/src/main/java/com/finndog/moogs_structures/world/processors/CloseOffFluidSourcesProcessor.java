@@ -63,7 +63,7 @@ public class CloseOffFluidSourcesProcessor implements StructureProcessor {
             return processedBlockInfo;
         }
 
-        if(!GeneralUtils.isFullCube(levelReader, processedBlockInfo.pos(), processedBlockInfo.state()) || !processedBlockInfo.state().blocksMotion()) {
+        if(!GeneralUtils.isFullCube(levelReader, processedBlockInfo.pos(), processedBlockInfo.state()) || !processedBlockInfo.state().isSolid()) {
             ChunkAccess currentChunk = levelReader.getChunk(currentChunkPos.x(), currentChunkPos.z());
 
             if(ifAirInWorld && !currentChunk.getBlockState(processedBlockInfo.pos()).isAir()) return processedBlockInfo;
