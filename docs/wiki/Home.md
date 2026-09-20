@@ -55,7 +55,7 @@ Throughout this wiki, we use examples from **[MoogsVoyagerStructures](https://gi
 
 ## Getting Help
 
-- Join the [Discord server](https://discord.gg/S5nffJbuvA) for support
+- Join the [Discord server](https://moogsmods.com/discord?r=github) for support
 - Check the [GitHub repository](https://github.com/FinnSetchell/MoogsStructureLib) for issues and updates
 - Review the examples in this wiki for common patterns
 
