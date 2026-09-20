@@ -1,6 +1,6 @@
 ![Banner](https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_header.webp)
 
-[![Discord](https://img.shields.io/discord/869218732650688543?color=3c3040&label=DISCORD&style=for-the-badge)](https://discord.com/invite/S5nffJbuvA)
+[![Discord](https://img.shields.io/discord/869218732650688543?color=3c3040&label=DISCORD&style=for-the-badge)](https://moogsmods.com/discord?r=readme-msl)
 
 [![My projects](https://img.shields.io/badge/CurseForge-projects-3c3040?style=for-the-badge&logo=curseforge)](https://www.curseforge.com/members/finndog_123/projects)
 
@@ -26,6 +26,6 @@ The wiki includes step-by-step guides, complete JSON references, real examples f
 
 ![banner](https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_discord.webp)
 
-The best and fastest way to get replies is to join our [Discord server](https://discord.gg/S5nffJbuvA).
+The best and fastest way to get replies is to join our [Discord server](https://moogsmods.com/discord?r=readme-msl).
 
 ![BHsponser](https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_promo.webp)
