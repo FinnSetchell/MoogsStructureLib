@@ -21,7 +21,7 @@ public final class SupportLinks {
 
     private static final String DISCORD_ID = "discord";
     private static final String KOFI_ID = "kofi";
-    private static final String DISCORD_URL = "https://discord.gg/S5nffJbuvA";
+    private static final String DISCORD_URL = "https://moogsmods.com/discord?r=ingame-msl";
     private static final String KOFI_URL = "https://ko-fi.com/finndog";
     private static final ResourceLocation DISCORD_TEX = new ResourceLocation(MoogsStructuresCommon.MODID, "textures/gui/discord.png");
     private static final ResourceLocation KOFI_TEX = new ResourceLocation(MoogsStructuresCommon.MODID, "textures/gui/kofi.png");
