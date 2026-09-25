@@ -4,7 +4,6 @@ import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.world.structures.codecs.YRangeAllowance;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
-import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
 import com.google.common.collect.Maps;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -32,7 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-public class GenericNetherJigsawStructure extends GenericJigsawStructure implements EnhancedTerrainAdaptationStructure {
+public class GenericNetherJigsawStructure extends GenericJigsawStructure {
 
     public static final MapCodec<GenericNetherJigsawStructure> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             GenericNetherJigsawStructure.settingsCodec(instance),
@@ -53,7 +52,6 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure impleme
 
     public final Optional<Integer> ledgeOffsetY;
     public final LAND_SEARCH_DIRECTION searchDirection;
-    public final EnhancedTerrainAdaptation enhancedTerrainAdaptation;
 
     public GenericNetherJigsawStructure(StructureSettings config,
                                         Holder<StructureTemplatePool> startPool,
@@ -83,16 +81,11 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure impleme
             maxDistanceFromCenter,
             Optional.empty(),
             useBoundingBoxHack,
-            liquidSettings);
+            liquidSettings,
+            enhancedTerrainAdaptation);
 
         this.ledgeOffsetY = ledgeOffsetY;
         this.searchDirection = searchDirection;
-        this.enhancedTerrainAdaptation = enhancedTerrainAdaptation;
-    }
-
-    @Override
-    public EnhancedTerrainAdaptation getEnhancedTerrainAdaptation() {
-        return this.enhancedTerrainAdaptation;
     }
 
     @Override
