@@ -4,6 +4,8 @@ import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.world.structures.codecs.YRangeAllowance;
 import com.finndog.moogs_structures.world.structures.pieces.PieceLimitedJigsawManager;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
 import com.google.common.collect.Maps;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -45,7 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
-public class GenericJigsawStructure extends Structure {
+public class GenericJigsawStructure extends Structure implements EnhancedTerrainAdaptationStructure {
 
     public static final MapCodec<GenericJigsawStructure> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             GenericJigsawStructure.settingsCodec(instance),
@@ -62,7 +64,8 @@ public class GenericJigsawStructure extends Structure {
             Codec.intRange(1, 128).optionalFieldOf("max_distance_from_center").forGetter(structure -> structure.maxDistanceFromCenter),
             StringRepresentable.fromEnum(BURYING_TYPE::values).optionalFieldOf("burying_type").forGetter(structure -> structure.buryingType),
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
-            LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings)
+            LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
+            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
     ).apply(instance, GenericJigsawStructure::new));
 
     public final Holder<StructureTemplatePool> startPool;
@@ -79,6 +82,7 @@ public class GenericJigsawStructure extends Structure {
     public final Optional<BURYING_TYPE> buryingType;
     public final boolean useBoundingBoxHack;
     public final LiquidSettings liquidSettings;
+    public final EnhancedTerrainAdaptation enhancedTerrainAdaptation;
 
 
     public GenericJigsawStructure(StructureSettings config,
@@ -95,9 +99,11 @@ public class GenericJigsawStructure extends Structure {
                                   Optional<Integer> maxDistanceFromCenter,
                                   Optional<BURYING_TYPE> buryingType,
                                   boolean useBoundingBoxHack,
-                                  LiquidSettings liquidSettings)
+                                  LiquidSettings liquidSettings,
+                                  EnhancedTerrainAdaptation enhancedTerrainAdaptation)
     {
         super(config);
+        this.enhancedTerrainAdaptation = enhancedTerrainAdaptation;
         this.startPool = startPool;
         this.size = size;
         this.yAllowance = yAllowance;
@@ -121,6 +127,11 @@ public class GenericJigsawStructure extends Structure {
                     Structure pool of problematic structure: %s
             """.formatted(startPool.value()));
         }
+    }
+
+    @Override
+    public EnhancedTerrainAdaptation getEnhancedTerrainAdaptation() {
+        return this.enhancedTerrainAdaptation;
     }
 
     protected boolean extraSpawningChecks(GenerationContext context, BlockPos blockPos) {
