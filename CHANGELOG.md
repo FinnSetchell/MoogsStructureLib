@@ -1,3 +1,13 @@
+## [3.4.0]
+
+### Added
+- Regular jigsaw structures can now use enhanced terrain adaptation, not only Nether ones
+
+### Changed
+- The structure sliders now say how common structures are: 2x means about twice as many, 0.5x about half as many. Your existing settings carry over unchanged
+
+---
+
 ## [3.3.1] - 2026-09-15
 
 ### Fixed
