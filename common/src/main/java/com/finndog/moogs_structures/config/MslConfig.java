@@ -14,6 +14,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -25,16 +26,19 @@ import java.util.TreeSet;
  * <pre>{@code
  * {
  *   "presets": { "<modid>": { "<presetId>": true } },
- *   "spacing": {
+ *   "frequency": {
  *     "universal_multiplier": 1.0,
  *     "per_mod": { "<modid>": 1.0 },
  *     "per_structure": { "<structure_set_id>": 1.0 }
  *   }
  * }
  * }</pre>
- * Presets are booleans discovered from mod manifests (synced on load). Spacing multipliers scale a
- * structure's spacing/separation; the effective multiplier for a set is
- * universal x per_mod[namespace] x per_structure[id]. Both sections share one atomic writer so
+ * Presets are booleans discovered from mod manifests (synced on load). Frequency multipliers say how
+ * common a structure is: 2.0 means about twice as many. The effective frequency for a set is
+ * universal x per_mod[namespace] x per_structure[id], and placements scale spacing/separation by
+ * 1 / sqrt(frequency), because the number of structures in an area goes with 1 / spacing^2.
+ * A pre-3.4 file stores spacing multipliers instead; they are converted on read (f = 1 / s^2),
+ * which reproduces the old effective spacing exactly. Both sections share one atomic writer so
  * neither clobbers the other. A generation counter is bumped on {@link #loadAndSync} (world load)
  * so placements can memoize effective values and only recompute per world session, not per edit.
  */
@@ -46,9 +50,14 @@ public final class MslConfig {
     public static MslConfig get() { return INSTANCE; }
 
     private Map<String, Map<String, Boolean>> presets = new TreeMap<>();
-    private double universalSpacing = 1.0;
-    private Map<String, Double> perModSpacing = new TreeMap<>();
-    private Map<String, Double> perStructureSpacing = new TreeMap<>();
+    // Bounds for a stored frequency. Wide enough to hold every legacy spacing value (0.25x..4x
+    // spacing = 16x..1/16 frequency); only guards against zero, negative or absurd hand edits.
+    private static final double MIN_FREQUENCY = 0.01;
+    private static final double MAX_FREQUENCY = 100.0;
+
+    private double universalFrequency = 1.0;
+    private Map<String, Double> perModFrequency = new TreeMap<>();
+    private Map<String, Double> perStructureFrequency = new TreeMap<>();
     private Set<String> disabledStructures = new TreeSet<>();
     private Set<String> hiddenButtons = new TreeSet<>();
     // Immutable snapshot read by the worldgen mixin off multiple threads; swapped only at world load.
@@ -73,9 +82,9 @@ public final class MslConfig {
         }
 
         this.presets = mergedPresets;
-        this.universalSpacing = stored.universalSpacing;
-        this.perModSpacing = stored.perModSpacing;
-        this.perStructureSpacing = stored.perStructureSpacing;
+        this.universalFrequency = stored.universalFrequency;
+        this.perModFrequency = stored.perModFrequency;
+        this.perStructureFrequency = stored.perStructureFrequency;
         this.disabledStructures = stored.disabledStructures;
         this.hiddenButtons = stored.hiddenButtons;
         this.disabledSnapshot = buildSnapshot(stored.disabledStructures);
@@ -106,45 +115,57 @@ public final class MslConfig {
         writeFile();
     }
 
-    // --- spacing ---
+    // --- frequency ---
 
     /** Bumped each world load; placements memoize effective spacing against this so an in-world edit never desyncs an active session. */
     public int spacingGeneration() { return generation; }
 
-    public double getUniversalSpacingMultiplier() { return universalSpacing; }
+    public double getUniversalFrequency() { return universalFrequency; }
 
-    public double getModSpacingMultiplier(String modid) { return perModSpacing.getOrDefault(modid, 1.0); }
+    public double getModFrequency(String modid) { return perModFrequency.getOrDefault(modid, 1.0); }
 
-    public double getStructureSpacingMultiplier(String structureSetId) { return perStructureSpacing.getOrDefault(structureSetId, 1.0); }
+    public double getStructureFrequency(String structureSetId) { return perStructureFrequency.getOrDefault(structureSetId, 1.0); }
 
     /** universal x per_mod[namespace] x per_structure[id]. Null id -> universal only. */
-    public double getEffectiveSpacingMultiplier(String structureSetId) {
-        double m = universalSpacing;
+    public double getEffectiveFrequency(String structureSetId) {
+        double f = universalFrequency;
         if (structureSetId != null) {
             int colon = structureSetId.indexOf(':');
             String namespace = colon > 0 ? structureSetId.substring(0, colon) : structureSetId;
-            m *= perModSpacing.getOrDefault(namespace, 1.0);
-            m *= perStructureSpacing.getOrDefault(structureSetId, 1.0);
+            f *= perModFrequency.getOrDefault(namespace, 1.0);
+            f *= perStructureFrequency.getOrDefault(structureSetId, 1.0);
         }
-        return m;
+        return f;
     }
 
-    public synchronized void setUniversalSpacingAndSave(double value) {
+    /**
+     * What placements multiply spacing and separation by: 1 / sqrt(effective frequency). Twice as
+     * common means spacing shrinks by sqrt(2), since structure count goes with 1 / spacing^2.
+     */
+    public double getEffectiveSpacingMultiplier(String structureSetId) {
+        return 1.0 / Math.sqrt(getEffectiveFrequency(structureSetId));
+    }
+
+    public synchronized void setUniversalFrequencyAndSave(double value) {
         if (file == null) return;
-        this.universalSpacing = value;
+        this.universalFrequency = clampFrequency(value);
         writeFile();
     }
 
-    public synchronized void setModSpacingAndSave(String modid, double value) {
+    public synchronized void setModFrequencyAndSave(String modid, double value) {
         if (file == null) return;
-        perModSpacing.put(modid, value);
+        perModFrequency.put(modid, clampFrequency(value));
         writeFile();
     }
 
-    public synchronized void setStructureSpacingAndSave(String structureSetId, double value) {
+    public synchronized void setStructureFrequencyAndSave(String structureSetId, double value) {
         if (file == null) return;
-        perStructureSpacing.put(structureSetId, value);
+        perStructureFrequency.put(structureSetId, clampFrequency(value));
         writeFile();
+    }
+
+    private static double clampFrequency(double value) {
+        return Math.max(MIN_FREQUENCY, Math.min(MAX_FREQUENCY, value));
     }
 
     // --- disabled structures ---
@@ -186,8 +207,8 @@ public final class MslConfig {
 
     // --- io ---
 
-    private record Stored(Map<String, Map<String, Boolean>> presets, double universalSpacing,
-                          Map<String, Double> perModSpacing, Map<String, Double> perStructureSpacing,
+    private record Stored(Map<String, Map<String, Boolean>> presets, double universalFrequency,
+                          Map<String, Double> perModFrequency, Map<String, Double> perStructureFrequency,
                           Set<String> disabledStructures, Set<String> hiddenButtons) {}
 
     private static Stored readStored(Path file) {
@@ -226,11 +247,19 @@ public final class MslConfig {
                         presets.put(modid, forMod);
                     }
                 }
-                if (root.has("spacing") && root.get("spacing").isJsonObject()) {
+                if (root.has("frequency") && root.get("frequency").isJsonObject()) {
+                    JsonObject frequency = root.getAsJsonObject("frequency");
+                    universal = readMultiplier(frequency, "universal_multiplier", false, universal);
+                    readMultiplierMap(frequency, "per_mod", false, perMod);
+                    readMultiplierMap(frequency, "per_structure", false, perStructure);
+                } else if (root.has("spacing") && root.get("spacing").isJsonObject()) {
+                    // Pre-3.4 file: spacing multipliers. Frequency = 1 / spacing^2 keeps every
+                    // structure exactly where it was; the next write stores the frequency section.
                     JsonObject spacing = root.getAsJsonObject("spacing");
-                    if (spacing.has("universal_multiplier")) universal = spacing.get("universal_multiplier").getAsDouble();
-                    readMultiplierMap(spacing, "per_mod", perMod);
-                    readMultiplierMap(spacing, "per_structure", perStructure);
+                    universal = readMultiplier(spacing, "universal_multiplier", true, universal);
+                    readMultiplierMap(spacing, "per_mod", true, perMod);
+                    readMultiplierMap(spacing, "per_structure", true, perStructure);
+                    MoogsStructuresCommon.LOGGER.info("Moogs Structures: converted spacing multipliers in {} to frequency multipliers", file);
                 }
             } catch (IOException | RuntimeException e) {
                 MoogsStructuresCommon.LOGGER.warn("Moogs Structures: failed to read {} - defaults will be used ({}: {})",
@@ -240,21 +269,43 @@ public final class MslConfig {
         return new Stored(presets, universal, perMod, perStructure, disabled, hiddenButtons);
     }
 
-    private static void readMultiplierMap(JsonObject parent, String key, Map<String, Double> out) {
+    private static double readMultiplier(JsonObject parent, String key, boolean legacySpacing, double fallback) {
+        if (!parent.has(key) || !parent.get(key).isJsonPrimitive() || !parent.get(key).getAsJsonPrimitive().isNumber()) return fallback;
+        Double f = toFrequency(parent.get(key).getAsDouble(), legacySpacing, key);
+        return f != null ? f : fallback;
+    }
+
+    private static void readMultiplierMap(JsonObject parent, String key, boolean legacySpacing, Map<String, Double> out) {
         if (!parent.has(key) || !parent.get(key).isJsonObject()) return;
         JsonObject obj = parent.getAsJsonObject(key);
         for (String k : obj.keySet()) {
             if (obj.get(k).isJsonPrimitive() && obj.get(k).getAsJsonPrimitive().isNumber()) {
-                out.put(k, obj.get(k).getAsDouble());
+                Double f = toFrequency(obj.get(k).getAsDouble(), legacySpacing, k);
+                if (f != null) out.put(k, f);
             }
         }
+    }
+
+    /** A stored value as a frequency, or null (ignored, with a warning) if it is not a positive number. */
+    private static Double toFrequency(double value, boolean legacySpacing, String key) {
+        if (!Double.isFinite(value) || value <= 0) {
+            MoogsStructuresCommon.LOGGER.warn("Moogs Structures: ignoring {} multiplier {} for '{}' - it must be a positive number",
+                    legacySpacing ? "spacing" : "frequency", value, key);
+            return null;
+        }
+        return clampFrequency(legacySpacing ? 1.0 / (value * value) : value);
+    }
+
+    /** Rounded for the file so a converted legacy value reads 0.111111 rather than 0.1111111111111111. */
+    private static double forFile(double value) {
+        return Double.parseDouble(String.format(Locale.ROOT, "%.6f", value));
     }
 
     private synchronized void writeFile() {
         try {
             Files.createDirectories(file.getParent());
             JsonObject root = new JsonObject();
-            root.addProperty("_comment", "Presets replace vanilla structures with Moogs ones. Spacing multipliers make structures rarer (higher) or denser (lower); effective = universal x per_mod x per_structure. Changes apply on world reload and only affect newly generated chunks.");
+            root.addProperty("_comment", "Presets replace vanilla structures with Moogs ones. Frequency multipliers say how common structures are: 2.0 means about twice as many, 0.5 about half as many; effective = universal x per_mod x per_structure. Changes apply on world reload and only affect newly generated chunks.");
 
             JsonObject presetsObj = new JsonObject();
             for (Map.Entry<String, Map<String, Boolean>> mod : presets.entrySet()) {
@@ -266,15 +317,15 @@ public final class MslConfig {
             }
             root.add("presets", presetsObj);
 
-            JsonObject spacing = new JsonObject();
-            spacing.addProperty("universal_multiplier", universalSpacing);
+            JsonObject frequency = new JsonObject();
+            frequency.addProperty("universal_multiplier", forFile(universalFrequency));
             JsonObject perMod = new JsonObject();
-            perModSpacing.forEach(perMod::addProperty);
-            spacing.add("per_mod", perMod);
+            perModFrequency.forEach((k, v) -> perMod.addProperty(k, forFile(v)));
+            frequency.add("per_mod", perMod);
             JsonObject perStructure = new JsonObject();
-            perStructureSpacing.forEach(perStructure::addProperty);
-            spacing.add("per_structure", perStructure);
-            root.add("spacing", spacing);
+            perStructureFrequency.forEach((k, v) -> perStructure.addProperty(k, forFile(v)));
+            frequency.add("per_structure", perStructure);
+            root.add("frequency", frequency);
 
             JsonArray disabled = new JsonArray();
             disabledStructures.forEach(disabled::add);
