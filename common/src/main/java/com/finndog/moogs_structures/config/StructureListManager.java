@@ -151,7 +151,8 @@ public final class StructureListManager {
     /**
      * One row per structure_set. The row's id (disable + spacing key) is the set id; the spacing slider
      * is offered only for advanced_random_spread sets; the preview points at the single contained
-     * structure's render (omitted for multi-structure sets, which have no single render); the name is
+     * structure's render, or for a multi-structure set at the set's own page (only on the preview
+     * site, which serves set pages; a custom template gets no link for them); the name is
      * the title-cased path of the representative structure (or the set, for multi-structure sets).
      */
     private static List<StructureEntry> deriveEntries(Map<String, String> setJsons, String template) {
@@ -175,7 +176,8 @@ public final class StructureListManager {
                 boolean single = structs.size() == 1;
                 String spacingKey = spread ? setId : null;
                 String name = titleCase(single ? pathOf(structs.get(0)) : pathOf(setId));
-                String previewUrl = single ? buildUrl(template, structs.get(0)) : null;
+                String previewUrl = single ? buildUrl(template, structs.get(0))
+                        : servesSetPages(template) ? buildUrl(template, setId) : null;
                 entries.add(new StructureEntry(setId, name, previewUrl, spacingKey));
             } catch (RuntimeException ex) {
                 MoogsStructuresCommon.LOGGER.warn("Moogs Structures: could not derive a config row from structure_set '{}' ({}: {})",
@@ -217,9 +219,19 @@ public final class StructureListManager {
             return structures.get("preview_url_template").getAsString();
         }
         if (structures.has("mod_slug")) {
-            return "https://previews.moogsmods.com/" + structures.get("mod_slug").getAsString() + "/{mc_version}/{structure}";
+            return PREVIEW_SITE + structures.get("mod_slug").getAsString() + "/{mc_version}/{structure}";
         }
         return null;
+    }
+
+    private static final String PREVIEW_SITE = "https://previews.moogsmods.com/";
+
+    /**
+     * Whether the template points at the preview site, which has a page per multi-structure set
+     * ({@code /<mod_slug>/<mc_version>/<set_path>}). A custom host may not, so its sets get no link.
+     */
+    private static boolean servesSetPages(String template) {
+        return template != null && template.startsWith(PREVIEW_SITE);
     }
 
     private static String buildUrl(String template, String structureId) {
