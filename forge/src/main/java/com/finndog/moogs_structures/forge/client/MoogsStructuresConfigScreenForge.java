@@ -57,20 +57,20 @@ public final class MoogsStructuresConfigScreenForge {
 
     private static void buildStructures(ConfigBuilder builder, ConfigEntryBuilder eb) {
         ConfigCategory category = builder.getOrCreateCategory(Component.translatable("moogs_structures.config.category.structures"));
-        category.addEntry(eb.startIntSlider(Component.translatable("moogs_structures.config.universal_rarity"), toPercent(MslConfig.get().getUniversalSpacingMultiplier()), 25, 400)
+        category.addEntry(eb.startIntSlider(Component.translatable("moogs_structures.config.universal_frequency"), toPercent(MslConfig.get().getUniversalFrequency()), 25, 400)
                 .setDefaultValue(100)
                 .setTextGetter(MoogsStructuresConfigScreenForge::multiplierLabel)
-                .setTooltip(Component.translatable("moogs_structures.config.universal_rarity.tooltip"))
-                .setSaveConsumer(v -> MslConfig.get().setUniversalSpacingAndSave(v / 100.0))
+                .setTooltip(Component.translatable("moogs_structures.config.universal_frequency.tooltip"))
+                .setSaveConsumer(v -> { if (v != toPercent(MslConfig.get().getUniversalFrequency())) MslConfig.get().setUniversalFrequencyAndSave(v / 100.0); })
                 .build());
 
         for (StructureListManager.ModGroup group : StructureListManager.getGroups()) {
             List<AbstractConfigListEntry> entries = new ArrayList<>();
-            entries.add(eb.startIntSlider(Component.translatable("moogs_structures.config.all_of_mod", group.modName()), toPercent(MslConfig.get().getModSpacingMultiplier(group.modid())), 25, 400)
+            entries.add(eb.startIntSlider(Component.translatable("moogs_structures.config.all_of_mod", group.modName()), toPercent(MslConfig.get().getModFrequency(group.modid())), 25, 400)
                     .setDefaultValue(100)
                     .setTextGetter(MoogsStructuresConfigScreenForge::multiplierLabel)
-                    .setTooltip(Component.translatable("moogs_structures.config.mod_rarity.tooltip", group.modName()))
-                    .setSaveConsumer(v -> MslConfig.get().setModSpacingAndSave(group.modid(), v / 100.0))
+                    .setTooltip(Component.translatable("moogs_structures.config.mod_frequency.tooltip", group.modName()))
+                    .setSaveConsumer(v -> { if (v != toPercent(MslConfig.get().getModFrequency(group.modid()))) MslConfig.get().setModFrequencyAndSave(group.modid(), v / 100.0); })
                     .build());
             for (StructureListManager.StructureEntry s : group.structures()) {
                 entries.add(structureRow(s));
@@ -81,10 +81,10 @@ public final class MoogsStructuresConfigScreenForge {
 
     private static AbstractConfigListEntry structureRow(StructureListManager.StructureEntry s) {
         if (s.spacingKey() != null) {
-            int value = toPercent(MslConfig.get().getStructureSpacingMultiplier(s.spacingKey()));
+            int value = toPercent(MslConfig.get().getStructureFrequency(s.spacingKey()));
             return new SpacingPreviewSliderEntry(Component.literal(s.name()), 25, 400, value, 100,
                     MoogsStructuresConfigScreenForge::multiplierLabel,
-                    v -> MslConfig.get().setStructureSpacingAndSave(s.spacingKey(), v / 100.0),
+                    v -> { if (v != value) MslConfig.get().setStructureFrequencyAndSave(s.spacingKey(), v / 100.0); },
                     s.previewUrl(), s.structureId());
         }
         return new StructureActionsEntry(Component.literal(s.name()), s.previewUrl(), s.structureId());
