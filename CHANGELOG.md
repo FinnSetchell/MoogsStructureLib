@@ -9,6 +9,7 @@
 
 ### Changed
 - The structure sliders now say how common structures are: 2x means about twice as many, 0.5x about half as many. Your existing settings carry over unchanged
+- The Preview button now works on config rows that group several structures, opening a page with a tab for each one
 
 ---
 
