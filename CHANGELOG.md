@@ -2,7 +2,7 @@
 
 ---
 
-## [3.4.0]
+## [3.4.0] - 2026-09-25
 
 ### Added
 - Regular jigsaw structures can now use enhanced terrain adaptation, not only Nether ones
