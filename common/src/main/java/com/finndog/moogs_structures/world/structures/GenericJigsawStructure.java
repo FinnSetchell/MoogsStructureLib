@@ -3,7 +3,10 @@ package com.finndog.moogs_structures.world.structures;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.world.structures.pieces.PieceLimitedJigsawManager;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
 import com.google.common.collect.Maps;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.Util;
@@ -39,7 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
-public class GenericJigsawStructure extends Structure {
+public class GenericJigsawStructure extends Structure implements EnhancedTerrainAdaptationStructure {
 
     public static final Codec<GenericJigsawStructure> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             GenericJigsawStructure.settingsCodec(instance),
@@ -57,8 +60,13 @@ public class GenericJigsawStructure extends Structure {
             ResourceLocation.CODEC.listOf().fieldOf("pools_that_ignore_boundaries").orElse(new ArrayList<>()).xmap(HashSet::new, ArrayList::new).forGetter(structure -> structure.poolsThatIgnoreBoundaries),
             Codec.intRange(1, 128).optionalFieldOf("max_distance_from_center").forGetter(structure -> structure.maxDistanceFromCenter),
             StringRepresentable.fromEnum(BURYING_TYPE::values).optionalFieldOf("burying_type").forGetter(structure -> structure.buryingType),
-            Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack)
-    ).apply(instance, GenericJigsawStructure::new));
+            // DFU groups cap at 16 slots, so these two share one; the JSON stays flat.
+            Codec.mapPair(Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false),
+                    EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE))
+                    .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, structure.enhancedTerrainAdaptation))
+    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, cannotSpawnInLiquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackAndAdaptation) -> new GenericJigsawStructure(
+            config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, cannotSpawnInLiquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
+            hackAndAdaptation.getFirst(), hackAndAdaptation.getSecond())));
 
     public final Holder<StructureTemplatePool> startPool;
     public final int size;
@@ -75,6 +83,7 @@ public class GenericJigsawStructure extends Structure {
     public final Optional<Integer> maxDistanceFromCenter;
     public final Optional<BURYING_TYPE> buryingType;
     public final boolean useBoundingBoxHack;
+    public final EnhancedTerrainAdaptation enhancedTerrainAdaptation;
 
     public GenericJigsawStructure(StructureSettings config,
                                   Holder<StructureTemplatePool> startPool,
@@ -91,9 +100,11 @@ public class GenericJigsawStructure extends Structure {
                                   HashSet<ResourceLocation> poolsThatIgnoreBoundaries,
                                   Optional<Integer> maxDistanceFromCenter,
                                   Optional<BURYING_TYPE> buryingType,
-                                  boolean useBoundingBoxHack)
+                                  boolean useBoundingBoxHack,
+                                  EnhancedTerrainAdaptation enhancedTerrainAdaptation)
     {
         super(config);
+        this.enhancedTerrainAdaptation = enhancedTerrainAdaptation;
         this.startPool = startPool;
         this.size = size;
         this.minYAllowed = minYAllowed;
@@ -117,6 +128,11 @@ public class GenericJigsawStructure extends Structure {
                     Structure pool of problematic structure: %s
             """.formatted(startPool.value()));
         }
+    }
+
+    @Override
+    public EnhancedTerrainAdaptation getEnhancedTerrainAdaptation() {
+        return this.enhancedTerrainAdaptation;
     }
 
     protected boolean extraSpawningChecks(GenerationContext context, BlockPos blockPos) {
