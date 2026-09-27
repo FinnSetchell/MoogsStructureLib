@@ -15,13 +15,15 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Map;
+import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Rewrites a container's LootTable to the vanilla equivalent when the replacement for
  * (modid, vanilla_key) is enabled, so mods that inject into the vanilla loot table still
  * fill the replacing mod's chests. When the toggle is off the mod's own loot table stays.
  */
-public class VanillaLootSwapProcessor extends StructureProcessor {
+public class VanillaLootSwapProcessor extends StructureEntityProcessor {
 
     public static final MapCodec<VanillaLootSwapProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
             Codec.STRING.fieldOf("modid").forGetter(p -> p.modid),
@@ -69,6 +71,28 @@ public class VanillaLootSwapProcessor extends StructureProcessor {
             default -> { }
         }
         return new StructureTemplate.StructureBlockInfo(worldInfo.pos(), worldInfo.state(), newNbt);
+    }
+
+    // Chest and hopper minecarts carry the same LootTable/LootTableSeed keys as containers, so run the
+    // entity's NBT through processBlock as a stand-in block at the entity's position.
+    @Override
+    public StructureTemplate.StructureEntityInfo processEntity(ServerLevelAccessor serverLevelAccessor,
+                                                               BlockPos structurePiecePos,
+                                                               BlockPos structurePieceBottomCenterPos,
+                                                               StructureTemplate.StructureEntityInfo localEntityInfo,
+                                                               StructureTemplate.StructureEntityInfo globalEntityInfo,
+                                                               StructurePlaceSettings structurePlaceSettings) {
+        if (globalEntityInfo.nbt == null) {
+            return globalEntityInfo;
+        }
+        StructureTemplate.StructureBlockInfo asBlock = new StructureTemplate.StructureBlockInfo(
+                globalEntityInfo.blockPos, Blocks.AIR.defaultBlockState(), globalEntityInfo.nbt);
+        StructureTemplate.StructureBlockInfo swapped = processBlock(serverLevelAccessor, structurePiecePos,
+                structurePieceBottomCenterPos, asBlock, asBlock, structurePlaceSettings);
+        if (swapped == asBlock || swapped == null) {
+            return globalEntityInfo;
+        }
+        return new StructureTemplate.StructureEntityInfo(globalEntityInfo.pos, globalEntityInfo.blockPos, swapped.nbt());
     }
 
     @Override
