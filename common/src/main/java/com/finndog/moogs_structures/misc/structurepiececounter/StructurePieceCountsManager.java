@@ -100,6 +100,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
 
     @Nullable
     public Map<ResourceLocation, RequiredPieceNeeds> getRequirePieces(ResourceLocation structureRL) {
+        if (structureRL == null) return null;
         Map<ResourceLocation, List<StructurePieceCountsObj>> counts = this.structureToPieceCountsObjs;
         if (!counts.containsKey(structureRL)) return null;
         return cachedRequirePiecesMap.computeIfAbsent(structureRL, rl -> {
@@ -122,6 +123,9 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
 
     @MethodsReturnNonnullByDefault
     public Map<ResourceLocation, Integer> getMaximumCountForPieces(ResourceLocation structureRL) {
+        // A structure nested inside another mod's wrapper (e.g. Lithostitched's delegating structure) has no
+        // registry id of its own. The concurrent cache rejects a null key, so such a structure gets no limits.
+        if (structureRL == null) return Map.of();
         Map<ResourceLocation, List<StructurePieceCountsObj>> counts = this.structureToPieceCountsObjs;
         return cachedMaxCountPiecesMap.computeIfAbsent(structureRL, rl -> {
             Map<ResourceLocation, Integer> maxCountPiecesMap = new HashMap<>();
