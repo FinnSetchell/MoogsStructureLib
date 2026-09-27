@@ -77,6 +77,6 @@ targets:
     displaySuffix: "[FABRIC + FORGE + NEOFORGE]"
   - branch: "26.3"
     mc: { start: "26.3", end: "26.3" }
-    loaders: [fabric, neoforge]
+    loaders: [fabric, forge, neoforge]
     java: 25
-    displaySuffix: "[FABRIC + NEOFORGE]"
+    displaySuffix: "[FABRIC + FORGE + NEOFORGE]"
