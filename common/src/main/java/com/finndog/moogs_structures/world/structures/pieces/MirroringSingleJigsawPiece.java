@@ -83,8 +83,17 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
     public List<StructureTemplate.StructureBlockInfo> getShuffledJigsawBlocks(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation, RandomSource random) {
         StructureTemplate template = this.getTemplate(templateManager);
         ObjectArrayList<StructureTemplate.StructureBlockInfo> list = template.filterBlocks(blockPos, (new StructurePlaceSettings()).setRotation(rotation).setMirror(mirror), Blocks.JIGSAW, true);
-        Util.shuffle(list, random);
+        shuffle(list, random);
         return list;
+    }
+
+    // Vanilla's Util.shuffle, inlined: it takes an ObjectArrayList up to 1.20.2 and a List from 1.20.3,
+    // so a call compiled against 1.20 throws NoSuchMethodError on 1.20.3-1.20.4. Same draws, same order.
+    private static <T> void shuffle(List<T> list, RandomSource random) {
+        for (int i = list.size(); i > 1; --i) {
+            int j = random.nextInt(i);
+            list.set(i - 1, list.set(j, list.get(i - 1)));
+        }
     }
 
     @Override
