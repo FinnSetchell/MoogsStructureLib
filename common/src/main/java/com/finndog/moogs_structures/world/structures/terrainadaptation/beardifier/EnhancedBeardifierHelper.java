@@ -151,6 +151,11 @@ public class EnhancedBeardifierHelper {
                                 pieceAdaptation,
                                 poolElementPiece.getGroundLevelDelta(),
                                 poolElementPiece.getRotation()));
+                        // A rigid piece is covered by its own bounding-box kernel. Its junctions carry the start
+                        // piece's ground level all the way down a rigid chain (the jigsaw maths keep minY plus
+                        // groundLevelDelta constant), so bearding them raised a lump of terrain at surface height
+                        // over every connection of a deep tunnel. Junction beards are for terrain-matching pieces.
+                        continue;
                     }
 
                     for (JigsawJunction jigsawJunction : poolElementPiece.getJunctions()) {
