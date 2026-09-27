@@ -1,15 +1,21 @@
 package com.finndog.moogs_structures.world.processors;
 
+import com.finndog.moogs_structures.MoogsStructuresCommon;
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.Decoder;
+import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -40,11 +46,41 @@ public class EquipArmorStandProcessor extends StructureEntityProcessor {
      */
     public record ArmorSet(Optional<ItemStack> head, Optional<ItemStack> chest, Optional<ItemStack> legs, Optional<ItemStack> feet) {
         public static final Codec<ArmorSet> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                ItemStack.CODEC.optionalFieldOf("head").forGetter(ArmorSet::head),
-                ItemStack.CODEC.optionalFieldOf("chest").forGetter(ArmorSet::chest),
-                ItemStack.CODEC.optionalFieldOf("legs").forGetter(ArmorSet::legs),
-                ItemStack.CODEC.optionalFieldOf("feet").forGetter(ArmorSet::feet)
+                loggedItemCodec("head").optionalFieldOf("head").forGetter(ArmorSet::head),
+                loggedItemCodec("chest").optionalFieldOf("chest").forGetter(ArmorSet::chest),
+                loggedItemCodec("legs").optionalFieldOf("legs").forGetter(ArmorSet::legs),
+                loggedItemCodec("feet").optionalFieldOf("feet").forGetter(ArmorSet::feet)
         ).apply(instance, ArmorSet::new));
+    }
+
+    // 1.20's ItemStack.CODEC requires "Count", and this era's optionalFieldOf drops a decode error
+    // silently, so an item written as {"id": ...} (or with 1.20.5's lowercase "count") left the stand
+    // bare with no log line. Either spelling is accepted here and a missing count means one.
+    private static final Codec<ItemStack> ITEM_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            // The item registry defaults unknown ids to air, so resolve by hand to report a typo.
+            ResourceLocation.CODEC.comapFlatMap(
+                    id -> BuiltInRegistries.ITEM.getOptional(id).map(DataResult::success)
+                            .orElseGet(() -> DataResult.error(() -> "unknown item " + id)),
+                    BuiltInRegistries.ITEM::getKey).fieldOf("id").forGetter(ItemStack::getItem),
+            Codec.INT.optionalFieldOf("Count").forGetter(stack -> Optional.of(stack.getCount())),
+            Codec.INT.optionalFieldOf("count").forGetter(stack -> Optional.empty()),
+            CompoundTag.CODEC.optionalFieldOf("tag").forGetter(stack -> Optional.ofNullable(stack.getTag()))
+    ).apply(instance, (item, upperCount, lowerCount, tag) -> {
+        ItemStack stack = new ItemStack(item, upperCount.or(() -> lowerCount).orElse(1));
+        tag.ifPresent(stack::setTag);
+        return stack;
+    }));
+
+    private static Codec<ItemStack> loggedItemCodec(String slot) {
+        return Codec.of(ITEM_CODEC, new Decoder<>() {
+            @Override
+            public <T> DataResult<Pair<ItemStack, T>> decode(DynamicOps<T> ops, T input) {
+                DataResult<Pair<ItemStack, T>> result = ITEM_CODEC.decode(ops, input);
+                result.error().ifPresent(error -> MoogsStructuresCommon.LOGGER.warn(
+                        "equip_armor_stand: could not read the {} item, that slot stays empty ({})", slot, error.message()));
+                return result;
+            }
+        });
     }
 
     public static final Codec<EquipArmorStandProcessor> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
