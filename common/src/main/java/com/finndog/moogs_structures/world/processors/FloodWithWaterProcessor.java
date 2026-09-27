@@ -83,7 +83,10 @@ public class FloodWithWaterProcessor extends StructureProcessor {
                     }
 
                     BlockState neighboringBlock = currentChunk.getBlockState(mutable);
-                    if (!neighboringBlock.canOcclude() && neighboringBlock.getFluidState().isEmpty()) {
+                    // Seal only open air. Anything else non-solid beside the water is part of a structure,
+                    // often one already placed in the neighbouring chunk (a spawner, chest or torch), and
+                    // replacing it orphaned its block entity.
+                    if (neighboringBlock.isAir()) {
                         currentChunk.setBlockState(mutable, Blocks.CRACKED_STONE_BRICKS.defaultBlockState(), Block.UPDATE_CLIENTS);
                     }
                 }
