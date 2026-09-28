@@ -3,7 +3,11 @@ package com.finndog.moogs_structures.world.placements;
 //? if <26.3 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 //?}
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.placement.PlacementContext;
@@ -26,7 +30,11 @@ public class MinusEightPlacement extends PlacementModifier {
 /*public class MinusEightPlacement implements PlacementModifier {
 *///?}
 	private static final MinusEightPlacement INSTANCE = new MinusEightPlacement();
+	//? if >=1.20.6 {
 	public static final MapCodec<MinusEightPlacement> CODEC = MapCodec.unit(() -> INSTANCE);
+	//?} else {
+	/*public static final Codec<MinusEightPlacement> CODEC = Codec.unit(() -> INSTANCE);
+	*///?}
 
 	public static MinusEightPlacement subtractedEight() {
 		return INSTANCE;

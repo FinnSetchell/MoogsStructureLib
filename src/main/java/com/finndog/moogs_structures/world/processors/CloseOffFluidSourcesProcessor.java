@@ -6,7 +6,11 @@ import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -43,9 +47,13 @@ public class CloseOffFluidSourcesProcessor extends StructureProcessor {
 /*public class CloseOffFluidSourcesProcessor implements StructureProcessor {
 *///?}
 
-    //? if <26.2 {
+    //? if >=1.20.6 <26.2 {
     public static final MapCodec<CloseOffFluidSourcesProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-    //?} else {
+    //?}
+    //? if <1.20.6 {
+    /*public static final Codec<CloseOffFluidSourcesProcessor> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
+    *///?}
+    //? if >=26.2 {
     /*public static final MapCodec<CloseOffFluidSourcesProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
     *///?}
             Codec.mapPair(BuiltInRegistries.BLOCK.byNameCodec().fieldOf("block"), Codec.intRange(1, Integer.MAX_VALUE).fieldOf("weight"))

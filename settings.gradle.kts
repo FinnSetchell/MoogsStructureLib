@@ -30,6 +30,9 @@ stonecutter {
             }
         }
 
+        match("1.20", "fabric")
+        version("1.20-forge", "1.20").buildscript("build.forge-legacy.gradle.kts")
+        match("1.20.6", "fabric", "neoforge")
         match("1.21.1", "fabric", "forge", "neoforge")
         match("1.21.2", "fabric", "forge", "neoforge")
         match("1.21.4", "fabric", "forge", "neoforge")

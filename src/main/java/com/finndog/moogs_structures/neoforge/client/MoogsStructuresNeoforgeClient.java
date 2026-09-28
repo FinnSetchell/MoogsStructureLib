@@ -1,3 +1,4 @@
+//? if >=1.20.6 {
 package com.finndog.moogs_structures.neoforge.client;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
@@ -25,3 +26,5 @@ public class MoogsStructuresNeoforgeClient {
                         : new ClothRequiredScreen(parent));
     }
 }
+
+//?}

@@ -1,3 +1,4 @@
+//? if >=1.20.6 {
 package com.finndog.moogs_structures.config.neoforge;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
@@ -114,3 +115,5 @@ public class PlatformConfigImpl implements PlatformConfig {
                 .orElse(null);
     }
 }
+
+//?}

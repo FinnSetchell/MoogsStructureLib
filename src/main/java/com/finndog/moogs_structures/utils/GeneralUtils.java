@@ -5,14 +5,23 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.mojang.datafixers.util.Pair;
+//? if >=1.21.1 {
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
-//? if <26.1.2 {
+//?}
+//? if >=1.21.1 <26.1.2 {
 import net.minecraft.nbt.CompoundTag;
 //?}
-//? if <1.21.5 {
+//? if >=1.21.1 <1.21.5 {
 import net.minecraft.nbt.StringTag;
 //?}
+//? if <1.21.1 {
+/*import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.FrontAndTop;
+import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.BuiltInRegistries;
+*///?}
 //? if >=1.21.11 <26.1.2 {
 /*import net.minecraft.nbt.StringTag;
 *///?}
@@ -128,15 +137,23 @@ public final class GeneralUtils {
 
     //////////////////////////////////////////////
 
+    //? if >=1.21.1 {
     public static ItemStack enchantRandomly(RegistryAccess registryAccess, RandomSource random, ItemStack itemToEnchant, float chance) {
+    //?} else {
+    /*public static ItemStack enchantRandomly(RandomSource random, ItemStack itemToEnchant, float chance) {
+    *///?}
         //? if >=1.21.5 {
         /*Registry<Enchantment> enchReg = registryAccess.lookupOrThrow(Registries.ENCHANTMENT);
         *///?}
         if(random.nextFloat() < chance) {
-            //? if <1.21.2 {
+            //? if >=1.21.1 <1.21.2 {
             List<Holder.Reference<Enchantment>> list = registryAccess.registryOrThrow(Registries.ENCHANTMENT).holders()
                     .filter(holder -> holder.value().canEnchant(itemToEnchant)).toList();
             //?}
+            //? if <1.21.1 {
+            /*List<Enchantment> list = BuiltInRegistries.ENCHANTMENT.stream().filter(Enchantment::isDiscoverable)
+                    .filter((enchantmentToCheck) -> enchantmentToCheck.canEnchant(itemToEnchant)).toList();
+            *///?}
             //? if >=1.21.2 <1.21.5 {
             /*List<Holder.Reference<Enchantment>> list = registryAccess.lookupOrThrow(Registries.ENCHANTMENT).listElements()
                     .filter(holder -> holder.value().canEnchant(itemToEnchant) && holder.is(EnchantmentTags.ON_MOB_SPAWN_EQUIPMENT)).toList();
@@ -146,10 +163,20 @@ public final class GeneralUtils {
                     .filter(holder -> holder.canEnchant(itemToEnchant)).toList();
             *///?}
             if(!list.isEmpty()) {
-                //? if <1.21.5 {
+                //? if >=1.21.1 <1.21.5 {
                 Holder.Reference<Enchantment> enchantment = list.get(random.nextInt(list.size()));
+                //?}
+                //? if <1.21.1 {
+                /*Enchantment enchantment = list.get(random.nextInt(list.size()));
+                *///?}
                 // bias towards weaker enchantments
+                //? if >=1.21.1 <1.21.5 {
                 int enchantmentLevel = random.nextInt(Mth.nextInt(random, enchantment.value().getMinLevel(), enchantment.value().getMaxLevel()) + 1);
+                //?}
+                //? if <1.21.1 {
+                /*int enchantmentLevel = random.nextInt(Mth.nextInt(random, enchantment.getMinLevel(), enchantment.getMaxLevel()) + 1);
+                *///?}
+                //? if <1.21.5 {
                 itemToEnchant.enchant(enchantment, enchantmentLevel);
                 //?} else {
                 /*Optional<Reference<Enchantment>> enchantment = enchReg.get(enchReg.getKey(list.get(random.nextInt(list.size()))));
@@ -275,15 +302,24 @@ public final class GeneralUtils {
             joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
         }
         *///?}
+        //? if <1.21.1 {
+        /*String joint = jigsaw1.nbt().getString("joint");
+        if(joint.isEmpty()) {
+            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
+        }
+        *///?}
 
         //? if >=26.1.2 {
         /*boolean isRollable = joint.equals("rollable");
         *///?}
+        //? if <1.21.1 {
+        /*boolean isRollable = joint.equals("rollable");
+        *///?}
         return prop1.front() == prop2.front().getOpposite() &&
-                //? if <26.1.2 {
+                //? if >=1.21.1 <26.1.2 {
                 (prop1.top() == prop2.top() || isRollableJoint(jigsaw1, prop1)) &&
                 //?}
-                //? if <1.21.2 {
+                //? if >=1.21.1 <1.21.2 {
                 getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
                 //?}
                 //? if >=1.21.2 <1.21.5 {
@@ -292,11 +328,11 @@ public final class GeneralUtils {
                 //? if >=1.21.5 <26.1.2 {
                 /*getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
                 *///?}
-    //? if <26.1.2 {
+    //? if >=1.21.1 <26.1.2 {
     }
 
     //?}
-    //? if <1.21.2 {
+    //? if >=1.21.1 <1.21.2 {
     private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
         String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
     //?}
@@ -308,7 +344,7 @@ public final class GeneralUtils {
     /*private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
         String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
     *///?}
-        //? if <26.1.2 {
+        //? if >=1.21.1 <26.1.2 {
         if(!joint.equals("rollable") && !joint.equals("aligned")) {
             return !prop1.front().getAxis().isHorizontal();
         }
@@ -319,9 +355,13 @@ public final class GeneralUtils {
 
     public static String getStringMicroOptimised(CompoundTag tag, String key) {
         //?}
-        //? if <1.21.5 {
+        //? if >=1.21.1 <1.21.5 {
         return tag.get(key) instanceof StringTag stringTag ? stringTag.getAsString() : "";
         //?}
+                //? if <1.21.1 {
+                /*(isRollable || prop1.top() == prop2.top()) &&
+                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
+                *///?}
         //? if >=1.21.5 <1.21.11 {
         /*return tag.getString(key).orElse("");
         *///?}
@@ -348,7 +388,11 @@ public final class GeneralUtils {
         // Finds all JSON files paths within the pool_additions folder. NOTE: this is just the path rn. Not the actual files yet.
         for (Map.Entry<ResourceLocation, List<Resource>> resourceStackEntry : resourceManager.listResourceStacks(dataType, (fileString) -> fileString.toString().endsWith(".json")).entrySet()) {
             String identifierPath = resourceStackEntry.getKey().getPath();
+            //? if >=1.21.1 {
             ResourceLocation fileID = ResourceLocation.fromNamespaceAndPath(
+            //?} else {
+            /*ResourceLocation fileID = new ResourceLocation(
+            *///?}
                     resourceStackEntry.getKey().getNamespace(),
                     identifierPath.substring(dataTypeLength, identifierPath.length() - fileSuffixLength));
 

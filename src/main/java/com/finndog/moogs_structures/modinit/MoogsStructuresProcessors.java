@@ -12,9 +12,15 @@ import com.finndog.moogs_structures.world.processors.RandomReplaceWithProperties
 import com.finndog.moogs_structures.world.processors.RemoveFloatingBlocksProcessor;
 import com.finndog.moogs_structures.world.processors.SpawnerRandomizingProcessor;
 import com.finndog.moogs_structures.world.processors.SuperGravityProcessor;
+//? if >=1.21.1 {
 import com.finndog.moogs_structures.world.processors.TrialSpawnerRandomizingProcessor;
+//?}
 import com.finndog.moogs_structures.world.processors.VanillaLootSwapProcessor;
+//? if >=1.21.1 {
 import com.finndog.moogs_structures.world.processors.VaultRandomizingProcessor;
+//?} else {
+/*import com.finndog.moogs_structures.world.processors.WaterloggingFixProcessor;
+*///?}
 //? if >=26.2 {
 /*import com.mojang.serialization.MapCodec;
 *///?}
@@ -43,8 +49,15 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<StructureProcessorType<SpawnerRandomizingProcessor>> SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("spawner_randomizing_processor", () -> () -> SpawnerRandomizingProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> () -> EquipArmorStandProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<HangingEntityAnchorProcessor>> HANGING_ENTITY_ANCHOR_PROCESSOR = STRUCTURE_PROCESSOR.register("hanging_entity_anchor_processor", () -> () -> HangingEntityAnchorProcessor.CODEC);
+    //?}
+    //? if >=1.21.1 <26.2 {
     public static final RegistryEntry<StructureProcessorType<TrialSpawnerRandomizingProcessor>> TRIAL_SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("trial_spawner_randomizing_processor", () -> () -> TrialSpawnerRandomizingProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<VaultRandomizingProcessor>> VAULT_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("vault_randomizing_processor", () -> () -> VaultRandomizingProcessor.CODEC);
+    //?}
+    //? if <1.21.1 {
+    /*public static final RegistryEntry<StructureProcessorType<WaterloggingFixProcessor>> WATERLOGGING_FIX_PROCESSOR = STRUCTURE_PROCESSOR.register("waterlogging_fix_processor", () -> () -> WaterloggingFixProcessor.CODEC);
+    *///?}
+    //? if <26.2 {
     public static final RegistryEntry<StructureProcessorType<VanillaLootSwapProcessor>> VANILLA_LOOT_SWAP_PROCESSOR = STRUCTURE_PROCESSOR.register("vanilla_loot_swap_processor", () -> () -> VanillaLootSwapProcessor.CODEC);
     //?} else {
     /*public static final RegistryEntry<MapCodec<PillarProcessor>> PILLAR_PROCESSOR = STRUCTURE_PROCESSOR.register("pillar_processor", () -> PillarProcessor.MAP_CODEC);

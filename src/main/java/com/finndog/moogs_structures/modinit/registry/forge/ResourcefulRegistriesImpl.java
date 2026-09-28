@@ -23,16 +23,28 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
 /*public class ResourcefulRegistriesImpl implements IResourcefulRegistriesProvider {
 *///?}
 
+    //? if >=1.21.1 {
     private static final List<CustomRegistryInfo<?, ?>> CUSTOM_REGISTRIES = new ArrayList<>();
+    //?} else {
+    /*private static final List<CustomRegistryInfo<?>> CUSTOM_REGISTRIES = new ArrayList<>();
+    *///?}
 
     @Override
     public <T> ResourcefulRegistry<T> create(Registry<T> registry, String id) {
+        //? if >=1.21.1 {
         return new ForgeResourcefulRegistry<>(registry, id);
+        //?} else {
+        /*return new ForgeResourcefulRegistry<>(registry.key(), id);
+        *///?}
     }
 
     @Override
     public <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
+        //? if >=1.21.1 {
         CustomRegistryInfo<T, T> info = new CustomRegistryInfo<>(new LateSupplier<>(), key, save, sync, allowModification);
+        //?} else {
+        /*CustomRegistryInfo<T> info = new CustomRegistryInfo<>(new LateSupplier<>(), key, save, sync, allowModification);
+        *///?}
         CUSTOM_REGISTRIES.add(info);
         return Pair.of(info.lookup(), new ForgeResourcefulRegistry<>(key, modId));
     }
@@ -59,7 +71,11 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
         }
     }
 
+    //? if >=1.21.1 {
     public record CustomRegistryInfo<T, K extends T>(
+    //?} else {
+    /*public record CustomRegistryInfo<T>(
+    *///?}
             LateSupplier<CustomRegistryLookup<T>> lookup,
             ResourceKey<? extends Registry<T>> key,
             boolean save,
@@ -72,13 +88,24 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
         }
 
         public RegistryBuilder<T> getBuilder() {
+            //? if >=1.21.1 {
             RegistryBuilder<T> builder = new RegistryBuilder<T>()
-                    //? if <1.21.11 {
+            //?}
+                    //? if >=1.21.1 <1.21.11 {
                     .setName(key.location());
-                    //?} else {
+                    //?}
+            //? if <1.21.1 {
+            /*RegistryBuilder<T> builder = new RegistryBuilder<>();
+            builder.setName(key.location());
+            if (!save) builder.disableSaving();
+            *///?}
+                    //? if >=1.21.11 {
                     /*.setName(key.identifier());
                     *///?}
             if (!sync) builder.disableSync();
+            //? if <1.21.1 {
+            /*if (allowModification) builder.allowModification();
+            *///?}
             return builder;
         }
     }

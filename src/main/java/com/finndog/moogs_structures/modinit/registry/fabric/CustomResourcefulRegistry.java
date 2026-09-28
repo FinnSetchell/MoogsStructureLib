@@ -23,8 +23,13 @@ public class CustomResourcefulRegistry<T> implements ResourcefulRegistry<T> {
 
     @Override
     public <I extends T> RegistryEntry<I> register(String id, Supplier<I> supplier) {
+        //? if >=1.21.1 {
         I value = Registry.register(registry, ResourceLocation.fromNamespaceAndPath(this.id, id), supplier.get());
         return entries.add(new BasicRegistryEntry<>(ResourceLocation.fromNamespaceAndPath(this.id, id), value));
+        //?} else {
+        /*I value = Registry.register(registry, new ResourceLocation(this.id, id), supplier.get());
+        return entries.add(new BasicRegistryEntry<>(new ResourceLocation(this.id, id), value));
+        *///?}
     }
 
     @Override

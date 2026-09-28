@@ -6,7 +6,9 @@ import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
 //?}
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -17,6 +19,9 @@ import net.minecraft.core.RegistryCodecs;
 *///?}
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
+//? if <1.21.1 {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
@@ -29,14 +34,22 @@ import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadType;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacementType;
 //?}
 
+//? if >=1.21.1 {
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashSet;
+//?}
 import java.util.Optional;
+//? if >=1.21.1 {
 import java.util.Set;
+//?}
 
 public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
+    //? if >=1.20.6 {
     public static final MapCodec<AdvancedRandomSpread> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    //?} else {
+    /*public static final Codec<AdvancedRandomSpread> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
+    *///?}
             Vec3i.offsetCodec(16).optionalFieldOf("locate_offset", Vec3i.ZERO).forGetter(AdvancedRandomSpread::locateOffset),
             FrequencyReductionMethod.CODEC.optionalFieldOf("frequency_reduction_method", FrequencyReductionMethod.DEFAULT).forGetter(AdvancedRandomSpread::frequencyReductionMethod),
             Codec.floatRange(0.0F, 1.0F).optionalFieldOf("frequency", 1.0F).forGetter(AdvancedRandomSpread::frequency),
@@ -257,8 +270,10 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     }
 
     public record SuperExclusionZone(HolderSet<StructureSet> otherSet, int chunkCount, Optional<Integer> allowedChunkCount) {
+        //? if >=1.21.1 {
         private static final ThreadLocal<Set<ResourceLocation>> EVALUATING_SETS = ThreadLocal.withInitial(HashSet::new);
 
+        //?}
         public static final Codec<SuperExclusionZone> CODEC = RecordCodecBuilder.create(builder -> builder.group(
                 //? if <26.3 {
                 RegistryCodecs.homogeneousList(Registries.STRUCTURE_SET, StructureSet.DIRECT_CODEC).fieldOf("other_set").forGetter(SuperExclusionZone::otherSet),
@@ -270,14 +285,18 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         ).apply(builder, SuperExclusionZone::new));
 
         boolean isPlacementForbidden(ChunkGeneratorStructureState chunkGeneratorStructureState, int l, int j) {
+            //? if >=1.21.1 {
             Set<ResourceLocation> evaluating = EVALUATING_SETS.get();
 
+            //?}
             for (Holder<StructureSet> holder : this.otherSet) {
-                //? if <1.21.11 {
+                //? if >=1.21.1 <1.21.11 {
                 ResourceLocation setId = holder.unwrapKey().map(key -> key.location()).orElse(null);
-                //?} else {
+                //?}
+                //? if >=1.21.11 {
                 /*ResourceLocation setId = holder.unwrapKey().map(key -> key.identifier()).orElse(null);
                 *///?}
+                //? if >=1.21.1 {
                 if (setId == null) continue;
                 if (evaluating.contains(setId)) continue;
                 evaluating.add(setId);
@@ -287,17 +306,23 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
                     }
                 } finally {
                     evaluating.remove(setId);
+                //?} else {
+                /*if (chunkGeneratorStructureState.hasStructureChunkInRange(holder, l, j, this.chunkCount)) {
+                    return true;
+                *///?}
                 }
             }
 
             if (this.allowedChunkCount.isPresent() && this.allowedChunkCount.get() > this.chunkCount) {
                 boolean isAnyInRange = false;
                 for (Holder<StructureSet> holder : this.otherSet) {
-                    //? if <1.21.11 {
+                    //? if >=1.21.1 <1.21.11 {
                     ResourceLocation setId = holder.unwrapKey().map(key -> key.location()).orElse(null);
-                    //?} else {
+                    //?}
+                    //? if >=1.21.11 {
                     /*ResourceLocation setId = holder.unwrapKey().map(key -> key.identifier()).orElse(null);
                     *///?}
+                    //? if >=1.21.1 {
                     if (setId == null) continue;
                     if (evaluating.contains(setId)) continue;
                     evaluating.add(setId);
@@ -307,6 +332,10 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
                         }
                     } finally {
                         evaluating.remove(setId);
+                    //?} else {
+                    /*if (chunkGeneratorStructureState.hasStructureChunkInRange(holder, l, j, this.allowedChunkCount.get())) {
+                        isAnyInRange = true;
+                    *///?}
                     }
                 }
                 if (!isAnyInRange) {

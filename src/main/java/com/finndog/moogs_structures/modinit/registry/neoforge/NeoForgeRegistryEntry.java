@@ -1,3 +1,4 @@
+//? if >=1.20.6 {
 package com.finndog.moogs_structures.modinit.registry.neoforge;
 
 import com.finndog.moogs_structures.modinit.registry.RegistryEntry;
@@ -22,3 +23,4 @@ public class NeoForgeRegistryEntry<R, T extends R> implements RegistryEntry<T> {
         return object.getId();
     }
 }
+//?}

@@ -3,7 +3,11 @@ package com.finndog.moogs_structures.world.processors;
 //? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //?}
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 //? if >=1.21.5 {
@@ -34,9 +38,13 @@ import java.util.Set;
 public class HangingEntityAnchorProcessor extends StructureEntityProcessor {
 
     public static final HangingEntityAnchorProcessor INSTANCE = new HangingEntityAnchorProcessor();
-    //? if <26.2 {
+    //? if >=1.20.6 <26.2 {
     public static final MapCodec<HangingEntityAnchorProcessor> CODEC = MapCodec.unit(() -> INSTANCE);
-    //?} else {
+    //?}
+    //? if <1.20.6 {
+    /*public static final Codec<HangingEntityAnchorProcessor> CODEC = Codec.unit(() -> INSTANCE);
+    *///?}
+    //? if >=26.2 {
     /*public static final MapCodec<HangingEntityAnchorProcessor> MAP_CODEC = MapCodec.unit(() -> INSTANCE);
     *///?}
 

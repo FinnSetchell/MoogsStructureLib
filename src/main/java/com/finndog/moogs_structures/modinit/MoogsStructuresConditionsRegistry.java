@@ -12,7 +12,11 @@ import java.util.function.Supplier;
 public final class MoogsStructuresConditionsRegistry {
     private MoogsStructuresConditionsRegistry() {}
 
+    //? if >=1.21.1 {
     public static final ResourceKey<Registry<Supplier<Boolean>>> MoogsStructures_JSON_CONDITIONS_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(MoogsStructuresCommon.MODID, "json_conditions"));
+    //?} else {
+    /*public static final ResourceKey<Registry<Supplier<Boolean>>> MoogsStructures_JSON_CONDITIONS_KEY = ResourceKey.createRegistryKey(new ResourceLocation(MoogsStructuresCommon.MODID, "json_conditions"));
+    *///?}
     public static final CustomRegistry<Supplier<Boolean>> MoogsStructures_JSON_CONDITIONS_REGISTRY = CustomRegistry.of(MoogsStructuresCommon.MODID, MoogsStructures_JSON_CONDITIONS_KEY, false, false, true);
     public static final RegistryEntry<Supplier<Boolean>> ALWAYS_TRUE = MoogsStructures_JSON_CONDITIONS_REGISTRY.register("always_true", () -> () -> true);
     public static final RegistryEntry<Supplier<Boolean>> ALWAYS_FALSE = MoogsStructures_JSON_CONDITIONS_REGISTRY.register("always_false", () -> () -> false);

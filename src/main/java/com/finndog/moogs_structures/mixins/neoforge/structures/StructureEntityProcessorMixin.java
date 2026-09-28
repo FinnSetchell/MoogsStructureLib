@@ -1,3 +1,4 @@
+//? if >=1.20.6 {
 package com.finndog.moogs_structures.mixins.neoforge.structures;
 
 import com.finndog.moogs_structures.world.processors.StructureEntityProcessor;
@@ -34,3 +35,5 @@ public abstract class StructureEntityProcessorMixin {
                 serverLevelAccessor, piecePos, piecePos, localEntityInfo, globalEntityInfo, settings);
     }
 }
+
+//?}

@@ -7,7 +7,11 @@ import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -35,9 +39,13 @@ public class RandomReplaceWithPropertiesProcessor extends StructureProcessor {
 /*public class RandomReplaceWithPropertiesProcessor implements StructureProcessor {
 *///?}
 
-    //? if <26.2 {
+    //? if >=1.20.6 <26.2 {
     public static final MapCodec<RandomReplaceWithPropertiesProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-    //?} else {
+    //?}
+    //? if <1.20.6 {
+    /*public static final Codec<RandomReplaceWithPropertiesProcessor> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
+    *///?}
+    //? if >=26.2 {
     /*public static final MapCodec<RandomReplaceWithPropertiesProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
     *///?}
             BuiltInRegistries.BLOCK.byNameCodec().fieldOf("input_block").forGetter(config -> config.inputBlock),

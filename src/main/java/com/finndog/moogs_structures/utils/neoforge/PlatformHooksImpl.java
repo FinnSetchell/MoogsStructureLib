@@ -1,3 +1,4 @@
+//? if >=1.20.6 {
 package com.finndog.moogs_structures.utils.neoforge;
 
 import net.neoforged.fml.ModList;
@@ -20,3 +21,5 @@ public class PlatformHooksImpl {
         *///?}
     }
 }
+
+//?}

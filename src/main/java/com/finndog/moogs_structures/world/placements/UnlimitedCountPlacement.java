@@ -3,7 +3,11 @@ package com.finndog.moogs_structures.world.placements;
 //? if <26.3 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 //?}
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.ConstantInt;
@@ -21,9 +25,13 @@ public class UnlimitedCountPlacement extends RepeatingPlacement {
 //?} else {
 /*public class UnlimitedCountPlacement implements RepeatingPlacement {
 *///?}
-    //? if <26.1.2 {
+    //? if >=1.20.6 <26.1.2 {
     public static final MapCodec<UnlimitedCountPlacement> CODEC = IntProvider.NON_NEGATIVE_CODEC.fieldOf("count").xmap(UnlimitedCountPlacement::new, countPlacement -> countPlacement.count);
-    //?} else {
+    //?}
+    //? if <1.20.6 {
+    /*public static final Codec<UnlimitedCountPlacement> CODEC = IntProvider.NON_NEGATIVE_CODEC.fieldOf("count").xmap(UnlimitedCountPlacement::new, countPlacement -> countPlacement.count).codec();
+    *///?}
+    //? if >=26.1.2 {
     /*public static final MapCodec<UnlimitedCountPlacement> CODEC = IntProviders.codec(0, Integer.MAX_VALUE).fieldOf("count").xmap(UnlimitedCountPlacement::new, countPlacement -> countPlacement.count);
     *///?}
     private final IntProvider count;

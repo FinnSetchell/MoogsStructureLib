@@ -4,7 +4,11 @@ import com.finndog.moogs_structures.modinit.registry.RegistryEntry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.RegistryObject;
 
+//? if >=1.21.1 {
 public class ForgeRegistryEntry<R, T extends R> implements RegistryEntry<T> {
+//?} else {
+/*public class ForgeRegistryEntry<T> implements RegistryEntry<T> {
+*///?}
 
     private final RegistryObject<T> object;
 

@@ -1,0 +1,36 @@
+{
+  // Barn side pool configuration for Moog's Structure Lib
+  // This pool defines additional pieces that can be attached to the main barn structure
+  // More info: https://minecraft.gamepedia.com/Custom_world_generation#JSON_format_8
+
+  "name": "moogs_structures:houses/barn/side_pool",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        // Jigsaw structure rules:
+        // - Side pieces must be entirely outside OR inside the calling piece's bounding box
+        // - No intersecting pieces allowed
+        // - Jigsaw blocks in the main structure must point to this pool
+        // - Ensure proper spacing and orientation for clean connections
+        
+        "location": "moogs_structures:houses/barn/side_piece",
+        "processors": "minecraft:empty",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    },
+    {
+      // Alternative side piece - provides variety in barn generation
+      // With equal weights (1:1), there's a 50% chance for each variant
+      "weight": 1,
+      "element": {
+        "location": "moogs_structures:houses/barn/side_piece_variant",
+        "processors": "minecraft:empty",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    }
+  ]
+}

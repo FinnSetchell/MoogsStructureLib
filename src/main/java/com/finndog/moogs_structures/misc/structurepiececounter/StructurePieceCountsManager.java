@@ -205,9 +205,16 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
             if(structurePieceCountsObjs != null) {
                 structurePieceCountsObjs.forEach(entry -> {
                     if (entry.alwaysSpawnThisMany != null)
+            //?}
+                        //? if >=1.21.1 <1.21.5 {
                         requirePiecesMap.put(ResourceLocation.tryParse(entry.nbtPieceName), new RequiredPieceNeeds(entry.alwaysSpawnThisMany, entry.minimumDistanceFromCenterPiece != null ? entry.minimumDistanceFromCenterPiece : 0));
+                        //?}
+                        //? if <1.21.1 {
+                        /*requirePiecesMap.put(new ResourceLocation(entry.nbtPieceName), new RequiredPieceNeeds(entry.alwaysSpawnThisMany, entry.minimumDistanceFromCenterPiece != null ? entry.minimumDistanceFromCenterPiece : 0));
+                        *///?}
+                //? if <1.21.5 {
                 });
-            //?} else {
+                //?} else {
             /*List<StructurePieceCountsObj> list = counts.get(rl);
             if (list != null) {
                 for (StructurePieceCountsObj entry : list) {
@@ -219,7 +226,7 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
                         );
                     }
                 }
-            *///?}
+                *///?}
             }
             return requirePiecesMap;
         });
@@ -250,7 +257,11 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
                 for (StructurePieceCountsObj entry : list) {
                     if (entry.neverSpawnMoreThanThisMany != null) {
             *///?}
+                        //? if >=1.21.1 {
                         maxCountPiecesMap.put(ResourceLocation.tryParse(entry.nbtPieceName), entry.neverSpawnMoreThanThisMany);
+                        //?} else {
+                        /*maxCountPiecesMap.put(new ResourceLocation(entry.nbtPieceName), entry.neverSpawnMoreThanThisMany);
+                        *///?}
                 //? if <1.21.5 {
                 });
                 //?} else {

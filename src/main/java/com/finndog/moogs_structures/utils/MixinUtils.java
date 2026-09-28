@@ -11,7 +11,11 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
+//? if >=1.20.6 {
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+//?} else {
+/*import net.minecraft.world.level.chunk.ChunkStatus;
+*///?}
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureStart;

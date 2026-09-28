@@ -1,3 +1,4 @@
+//? if >=1.21.1 {
 package com.finndog.moogs_structures.mixins.forge.structures;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -28,3 +29,5 @@ public class StructurePoolMixin {
         return original.call(minRange, 5000);
     }
 }
+
+//?}

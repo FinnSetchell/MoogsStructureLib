@@ -18,7 +18,7 @@ import java.util.StringJoiner;
  */
 public final class VersionResolver {
 
-    //? if <1.21.5 {
+    //? if >=1.20.6 <1.21.5 {
     private static final String CURRENT_VERSION_STRING = SharedConstants.VERSION_STRING;
     //?}
     //? if >=1.21.5 <1.21.11 {
@@ -44,7 +44,12 @@ public final class VersionResolver {
     //? if >=1.21.11 {
     /*private static final String CURRENT_VERSION_STRING = SharedConstants.getCurrentVersion().id();
     *///?}
+    //? if >=1.20.6 {
     private static final VersionNumber CURRENT_VERSION = VersionNumber.parseInternal(CURRENT_VERSION_STRING);
+    //?} else {
+    /*private static final VersionNumber CURRENT_VERSION = VersionNumber.parseInternal(SharedConstants.getCurrentVersion().getName());
+    private static final String CURRENT_VERSION_STRING = CURRENT_VERSION.toString();
+    *///?}
 
     private VersionResolver() {
     }
@@ -65,7 +70,11 @@ public final class VersionResolver {
 
             Optional<VersionEntry> result = parsedEntry.result();
             if (result.isEmpty()) {
+                //? if >=1.20.6 {
                 String errorMessage = parsedEntry.error().map(DataResult.Error::message).orElse("Unknown version range error");
+                //?} else {
+                /*String errorMessage = parsedEntry.error().map(errorResult -> errorResult.message()).orElse("Unknown version range error");
+                *///?}
                 return DataResult.error(() -> errorMessage);
             }
             entries.add(result.get());
@@ -112,14 +121,22 @@ public final class VersionResolver {
 
             Optional<VersionNumber> min = minResult.result();
             if (min.isEmpty()) {
+                //? if >=1.20.6 {
                 String errorMessage = minResult.error().map(DataResult.Error::message)
+                //?} else {
+                /*String errorMessage = minResult.error().map(errorResult -> errorResult.message())
+                *///?}
                         .orElse("Failed to parse minimum version for range '" + raw + "'");
                 return DataResult.error(() -> errorMessage);
             }
 
             Optional<VersionNumber> max = maxResult.result();
             if (max.isEmpty()) {
+                //? if >=1.20.6 {
                 String errorMessage = maxResult.error().map(DataResult.Error::message)
+                //?} else {
+                /*String errorMessage = maxResult.error().map(errorResult -> errorResult.message())
+                *///?}
                         .orElse("Failed to parse maximum version for range '" + raw + "'");
                 return DataResult.error(() -> errorMessage);
             }

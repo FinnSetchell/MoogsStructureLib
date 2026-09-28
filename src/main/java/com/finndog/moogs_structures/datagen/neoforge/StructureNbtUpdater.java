@@ -1,3 +1,4 @@
+//? if >=1.20.6 {
 package com.finndog.moogs_structures.datagen.neoforge;
 
 import com.google.common.hash.Hashing;
@@ -147,3 +148,4 @@ public class StructureNbtUpdater implements DataProvider {
         return "Update structure files in " + basePath;
     }
 }
+//?}

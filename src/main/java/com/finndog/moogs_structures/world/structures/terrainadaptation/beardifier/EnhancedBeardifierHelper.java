@@ -444,18 +444,26 @@ public class EnhancedBeardifierHelper {
             *///?}
 
             // Apply x/z padding (rotation-aware)
-                // Band-limited adaptation is piece-local; junction beards sit at connection ground level
-                // and would carve outside the band, so skip them when a band is configured.
             //? if <26.1.2 {
             Direction.Axis xPaddingDirection = pieceRotation.rotate(Direction.EAST).getAxis();
             int xPadding = xPaddingDirection == Direction.Axis.X ? adaptation.getPadding().x() : adaptation.getPadding().z();
             int zPadding = xPaddingDirection == Direction.Axis.X ? adaptation.getPadding().z() : adaptation.getPadding().x();
+            //?}
+            //? if >=1.20.6 <26.1.2 {
             pieceBoundingBox = pieceBoundingBox.inflatedBy(xPadding, 0, zPadding);
-            //?} else {
+            //?}
+            //? if <1.20.6 {
+            /*pieceBoundingBox = new BoundingBox(
+                    pieceBoundingBox.minX() - xPadding, pieceBoundingBox.minY(), pieceBoundingBox.minZ() - zPadding,
+                    pieceBoundingBox.maxX() + xPadding, pieceBoundingBox.maxY(), pieceBoundingBox.maxZ() + zPadding);
+            *///?}
+                // Band-limited adaptation is piece-local; junction beards sit at connection ground level
+                // and would carve outside the band, so skip them when a band is configured.
+                //? if >=26.1.2 {
                 /*if (adaptation.getBand().isPresent()) {
                     continue;
                 }
-            *///?}
+                *///?}
 
             //? if <26.1.2 {
             if (bandOpt.isPresent()) {

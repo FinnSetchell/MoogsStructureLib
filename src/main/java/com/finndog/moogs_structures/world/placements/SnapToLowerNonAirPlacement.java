@@ -3,7 +3,11 @@ package com.finndog.moogs_structures.world.placements;
 //? if <26.3 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 //?}
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
@@ -25,7 +29,11 @@ public class SnapToLowerNonAirPlacement extends PlacementModifier {
 /*public class SnapToLowerNonAirPlacement implements PlacementModifier {
 *///?}
 	private static final SnapToLowerNonAirPlacement INSTANCE = new SnapToLowerNonAirPlacement();
+	//? if >=1.20.6 {
 	public static final MapCodec<SnapToLowerNonAirPlacement> CODEC = MapCodec.unit(() -> INSTANCE);
+	//?} else {
+	/*public static final Codec<SnapToLowerNonAirPlacement> CODEC = Codec.unit(() -> INSTANCE);
+	*///?}
 
 	public static SnapToLowerNonAirPlacement snapToLowerNonAir() {
 		return INSTANCE;

@@ -1,11 +1,17 @@
 package com.finndog.moogs_structures.modinit.registry.forge;
 
+//? if >=1.21.1 {
 import com.finndog.moogs_structures.forge.MoogsStructuresForge;
+//?}
 import com.finndog.moogs_structures.modinit.registry.RegistryEntries;
 import com.finndog.moogs_structures.modinit.registry.RegistryEntry;
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
+//? if <1.21.1 {
+/*import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+*///?}
 import net.minecraftforge.registries.DeferredRegister;
 
 import java.util.Collection;
@@ -20,10 +26,12 @@ public class ForgeResourcefulRegistry<T> implements ResourcefulRegistry<T> {
         this.register = DeferredRegister.create(registry, id);
     }
 
+    //? if >=1.21.1 {
     public ForgeResourcefulRegistry(Registry<T> registry, String id) {
         this.register = DeferredRegister.create(registry.key(), id);
     }
 
+    //?}
     @Override
     public <I extends T> RegistryEntry<I> register(String id, Supplier<I> supplier) {
         return this.entries.add(new ForgeRegistryEntry<>(register.register(id, supplier)));
@@ -36,9 +44,14 @@ public class ForgeResourcefulRegistry<T> implements ResourcefulRegistry<T> {
 
     @Override
     public void init() {
-        //? if <1.21.5 {
+        //? if >=1.21.1 <1.21.5 {
         register.register(MoogsStructuresForge.modEventBusTempHolder);
-        //?} else {
+        //?}
+        //? if <1.21.1 {
+        /*IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
+        register.register(bus);
+        *///?}
+        //? if >=1.21.5 {
         /*register.register(MoogsStructuresForge.modBusGroupTempHolder);
         *///?}
     }

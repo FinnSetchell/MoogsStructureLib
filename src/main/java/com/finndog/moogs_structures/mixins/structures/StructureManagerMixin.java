@@ -1,10 +1,14 @@
 package com.finndog.moogs_structures.mixins.structures;
 
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
+//? if >=1.20.6 {
 import com.finndog.moogs_structures.replacement.AliasedStructurePredicate;
+//?}
 import com.finndog.moogs_structures.replacement.ReplacementAliases;
 import net.minecraft.core.BlockPos;
+//? if >=1.20.6 {
 import net.minecraft.core.Holder;
+//?}
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -16,7 +20,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+//? if >=1.20.6 {
 import java.util.function.Predicate;
+//?}
 
 /**
  * Makes a "is this position inside structure X" question answer yes when X has been replaced and the
@@ -71,6 +77,7 @@ public class StructureManagerMixin {
      * The tag and holder-set overloads both narrow to this one, so location predicates never reach
      * the single-structure aliasing above.
      */
+    //? if >=1.20.6 {
     @Inject(
             method = "getStructureWithPieceAt(Lnet/minecraft/core/BlockPos;Ljava/util/function/Predicate;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;",
             at = @At("HEAD"),
@@ -80,14 +87,18 @@ public class StructureManagerMixin {
         if (!ReplacementAliases.hasAny() || predicate instanceof AliasedStructurePredicate) return;
 
         StructureManager self = (StructureManager) (Object) this;
-        //? if <1.21.2 {
+    //?}
+        //? if >=1.20.6 <1.21.2 {
         Registry<Structure> registry = self.registryAccess().registryOrThrow(Registries.STRUCTURE);
-        //?} else {
+        //?}
+        //? if >=1.21.2 {
         /*Registry<Structure> registry = self.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         *///?}
+        //? if >=1.20.6 {
         cir.setReturnValue(self.getStructureWithPieceAt(blockPos, new AliasedStructurePredicate(predicate, registry)));
     }
 
+        //?}
     private static Structure moogs_structures_aliasFor(StructureManager manager, Structure asked, StructureStart found) {
         if (!ReplacementAliases.hasAny()) return null;
         if (found != null && found.isValid()) return null;

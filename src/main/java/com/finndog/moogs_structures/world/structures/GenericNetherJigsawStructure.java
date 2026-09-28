@@ -2,11 +2,17 @@ package com.finndog.moogs_structures.world.structures;
 
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.utils.GeneralUtils;
+//? if >=1.21.1 {
 import com.finndog.moogs_structures.world.structures.codecs.YRangeAllowance;
+//?}
+//? if >=1.20.6 {
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
+//?}
 import com.google.common.collect.Maps;
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 //? if <1.21.11 {
 import net.minecraft.Util;
@@ -25,8 +31,10 @@ import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureType;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePiecesBuilder;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+//? if >=1.21.1 {
 import net.minecraft.world.level.levelgen.structure.structures.JigsawStructure;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
+//?}
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -35,13 +43,27 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+//? if <1.20.6 {
+/*import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
+
+*///?}
 public class GenericNetherJigsawStructure extends GenericJigsawStructure {
 
+    //? if >=1.20.6 {
     public static final MapCodec<GenericNetherJigsawStructure> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    //?} else {
+    /*public static final Codec<GenericNetherJigsawStructure> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    *///?}
             GenericNetherJigsawStructure.settingsCodec(instance),
             StructureTemplatePool.CODEC.fieldOf("start_pool").forGetter(structure -> structure.startPool),
             Codec.intRange(0, 128).fieldOf("size").forGetter(structure -> structure.size),
+            //? if >=1.21.1 {
             YRangeAllowance.CODEC.optionalFieldOf("y_allowance").forGetter(structure -> structure.yAllowance),
+            //?} else {
+            /*Codec.INT.optionalFieldOf("min_y_allowed").forGetter(structure -> structure.minYAllowed),
+            Codec.INT.optionalFieldOf("max_y_allowed").forGetter(structure -> structure.maxYAllowed),
+            Codec.intRange(1, 1000).optionalFieldOf("allowed_y_range_from_start").forGetter(structure -> structure.allowedYRangeFromStart),
+            *///?}
             HeightProvider.CODEC.fieldOf("start_height").forGetter(structure -> structure.startHeight),
             Codec.BOOL.fieldOf("cannot_spawn_in_liquid").orElse(false).forGetter(structure -> structure.cannotSpawnInLiquid),
             Codec.intRange(1, 100).optionalFieldOf("valid_biome_radius_check").forGetter(structure -> structure.biomeRadius),
@@ -50,7 +72,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Codec.intRange(0, 100).optionalFieldOf("ledge_offset_y").forGetter(structure -> structure.ledgeOffsetY),
             StringRepresentable.fromEnum(LAND_SEARCH_DIRECTION::values).fieldOf("land_search_direction").forGetter(structure -> structure.searchDirection),
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
+            //? if >=1.21.1 {
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
+            //?}
             EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
     ).apply(instance, GenericNetherJigsawStructure::new));
 
@@ -60,7 +84,13 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
     public GenericNetherJigsawStructure(StructureSettings config,
                                         Holder<StructureTemplatePool> startPool,
                                         int size,
+                                        //? if >=1.21.1 {
                                         Optional<YRangeAllowance> yAllowance,
+                                        //?} else {
+                                        /*Optional<Integer> minYAllowed,
+                                        Optional<Integer> maxYAllowed,
+                                        Optional<Integer> allowedYRangeFromStart,
+                                        *///?}
                                         HeightProvider startHeight,
                                         boolean cannotSpawnInLiquid,
                                         Optional<Integer> biomeRadius,
@@ -69,12 +99,20 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                                         Optional<Integer> ledgeOffsetY,
                                         LAND_SEARCH_DIRECTION searchDirection,
                                         boolean useBoundingBoxHack,
+                                        //? if >=1.21.1 {
                                         LiquidSettings liquidSettings,
+                                        //?}
                                         EnhancedTerrainAdaptation enhancedTerrainAdaptation) {
         super(config,
             startPool,
             size,
+            //? if >=1.21.1 {
             yAllowance,
+            //?} else {
+            /*minYAllowed,
+            maxYAllowed,
+            allowedYRangeFromStart,
+            *///?}
             startHeight,
             Optional.empty(),
             cannotSpawnInLiquid,
@@ -85,7 +123,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             maxDistanceFromCenter,
             Optional.empty(),
             useBoundingBoxHack,
+            //? if >=1.21.1 {
             liquidSettings,
+            //?}
             enhancedTerrainAdaptation);
 
         this.ledgeOffsetY = ledgeOffsetY;

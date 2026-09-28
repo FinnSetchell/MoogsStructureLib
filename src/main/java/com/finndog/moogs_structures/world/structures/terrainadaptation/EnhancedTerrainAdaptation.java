@@ -153,7 +153,11 @@ public class EnhancedTerrainAdaptation {
         BURY("bury", 1),
         NONE("none", 0);
 
+        //? if >=1.20.6 {
         public static final Codec<TerrainAction> CODEC = StringRepresentable.fromValues(TerrainAction::values);
+        //?} else {
+        /*public static final Codec<TerrainAction> CODEC = StringRepresentable.fromEnum(TerrainAction::values);
+        *///?}
         private final String name;
         private final int densityModifier;
 

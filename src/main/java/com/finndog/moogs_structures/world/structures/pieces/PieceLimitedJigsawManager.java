@@ -41,7 +41,9 @@ import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
 import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+//? if >=1.21.1 {
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
+//?}
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.AABB;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -83,7 +85,9 @@ public class PieceLimitedJigsawManager {
             Set<ResourceLocation> poolsThatIgnoreBounds,
             Optional<Integer> maxDistanceFromCenter,
             Optional<GenericJigsawStructure.BURYING_TYPE> buryingType,
+            //? if >=1.21.1 {
             LiquidSettings liquidSettings,
+            //?}
             BiConsumer<StructurePiecesBuilder, List<PoolElementStructurePiece>> structureBoundsAdjuster
     ) {
         // Get jigsaw pool registry
@@ -143,8 +147,12 @@ public class PieceLimitedJigsawManager {
                 startPos,
                 startPieceBlueprint.getGroundLevelDelta(),
                 rotation,
+                //? if >=1.21.1 {
                 startPieceBlueprint.getBoundingBox(context.structureTemplateManager(), startPos, rotation),
                 liquidSettings
+                //?} else {
+                /*startPieceBlueprint.getBoundingBox(context.structureTemplateManager(), startPos, rotation)
+                *///?}
         );
 
         // Store center position of starting piece's bounding box
@@ -198,9 +206,12 @@ public class PieceLimitedJigsawManager {
             Map<ResourceLocation, Integer> currentPieceCounter = new HashMap<>();
             for (int attempts = 0; runOnce || doesNotHaveAllRequiredPieces(components, requiredPieces, currentPieceCounter); attempts++) {
         //?}
-                //? if <1.21.4 {
+                //? if >=1.21.1 <1.21.4 {
                 if (attempts == 40) {
                 //?}
+                //? if <1.21.1 {
+                /*if (attempts == 100) {
+                *///?}
                 //? if >=1.21.4 <1.21.5 {
                 /*if (attempts == 100) {
                 *///?}
@@ -228,7 +239,7 @@ public class PieceLimitedJigsawManager {
                     *///?}
 
                 //reroll start piece
-                //? if <1.21.5 {
+                //? if >=1.21.1 <1.21.5 {
                 PoolElementStructurePiece startPieceToUse = startPiece;
                 if (attempts > 0) {
                     StructurePoolElement startPieceBlueprintNew = startPool.getRandomTemplate(random);
@@ -242,19 +253,23 @@ public class PieceLimitedJigsawManager {
                             liquidSettings
                     );
                 }
-                //?} else {
+                //?}
+                    //? if >=1.21.5 {
                     /*Map<ResourceLocation, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces =
                             StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER.getRequirePieces(structureID);
                     boolean runOnce = requiredPieces == null || requiredPieces.isEmpty();
                     Map<ResourceLocation, Integer> currentPieceCounter = new HashMap<>();
-                *///?}
+                    *///?}
 
                 //? if <1.21.5 {
                 components.clear();
                 //?}
-                //? if <1.21.4 {
+                //? if >=1.21.1 <1.21.4 {
                 components.add(startPieceToUse); // Add start piece to list of pieces
                 //?}
+                //? if <1.21.1 {
+                /*components.add(startPiece); // Add start piece to list of pieces
+                *///?}
                 //? if >=1.21.4 <1.21.5 {
                 /*components.add(startPiece); // Add start piece to list of pieces
                 *///?}
@@ -313,9 +328,12 @@ public class PieceLimitedJigsawManager {
                     BoxOctree boxOctree = new BoxOctree(axisAlignedBB); // The maximum boundary of the entire structure
                     boxOctree.addBox(AABB.of(pieceBoundingBox));
                 //?}
-                    //? if <1.21.4 {
+                    //? if >=1.21.1 <1.21.4 {
                     Entry startPieceEntry = new Entry(startPieceToUse, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
                     //?}
+                    //? if <1.21.1 {
+                    /*Entry startPieceEntry = new Entry(startPiece, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
+                    *///?}
                     //? if >=1.21.4 <1.21.5 {
                     /*Entry startPieceEntry = new Entry(startPiece, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
                     *///?}
@@ -347,8 +365,15 @@ public class PieceLimitedJigsawManager {
                             requiredPieces,
                             buryingType.isEmpty() ? maxY : Integer.MAX_VALUE,
                             buryingType.isEmpty() ? minY : Integer.MIN_VALUE,
+                    //?}
+                            //? if >=1.21.1 <1.21.5 {
                             poolsThatIgnoreBounds,
                             liquidSettings);
+                            //?}
+                            //? if <1.21.1 {
+                            /*poolsThatIgnoreBounds);
+                            *///?}
+                    //? if <1.21.5 {
                     assembler.availablePieces.addLast(startPieceEntry);
                     //?} else {
                         /*components.clear();
@@ -492,8 +517,10 @@ public class PieceLimitedJigsawManager {
         private final int maxY;
         private final int minY;
         private final Set<ResourceLocation> poolsThatIgnoreBounds;
+        //? if >=1.21.1 {
         private final LiquidSettings liquidSettings;
 
+        //?}
 
         public Assembler(ResourceLocation structureID,
                          //? if <1.21.5 {
@@ -508,15 +535,22 @@ public class PieceLimitedJigsawManager {
                          Map<ResourceLocation, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces,
                          int maxY,
                          int minY,
+                         //? if >=1.21.1 {
                          Set<ResourceLocation> poolsThatIgnoreBounds,
-                         //? if <1.21.5 {
+                         //?}
+                         //? if >=1.21.1 <1.21.5 {
                          LiquidSettings liquidSettings
+                         //?}
+                         //? if <1.21.1 {
+                         /*Set<ResourceLocation> poolsThatIgnoreBounds
+                         *///?}
+        //? if <1.21.5 {
         ) {
             this.poolRegistry = poolRegistry;
-                         //?} else {
+        //?} else {
                          /*LiquidSettings liquidSettings) {
             this.poolLookup = poolLookup;
-                         *///?}
+        *///?}
             this.maxDepth = maxDepth;
             this.context = context;
             this.structurePieces = structurePieces;
@@ -528,7 +562,9 @@ public class PieceLimitedJigsawManager {
             this.requiredPieces = requiredPieces == null ? new HashMap<>() : new HashMap<>(requiredPieces);
             this.maximumPieceCounts = new HashMap<>(StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER.getMaximumCountForPieces(structureID));
             this.poolsThatIgnoreBounds = poolsThatIgnoreBounds;
+            //? if >=1.21.1 {
             this.liquidSettings = liquidSettings;
+            //?}
 
             // pieceCounts will keep track of how many of the pieces we are checking were spawned
             this.currentPieceCounts = new HashMap<>();
@@ -596,9 +632,12 @@ public class PieceLimitedJigsawManager {
                 BlockPos jigsawBlockTargetPos = jigsawBlockPos.relative(direction);
 
                 // Get the jigsaw block's piece pool
-                //? if <1.21.2 {
+                //? if >=1.21.1 <1.21.2 {
                 ResourceLocation jigsawBlockPool = ResourceLocation.tryParse(jigsawBlock.nbt().getString("pool"));
                 //?}
+                //? if <1.21.1 {
+                /*ResourceLocation jigsawBlockPool = new ResourceLocation(jigsawBlock.nbt().getString("pool"));
+                *///?}
                 //? if >=1.21.2 <1.21.5 {
                 /*ResourceLocation jigsawBlockPool = ResourceLocation.tryParse(jigsawBlock.info().nbt().getString("pool"));
                 *///?}
@@ -931,9 +970,12 @@ public class PieceLimitedJigsawManager {
                             }
                             else {
                             //?}
-                                //? if <1.21.2 {
+                                //? if >=1.21.1 <1.21.2 {
                                 ResourceLocation candidateTargetPool = ResourceLocation.tryParse(pieceCandidateJigsawBlock.nbt().getString("pool"));
                                 //?}
+                                //? if <1.21.1 {
+                                /*ResourceLocation candidateTargetPool = new ResourceLocation(pieceCandidateJigsawBlock.nbt().getString("pool"));
+                                *///?}
                                 //? if >=1.21.2 <1.21.5 {
                                 /*ResourceLocation candidateTargetPool = ResourceLocation.tryParse(pieceCandidateJigsawBlock.info().nbt().getString("pool"));
                                 *///?}
@@ -1066,9 +1108,12 @@ public class PieceLimitedJigsawManager {
                             /*} else {
                             *///?}
                                 if (surfaceHeight == -1) {
-                                    //? if <1.21.4 {
+                                    //? if >=1.21.1 <1.21.4 {
                                     surfaceHeight = context.chunkGenerator().getFirstFreeHeight(jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
                                     //?}
+                                    //? if <1.21.1 {
+                                    /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
+                                    *///?}
                                     //? if >=1.21.4 <1.21.5 {
                                     /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
                                     *///?}
@@ -1116,9 +1161,12 @@ public class PieceLimitedJigsawManager {
                             boolean validBounds = false;
 
                             // Make sure new piece fits within the chosen octree without intersecting any other piece.
-                            //? if <1.21.4 {
+                            //? if >=1.21.1 <1.21.4 {
                             if (ignoreBounds || (boxOctreeMutableObject.getValue().withinBoundsButNotIntersectingChildren(axisAlignedBBDeflated))) {
                             //?}
+                            //? if <1.21.1 {
+                            /*if (ignoreBounds || (boxOctreeMutableObject.getValue().boundaryContains(axisAlignedBBDeflated) && !boxOctreeMutableObject.getValue().intersectsAnyBox(axisAlignedBBDeflated))) {
+                            *///?}
                             //? if >=1.21.4 <1.21.5 {
                             /*if (ignoreBounds || (boxOctreeMutableObject.getValue().boundaryContains(axisAlignedBBDeflated) && !boxOctreeMutableObject.getValue().intersectsAnyBox(axisAlignedBBDeflated))) {
                             *///?}
@@ -1156,8 +1204,12 @@ public class PieceLimitedJigsawManager {
                                         adjustedCandidateJigsawBlockRelativePos,
                                         groundLevelDelta,
                                         rotation,
+                                        //? if >=1.21.1 {
                                         adjustedCandidateBoundingBox,
                                         liquidSettings
+                                        //?} else {
+                                        /*adjustedCandidateBoundingBox
+                                        *///?}
                                 );
 
                                 // Determine actual y-value for the new jigsaw block
@@ -1178,9 +1230,12 @@ public class PieceLimitedJigsawManager {
                                 /*} else {
                                 *///?}
                                     if (surfaceHeight == -1) {
-                                        //? if <1.21.4 {
+                                        //? if >=1.21.1 <1.21.4 {
                                         surfaceHeight = context.chunkGenerator().getFirstFreeHeight(jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
                                         //?}
+                                        //? if <1.21.1 {
+                                        /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
+                                        *///?}
                                         //? if >=1.21.4 <1.21.5 {
                                         /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
                                         *///?}

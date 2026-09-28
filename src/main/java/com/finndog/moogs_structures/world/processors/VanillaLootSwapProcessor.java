@@ -5,7 +5,9 @@ import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //?}
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -35,9 +37,13 @@ import net.minecraft.world.level.block.Blocks;
  */
 public class VanillaLootSwapProcessor extends StructureEntityProcessor {
 
-    //? if <26.2 {
+    //? if >=1.20.6 <26.2 {
     public static final MapCodec<VanillaLootSwapProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-    //?} else {
+    //?}
+    //? if <1.20.6 {
+    /*public static final Codec<VanillaLootSwapProcessor> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
+    *///?}
+    //? if >=26.2 {
     /*public static final MapCodec<VanillaLootSwapProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
     *///?}
             Codec.STRING.fieldOf("modid").forGetter(p -> p.modid),

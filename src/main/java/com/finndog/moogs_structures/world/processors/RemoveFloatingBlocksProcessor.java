@@ -3,7 +3,11 @@ package com.finndog.moogs_structures.world.processors;
 //? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //?}
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.WorldGenRegion;
@@ -31,9 +35,13 @@ public class RemoveFloatingBlocksProcessor extends StructureProcessor {
 /*public class RemoveFloatingBlocksProcessor implements StructureProcessor {
 *///?}
 
-    //? if <26.2 {
+    //? if >=1.20.6 <26.2 {
     public static final MapCodec<RemoveFloatingBlocksProcessor> CODEC = MapCodec.unit(RemoveFloatingBlocksProcessor::new);
-    //?} else {
+    //?}
+    //? if <1.20.6 {
+    /*public static final Codec<RemoveFloatingBlocksProcessor> CODEC = Codec.unit(RemoveFloatingBlocksProcessor::new);
+    *///?}
+    //? if >=26.2 {
     /*public static final MapCodec<RemoveFloatingBlocksProcessor> MAP_CODEC = MapCodec.unit(RemoveFloatingBlocksProcessor::new);
     *///?}
     private RemoveFloatingBlocksProcessor() { }

@@ -1,3 +1,4 @@
+//? if >=1.20.6 {
 package com.finndog.moogs_structures.replacement;
 
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
@@ -54,3 +55,5 @@ public final class AliasedStructurePredicate implements Predicate<Holder<Structu
                 .orElse(false);
     }
 }
+
+//?}

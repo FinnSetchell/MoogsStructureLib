@@ -8,24 +8,38 @@ import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.config.StructureListManager;
 import com.finndog.moogs_structures.config.StructureManifestReloadListener;
 import com.finndog.moogs_structures.misc.structurepiececounter.StructurePieceCountsManager;
-//? if <26.1.2 {
+//? if >=1.21.1 <26.1.2 {
 import com.finndog.moogs_structures.misc.trialspawnerconfig.TrialSpawnerConfigManager;
 //?}
-import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
-import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
-import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
-import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
-import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
-import com.finndog.moogs_structures.modinit.MoogsStructuresTags;
-import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
+//? if <1.21.1 {
+/*import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
 import com.finndog.moogs_structures.world.structures.placements.ConditionalConcentricRings;
-import com.finndog.moogs_structures.utils.AsyncLocator;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
+*///?}
+import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
+import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
+import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
+import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
+import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
+import com.finndog.moogs_structures.modinit.MoogsStructuresTags;
+//? if >=1.21.1 {
+import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
+import com.finndog.moogs_structures.world.structures.placements.ConditionalConcentricRings;
+//?}
+import com.finndog.moogs_structures.utils.AsyncLocator;
+//? if >=1.21.1 {
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.levelgen.structure.StructureSet;
+import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
+//?}
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -96,11 +110,19 @@ public class MoogsStructuresCommon {
     }
 
     public static void registerDatapackListener(final RegisterReloadListenerEvent event) {
-        //? if <26.1.2 {
+        //? if >=1.21.1 <26.1.2 {
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "trial_spawner_config_manager"), TrialSpawnerConfigManager.INSTANCE);
         //?}
+        //? if >=1.21.1 {
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "structure_manifests"), new StructureManifestReloadListener());
+        //?} else {
+        /*event.register(new ResourceLocation(MODID, "structure_manifests"), new StructureManifestReloadListener());
+        *///?}
         // Without this the msl_pieces_spawn_counts data is never loaded, so per-piece spawn counts are inert.
+        //? if >=1.21.1 {
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "msl_pieces_spawn_counts"), StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER);
+        //?} else {
+        /*event.register(new ResourceLocation(MODID, "msl_pieces_spawn_counts"), StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER);
+        *///?}
     }
 }

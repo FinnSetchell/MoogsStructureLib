@@ -1,4 +1,4 @@
-//? if <26.1.2 {
+//? if >=1.21.1 <26.1.2 {
 package com.finndog.moogs_structures.gametest.forge;
 
 import com.finndog.moogs_structures.world.processors.EquipArmorStandProcessor;

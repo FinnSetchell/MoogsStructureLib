@@ -1,3 +1,4 @@
+//? if >=1.20.6 {
 package com.finndog.moogs_structures.neoforge;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
@@ -19,6 +20,9 @@ import net.neoforged.neoforge.event.AddReloadListenerEvent;
 /*import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 *///?}
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+//? if <1.21.1 {
+/*import net.neoforged.neoforge.event.RegisterGameTestsEvent;
+*///?}
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
@@ -36,12 +40,26 @@ public class MoogsStructuresNeoforge {
         modEventBusTempHolder = null;
 
         modEventBus.addListener(MoogsStructuresNeoforge::onSetup);
+        //? if <1.21.1 {
+        /*modEventBus.addListener(MoogsStructuresNeoforge::registerGameTests);
+        *///?}
 
         IEventBus eventBus = NeoForge.EVENT_BUS;
         eventBus.addListener(MoogsStructuresNeoforge::onServerStarting);
         eventBus.addListener(MoogsStructuresNeoforge::onServerStopping);
         eventBus.addListener(MoogsStructuresNeoforge::onAddReloadListeners);
         eventBus.addListener(MoogsStructuresNeoforge::onRegisterCommands);
+    //? if <1.21.1 {
+    /*}
+
+    // Register game tests when the test class is on the classpath (dev/gametest only).
+    // Class.forName silently fails in production where the test class is absent.
+    private static void registerGameTests(RegisterGameTestsEvent event) {
+        try {
+            event.register(Class.forName("com.finndog.moogs_structures.gametest.EquipArmorStandProcessorTest"));
+        } catch (ClassNotFoundException ignored) {
+        }
+    *///?}
     }
 
     private static void onSetup(FMLCommonSetupEvent event) {
@@ -76,3 +94,5 @@ public class MoogsStructuresNeoforge {
     }
 
 }
+
+//?}

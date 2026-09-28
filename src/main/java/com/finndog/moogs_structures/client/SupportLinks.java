@@ -23,22 +23,47 @@ public final class SupportLinks {
     private static final String KOFI_ID = "kofi";
     private static final String DISCORD_URL = "https://moogsmods.com/discord?r=ingame-msl";
     private static final String KOFI_URL = "https://ko-fi.com/finndog";
+    //? if >=1.21.1 {
     private static final ResourceLocation DISCORD_SPRITE = ResourceLocation.fromNamespaceAndPath(MoogsStructuresCommon.MODID, "discord");
     private static final ResourceLocation KOFI_SPRITE = ResourceLocation.fromNamespaceAndPath(MoogsStructuresCommon.MODID, "kofi");
+    //?}
+    //? if >=1.20.6 <1.21.1 {
+    /*private static final ResourceLocation DISCORD_SPRITE = new ResourceLocation(MoogsStructuresCommon.MODID, "discord");
+    private static final ResourceLocation KOFI_SPRITE = new ResourceLocation(MoogsStructuresCommon.MODID, "kofi");
+    *///?}
+    //? if <1.20.6 {
+    /*private static final ResourceLocation DISCORD_TEX = new ResourceLocation(MoogsStructuresCommon.MODID, "textures/gui/discord.png");
+    private static final ResourceLocation KOFI_TEX = new ResourceLocation(MoogsStructuresCommon.MODID, "textures/gui/kofi.png");
+    private static final int DISCORD_TEX_W = 118, DISCORD_TEX_H = 118;
+    private static final int KOFI_TEX_W = 50, KOFI_TEX_H = 50;
+    *///?}
 
     private SupportLinks() {}
 
     public static void addTo(Screen screen) {
         MslConfig cfg = MslConfig.get();
         int right = screen.width - PAD;
+        //? if >=1.20.6 {
         right = maybeAdd(screen, cfg, right, DISCORD_W, DISCORD_ID, DISCORD_SPRITE, DISCORD_URL, "Join the Discord");
         maybeAdd(screen, cfg, right, KOFI_W, KOFI_ID, KOFI_SPRITE, KOFI_URL, "Support on Ko-fi");
+        //?} else {
+        /*right = maybeAdd(screen, cfg, right, DISCORD_W, DISCORD_ID, DISCORD_TEX, DISCORD_TEX_W, DISCORD_TEX_H, DISCORD_URL, "Join the Discord");
+        maybeAdd(screen, cfg, right, KOFI_W, KOFI_ID, KOFI_TEX, KOFI_TEX_W, KOFI_TEX_H, KOFI_URL, "Support on Ko-fi");
+        *///?}
     }
 
+    //? if >=1.20.6 {
     private static int maybeAdd(Screen screen, MslConfig cfg, int right, int w, String id, ResourceLocation sprite, String url, String tooltip) {
+    //?} else {
+    /*private static int maybeAdd(Screen screen, MslConfig cfg, int right, int w, String id, ResourceLocation tex, int texW, int texH, String url, String tooltip) {
+    *///?}
         if (cfg.isButtonHidden(id)) return right;
         int x = right - w;
+        //? if >=1.20.6 {
         ((ScreenInvoker) screen).msl$addRenderableWidget(new SupportButton(x, TOP, w, H, sprite, url, Component.literal(tooltip), id));
+        //?} else {
+        /*((ScreenInvoker) screen).msl$addRenderableWidget(new SupportButton(x, TOP, w, H, tex, texW, texH, url, Component.literal(tooltip), id));
+        *///?}
         return x - GAP;
     }
 }

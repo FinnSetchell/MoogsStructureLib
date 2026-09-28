@@ -4,7 +4,9 @@ package com.finndog.moogs_structures.world.processors;
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //?}
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -46,9 +48,13 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
         ).apply(instance, WeightedEntity::new));
     }
 
-    //? if <26.2 {
+    //? if >=1.20.6 <26.2 {
     public static final MapCodec<SpawnerRandomizingProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-    //?} else {
+    //?}
+    //? if <1.20.6 {
+    /*public static final Codec<SpawnerRandomizingProcessor> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
+    *///?}
+    //? if >=26.2 {
     /*public static final MapCodec<SpawnerRandomizingProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
     *///?}
             WeightedEntity.CODEC.listOf().fieldOf("weighted_entities").forGetter(p -> p.weightedEntities),

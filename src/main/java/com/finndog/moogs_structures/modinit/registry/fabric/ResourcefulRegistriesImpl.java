@@ -45,6 +45,9 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
         /*@SuppressWarnings("unchecked")
         var registry = FabricRegistryBuilder.createSimple((ResourceKey<Registry<T>>) (Object) key);
         *///?}
+        //? if <1.20.6 {
+        /*if (save) registry.attribute(RegistryAttribute.PERSISTED);
+        *///?}
         //? if <26.1.2 {
         if (sync) registry.attribute(RegistryAttribute.SYNCED);
         if (allowModification) registry.attribute(RegistryAttribute.MODDED);

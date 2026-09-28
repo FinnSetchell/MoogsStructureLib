@@ -83,6 +83,12 @@ tasks {
         )
         props.forEach { (k, v) -> inputs.property(k, v) }
         filesMatching(listOf("fabric.mod.json", "*.mixins.json", "pack.mcmeta")) { expand(props) }
+        // The 1.20.x jars also apply the access widener at runtime, as their Architectury builds did.
+        if (prop("mod.fabric_aw_entry").toBoolean()) {
+            filesMatching("fabric.mod.json") {
+                filter { line -> line.replace("\"environment\": \"*\",", "\"environment\": \"*\",\n  \"accessWidener\": \"$modId.accesswidener\",") }
+            }
+        }
         from(awFile) { rename { "$modId.accesswidener" } }
         from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
     }

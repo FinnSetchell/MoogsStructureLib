@@ -9,7 +9,11 @@ import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedT
 import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 //? if <1.21.11 {
@@ -36,18 +40,34 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElementType;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+//? if >=1.21.1 {
 import net.minecraft.world.level.levelgen.structure.templatesystem.*;
+//?} else {
+/*import net.minecraft.world.level.levelgen.structure.templatesystem.BlockIgnoreProcessor;
+import net.minecraft.world.level.levelgen.structure.templatesystem.JigsawReplacementProcessor;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorList;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+*///?}
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import com.finndog.moogs_structures.world.processors.HangingEntityAnchorProcessor;
+//? if >=1.21.1 {
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
+//?}
 
 public class MirroringSingleJigsawPiece extends SinglePoolElement implements PoolElementAdaptationOverride {
+    //? if >=1.20.6 {
     public static final MapCodec<MirroringSingleJigsawPiece> CODEC = RecordCodecBuilder.mapCodec((jigsawPieceInstance) ->
+    //?} else {
+    /*public static final Codec<MirroringSingleJigsawPiece> CODEC = RecordCodecBuilder.create((jigsawPieceInstance) ->
+    *///?}
             jigsawPieceInstance.group(
+                            //? if >=1.21.1 {
                             templateCodec(),
                             processorsCodec(),
                             projectionCodec(),
@@ -55,10 +75,22 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
                             overrideLiquidSettingsCodec(),
                             adaptationOverrideCodec())
                     .apply(jigsawPieceInstance, MirroringSingleJigsawPiece::new));
+                            //?} else {
+                    /*templateCodec(),
+                    processorsCodec(),
+                    projectionCodec(),
+                    mirrorCodec(),
+                    adaptationOverrideCodec())
+            .apply(jigsawPieceInstance, MirroringSingleJigsawPiece::new));
+                            *///?}
 
     protected static <E extends MirroringSingleJigsawPiece> RecordCodecBuilder<E, Mirror> mirrorCodec() {
         return Codec.STRING.fieldOf("mirror")
+                //? if >=1.21.1 {
                 .xmap(Mirror::valueOf, Mirror::toString)
+                //?} else {
+                /*.xmap(Mirror::valueOf, Mirror::name)
+                *///?}
                 .forGetter((jigsawPieceInstance) -> jigsawPieceInstance.mirror);
     }
 
@@ -70,12 +102,22 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
     protected final Mirror mirror;
     protected final Optional<EnhancedTerrainAdaptation> adaptationOverride;
 
+    //? if >=1.21.1 {
     public MirroringSingleJigsawPiece(SinglePoolElement singleJigsawPiece, Mirror mirror, Optional<LiquidSettings> liquidSettings) {
         this(((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getTemplate(), ((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getProcessors(), singleJigsawPiece.getProjection(), mirror, liquidSettings, Optional.empty());
+    //?} else {
+    /*public MirroringSingleJigsawPiece(SinglePoolElement singleJigsawPiece, Mirror mirror) {
+        this(((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getTemplate(), ((SinglePoolElementAccessor)singleJigsawPiece).moogs_structures_getProcessors(), singleJigsawPiece.getProjection(), mirror, Optional.empty());
+    *///?}
     }
 
+    //? if >=1.21.1 {
     protected MirroringSingleJigsawPiece(Either<ResourceLocation, StructureTemplate> locationTemplateEither, Holder<StructureProcessorList> processorListSupplier, StructureTemplatePool.Projection placementBehaviour, Mirror mirror, Optional<LiquidSettings> liquidSettings, Optional<EnhancedTerrainAdaptation> adaptationOverride) {
         super(locationTemplateEither, processorListSupplier, placementBehaviour, liquidSettings);
+    //?} else {
+    /*protected MirroringSingleJigsawPiece(Either<ResourceLocation, StructureTemplate> locationTemplateEither, Holder<StructureProcessorList> processorListSupplier, StructureTemplatePool.Projection placementBehaviour, Mirror mirror, Optional<EnhancedTerrainAdaptation> adaptationOverride) {
+        super(locationTemplateEither, processorListSupplier, placementBehaviour);
+    *///?}
         this.mirror = mirror;
         this.adaptationOverride = adaptationOverride;
     }
@@ -111,9 +153,14 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
         //? if >=1.21.2 <1.21.5 {
         /*ObjectArrayList<StructureTemplate.JigsawBlockInfo> list = getJigsaws(template, blockPos, (new StructurePlaceSettings()).setRotation(rotation).setMirror(mirror));
         *///?}
+        //? if >=1.20.6 <1.21.5 {
+        Util.shuffle(list, random);
+        //?}
+        //? if <1.20.6 {
+        /*shuffle(list, random);
+        *///?}
 
         //? if <1.21.5 {
-        Util.shuffle(list, random);
         return list;
         //?} else {
         /*ObjectArrayList<StructureTemplate.StructureBlockInfo> raw =
@@ -139,6 +186,17 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
         Util.shuffle(out, random);
         return out;
         *///?}
+    //? if <1.20.6 {
+    /*}
+
+    // Vanilla's Util.shuffle, inlined: it takes an ObjectArrayList up to 1.20.2 and a List from 1.20.3,
+    // so a call compiled against 1.20 throws NoSuchMethodError on 1.20.3-1.20.4. Same draws, same order.
+    private static <T> void shuffle(List<T> list, RandomSource random) {
+        for (int i = list.size(); i > 1; --i) {
+            int j = random.nextInt(i);
+            list.set(i - 1, list.set(j, list.get(i - 1)));
+        }
+    *///?}
     }
 
     //? if >=1.21.2 <1.21.5 {
@@ -168,6 +226,7 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
     }
 
     @Override
+    //? if >=1.21.1 {
     public boolean place(StructureTemplateManager templateManager,
                          WorldGenLevel worldGenLevel,
                          StructureManager StructureTemplateManager,
@@ -180,8 +239,15 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
                          LiquidSettings liquidSettings,
                          boolean doNotReplaceJigsaw)
     {
+    //?} else {
+    /*public boolean place(StructureTemplateManager templateManager, WorldGenLevel worldGenLevel, StructureManager StructureTemplateManager, ChunkGenerator chunkGenerator, BlockPos blockPos, BlockPos blockPos1, Rotation rotation, BoundingBox mutableBoundingBox, RandomSource random, boolean doNotReplaceJigsaw) {
+    *///?}
         StructureTemplate template = this.getTemplate(templateManager);
+        //? if >=1.21.1 {
         StructurePlaceSettings placementsettings = this.getSettings(rotation, mutableBoundingBox, liquidSettings, doNotReplaceJigsaw);
+        //?} else {
+        /*StructurePlaceSettings placementsettings = this.getSettings(rotation, mutableBoundingBox, doNotReplaceJigsaw);
+        *///?}
         if (!template.placeInWorld(worldGenLevel, blockPos, blockPos1, placementsettings, random, 18)) {
             return false;
         } else {
@@ -194,7 +260,11 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
     }
 
     @Override
+    //? if >=1.21.1 {
     protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox mutableBoundingBox, LiquidSettings liquidSettings, boolean doNotReplaceJigsaw) {
+    //?} else {
+    /*protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox mutableBoundingBox, boolean doNotReplaceJigsaw) {
+    *///?}
         StructurePlaceSettings placementsettings = new StructurePlaceSettings();
         placementsettings.setBoundingBox(mutableBoundingBox);
         placementsettings.setRotation(rotation);
@@ -202,7 +272,9 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
         placementsettings.setIgnoreEntities(false);
         placementsettings.addProcessor(BlockIgnoreProcessor.STRUCTURE_BLOCK);
         placementsettings.setFinalizeEntities(true);
+        //? if >=1.21.1 {
         placementsettings.setLiquidSettings(this.overrideLiquidSettings.orElse(liquidSettings));
+        //?}
         if (!doNotReplaceJigsaw) {
             placementsettings.addProcessor(JigsawReplacementProcessor.INSTANCE);
         }

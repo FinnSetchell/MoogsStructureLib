@@ -7,7 +7,11 @@ import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.world.randomize.BlockStateRandomizer;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?} else {
+/*import com.mojang.serialization.Codec;
+*///?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -49,7 +53,11 @@ public class PillarProcessor extends StructureProcessor {
 //?} else {
 /*public class PillarProcessor implements StructureProcessor {
 *///?}
+    //? if >=1.21.1 {
     private static final ResourceLocation EMPTY_RL = ResourceLocation.fromNamespaceAndPath("minecraft", "empty");
+    //?} else {
+    /*private static final ResourceLocation EMPTY_RL = new ResourceLocation("minecraft", "empty");
+    *///?}
 
     // Wrap vanilla BlockState codec so datapacks authored against legacy block names
     // (e.g. minecraft:chain) still resolve on a newer MC where the block was renamed
@@ -57,9 +65,13 @@ public class PillarProcessor extends StructureProcessor {
     // the modern alias isn't registered on this MC version.
     private static final Codec<BlockState> BLOCK_STATE_CODEC = BlockAliasCompatCodec.wrap(BlockState.CODEC);
 
-    //? if <26.2 {
+    //? if >=1.20.6 <26.2 {
     public static final MapCodec<PillarProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
-    //?} else {
+    //?}
+    //? if <1.20.6 {
+    /*public static final Codec<PillarProcessor> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
+    *///?}
+    //? if >=26.2 {
     /*public static final MapCodec<PillarProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
     *///?}
             Codec.mapPair(BLOCK_STATE_CODEC.fieldOf("trigger"), BLOCK_STATE_CODEC.fieldOf("replacement"))

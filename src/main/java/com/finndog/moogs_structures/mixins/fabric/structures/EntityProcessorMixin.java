@@ -188,9 +188,13 @@ public class EntityProcessorMixin {
                     /*entity.snapTo(entityPos.x, entityPos.y, entityPos.z, f, entity.getXRot());
                     *///?}
                     if (ctx.structurePlaceSettings().shouldFinalizeEntities() && entity instanceof Mob) {
-                        //? if <1.21.2 {
+                        //? if >=1.20.6 <1.21.2 {
                         ((Mob) entity).finalizeSpawn(serverLevelAccessor, serverLevelAccessor.getCurrentDifficultyAt(BlockPos.containing(entityPos)), MobSpawnType.STRUCTURE, null);
-                        //?} else {
+                        //?}
+                        //? if <1.20.6 {
+                        /*((Mob) entity).finalizeSpawn(serverLevelAccessor, serverLevelAccessor.getCurrentDifficultyAt(BlockPos.containing(entityPos)), MobSpawnType.STRUCTURE, null, null);
+                        *///?}
+                        //? if >=1.21.2 {
                         /*((Mob) entity).finalizeSpawn(serverLevelAccessor, serverLevelAccessor.getCurrentDifficultyAt(BlockPos.containing(entityPos)), EntitySpawnReason.STRUCTURE, null);
                         *///?}
                     }

@@ -6,7 +6,9 @@ import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
 //?}
 import com.mojang.serialization.Codec;
+//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
+//?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderSet;
 //? if <26.3 {
@@ -34,7 +36,11 @@ import java.util.Optional;
  * at world load.
  */
 public class ConditionalConcentricRings extends ConcentricRingsStructurePlacement {
+    //? if >=1.20.6 {
     public static final MapCodec<ConditionalConcentricRings> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    //?} else {
+    /*public static final Codec<ConditionalConcentricRings> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
+    *///?}
             Vec3i.offsetCodec(16).optionalFieldOf("locate_offset", Vec3i.ZERO).forGetter(ConditionalConcentricRings::locateOffset),
             FrequencyReductionMethod.CODEC.optionalFieldOf("frequency_reduction_method", FrequencyReductionMethod.DEFAULT).forGetter(ConditionalConcentricRings::frequencyReductionMethod),
             Codec.floatRange(0.0F, 1.0F).optionalFieldOf("frequency", 1.0F).forGetter(ConditionalConcentricRings::frequency),

@@ -29,12 +29,24 @@ public class SupportButton extends AbstractWidget {
     private static final int CLOSE = 9;
 
     private final ResourceLocation icon;
+    //? if <1.20.6 {
+    /*private final int texWidth;
+    private final int texHeight;
+    *///?}
     private final String url;
     private final String configId;
 
+    //? if >=1.20.6 {
     public SupportButton(int x, int y, int w, int h, ResourceLocation icon, String url, Component tooltip, String configId) {
+    //?} else {
+    /*public SupportButton(int x, int y, int w, int h, ResourceLocation icon, int texWidth, int texHeight, String url, Component tooltip, String configId) {
+    *///?}
         super(x, y, w, h, tooltip);
         this.icon = icon;
+        //? if <1.20.6 {
+        /*this.texWidth = texWidth;
+        this.texHeight = texHeight;
+        *///?}
         this.url = url;
         this.configId = configId;
         setTooltip(Tooltip.create(tooltip));
@@ -73,10 +85,14 @@ public class SupportButton extends AbstractWidget {
     }
 
     @Override
-    //? if <1.21.2 {
+    //? if >=1.20.6 <1.21.2 {
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         graphics.blitSprite(icon, getX(), getY(), width, height);
     //?}
+    //? if <1.20.6 {
+    /*public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+        graphics.blit(icon, getX(), getY(), width, height, 0.0F, 0.0F, texWidth, texHeight, texWidth, texHeight);
+    *///?}
     //? if >=1.21.2 <1.21.10 {
     /*protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
         guiGraphics.blitSprite(RenderType::guiTextured, icon, getX(), getY(), width, height);

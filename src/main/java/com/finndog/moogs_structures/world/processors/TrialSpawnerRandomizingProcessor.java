@@ -1,3 +1,4 @@
+//? if >=1.21.1 {
 package com.finndog.moogs_structures.world.processors;
 
 //? if <1.21.5 {
@@ -124,3 +125,5 @@ public class TrialSpawnerRandomizingProcessor extends StructureProcessor {
     *///?}
     }
 }
+
+//?}
