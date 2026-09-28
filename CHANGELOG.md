@@ -9,6 +9,14 @@
 - The structure sliders now say how common structures are: 2x means about twice as many, 0.5x about half as many. Your existing settings carry over unchanged
 - The Preview button now works on config rows that group several structures, opening a page with a tab for each one
 
+### Fixed
+- Structures with mirrored pieces no longer crash the game on Minecraft 1.20.3 and 1.20.4
+- Armour stands in structures are dressed again on Minecraft 1.20 to 1.20.4
+- Fixed a crash when another mod, such as Lithostitched, wraps Moog's structures
+- Spawners and other blocks in flooded structures, like the ocean temple, are no longer replaced by cracked stone bricks
+- Chest minecarts now switch to the vanilla loot table too while a structure is standing in for a vanilla one
+- Structures with deep tunnels no longer leave floating lumps of ground on the surface above them
+
 ---
 
 ## [3.3.1] - 2026-09-15
