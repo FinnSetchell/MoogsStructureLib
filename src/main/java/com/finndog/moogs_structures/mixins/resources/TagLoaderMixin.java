@@ -4,7 +4,9 @@ import com.finndog.moogs_structures.MoogsStructuresCommon;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager.Replacement;
 import com.finndog.moogs_structures.replacement.ReplacementAliases;
+//? if <1.21.2 {
 import com.google.common.collect.ImmutableSet;
+//?}
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -17,12 +19,18 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+//? if <1.21.2 {
 import java.util.Collection;
+//?} else {
+/*import java.util.ArrayList;
+*///?}
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+//? if <1.21.2 {
 import java.util.Optional;
 import java.util.function.Function;
+//?}
 
 /**
  * Adds a replacement structure to every structure tag that lists the vanilla structure it stands in for,
@@ -37,13 +45,23 @@ public class TagLoaderMixin {
 
     @Shadow
     @Final
+    //? if <1.21.2 {
     Function<ResourceLocation, Optional<?>> idToValue;
+    //?} else {
+    /*TagLoader.ElementLookup<Object> elementLookup;
+    *///?}
 
     @Inject(method = "build(Ljava/util/Map;)Ljava/util/Map;", at = @At("HEAD"))
     private void moogs_structures_refreshAliases(Map<ResourceLocation, List<TagLoader.EntryWithSource>> entries,
+                                                 //? if <1.21.2 {
                                                  CallbackInfoReturnable<Map<ResourceLocation, Collection<Object>>> cir) {
         // Tags are built in TagManager's prepare stage, ahead of the reload listener that re-reads the config,
         // so without this a config edit would only reach the tags on the reload after it.
+                                                 //?} else {
+                                                 /*CallbackInfoReturnable<Map<ResourceLocation, List<Object>>> cir) {
+        // Tags are built ahead of the reload listener that re-reads the config, so without this a
+        // config edit would only reach the tags on the reload after it.
+                                                 *///?}
         if (ReplaceVanillaManager.hasAnyBindings() && moogs_structures_isStructureLoader(this.directory)) {
             ReplaceVanillaManager.reloadConfig();
         }
@@ -51,12 +69,21 @@ public class TagLoaderMixin {
 
     @Inject(method = "build(Ljava/util/Map;)Ljava/util/Map;", at = @At("RETURN"))
     private void moogs_structures_mirrorTags(Map<ResourceLocation, List<TagLoader.EntryWithSource>> entries,
+                                             //? if <1.21.2 {
                                              CallbackInfoReturnable<Map<ResourceLocation, Collection<Object>>> cir) {
+                                             //?} else {
+                                             /*CallbackInfoReturnable<Map<ResourceLocation, List<Object>>> cir) {
+                                             *///?}
         if (!ReplacementAliases.hasAny() || !moogs_structures_isStructureLoader(this.directory)) return;
 
         ReplacementAliases.Snapshot aliases = ReplacementAliases.snapshot();
+        //? if <1.21.2 {
         for (Map.Entry<ResourceLocation, Collection<Object>> tag : cir.getReturnValue().entrySet()) {
             Collection<Object> holders = tag.getValue();
+        //?} else {
+        /*for (Map.Entry<ResourceLocation, List<Object>> tag : cir.getReturnValue().entrySet()) {
+            List<Object> holders = tag.getValue();
+        *///?}
             Map<ResourceLocation, Object> additions = null;
 
             for (Object holder : holders) {
@@ -69,7 +96,11 @@ public class TagLoaderMixin {
                         .orElse(null);
                 if (replacementId == null) continue;
 
+                //? if <1.21.2 {
                 Object replacementHolder = this.idToValue.apply(replacementId).orElse(null);
+                //?} else {
+                /*Object replacementHolder = this.elementLookup.get(replacementId, false).orElse(null);
+                *///?}
                 if (replacementHolder == null || holders.contains(replacementHolder)) continue;
 
                 if (additions == null) additions = new LinkedHashMap<>();
@@ -77,7 +108,13 @@ public class TagLoaderMixin {
             }
 
             if (additions == null) continue;
+            //? if <1.21.2 {
             tag.setValue(ImmutableSet.builder().addAll(holders).addAll(additions.values()).build());
+            //?} else {
+            /*List<Object> mirrored = new ArrayList<>(holders);
+            mirrored.addAll(additions.values());
+            tag.setValue(List.copyOf(mirrored));
+            *///?}
             MoogsStructuresCommon.LOGGER.debug("Moogs Structures: mirrored {} into structure tag {}", additions.keySet(), tag.getKey());
         }
     }

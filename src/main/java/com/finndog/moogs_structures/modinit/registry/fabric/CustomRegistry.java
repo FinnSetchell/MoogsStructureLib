@@ -29,7 +29,11 @@ public class CustomRegistry<T> implements CustomRegistryLookup<T> {
 
     @Override
     public @Nullable T get(ResourceLocation id) {
+        //? if <1.21.2 {
         return registry.get(id);
+        //?} else {
+        /*return registry.getValue(id);
+        *///?}
     }
 
     @Override

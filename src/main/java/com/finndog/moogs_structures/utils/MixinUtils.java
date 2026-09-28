@@ -40,7 +40,11 @@ public final class MixinUtils {
      * Checks if the provided position is inside a structure that is tagged with the provided tag.
      */
     public static boolean isPositionInTaggedStructure(WorldGenRegion worldGenRegion, BlockPos pos, TagKey<Structure> structureTagKey) {
+        //? if <1.21.2 {
         Registry<Structure> structureRegistry = worldGenRegion.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        //?} else {
+        /*Registry<Structure> structureRegistry = worldGenRegion.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        *///?}
         SectionPos sectionPos = SectionPos.of(pos);
 
         // Ensure chunk has generated structure references
@@ -54,7 +58,11 @@ public final class MixinUtils {
             LongSet references = entry.getValue();
 
             Optional<ResourceKey<Structure>> structureKey = structureRegistry.getResourceKey(structure);
+            //? if <1.21.2 {
             boolean isTaggedStructure = structureKey.isPresent() && structureRegistry.getHolderOrThrow(structureKey.get()).is(structureTagKey);
+            //?} else {
+            /*boolean isTaggedStructure = structureKey.isPresent() && structureRegistry.getOrThrow(structureKey.get()).is(structureTagKey);
+            *///?}
 
             if (isTaggedStructure) {
                 // Only suppress the feature where an actual piece is (its bounding box + a small
@@ -93,7 +101,11 @@ public final class MixinUtils {
         StructureManager structureManager = worldGenRegion.getLevel().structureManager();
 
         for (long reference : references) {
+            //? if <1.21.2 {
             SectionPos structureStartSectionPos = SectionPos.of(new ChunkPos(reference), worldGenRegion.getMinSection());
+            //?} else {
+            /*SectionPos structureStartSectionPos = SectionPos.of(new ChunkPos(reference), worldGenRegion.getMinSectionY());
+            *///?}
             if (!worldGenRegion.hasChunk(structureStartSectionPos.x(), structureStartSectionPos.z())) {
                 continue;
             }

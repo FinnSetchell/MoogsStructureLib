@@ -24,12 +24,18 @@ public class BoxOctree {
 
     private BoxOctree(AABB axisAlignedBB, int parentDepth) {
         boundary = axisAlignedBB.move(0, 0, 0); // deep copy
+        //? if <1.21.4 {
         size = new Vec3i(roundAwayFromZero(boundary.getXsize()), roundAwayFromZero(boundary.getYsize()), roundAwayFromZero(boundary.getZsize()));
+        //?} else {
+        /*size = new Vec3i((int) boundary.getXsize(), (int) boundary.getYsize(), (int) boundary.getZsize());
+        *///?}
         depth = parentDepth + 1;
+    //? if <1.21.4 {
     }
 
     private int roundAwayFromZero(double value) {
         return (value >= 0) ? (int)Math.ceil(value) : (int)Math.floor(value);
+    //?}
     }
 
     private void subdivide() {
@@ -83,7 +89,11 @@ public class BoxOctree {
 
         for(AABB parentInnerBox : innerBoxes) {
             for (BoxOctree octree : childrenOctants) {
+                //? if <1.21.4 {
                 if (octree.boundaryIntersects(parentInnerBox)) {
+                //?} else {
+                /*if (octree.boundaryContainsFuzzy(parentInnerBox)) {
+                *///?}
                     octree.addBox(parentInnerBox);
                 }
             }
@@ -99,7 +109,11 @@ public class BoxOctree {
 
         if(!childrenOctants.isEmpty()) {
             for(BoxOctree octree : childrenOctants) {
+                //? if <1.21.4 {
                 if(octree.boundaryIntersects(axisAlignedBB)) {
+                //?} else {
+                /*if(octree.boundaryContainsFuzzy(axisAlignedBB)) {
+                *///?}
                     octree.addBox(axisAlignedBB);
                 }
             }
@@ -125,6 +139,7 @@ public class BoxOctree {
                 boundary.contains(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ);
     }
 
+    //? if <1.21.4 {
     public boolean boundaryIntersects(AABB axisAlignedBB) {
         return boundary.intersects(axisAlignedBB);
     }
@@ -133,10 +148,15 @@ public class BoxOctree {
         return this.boundaryContains(axisAlignedBB) && !this.intersectsAnyBox(axisAlignedBB);
     }
 
+    //?}
     public boolean intersectsAnyBox(AABB axisAlignedBB) {
         if(!childrenOctants.isEmpty()) {
             for(BoxOctree octree : childrenOctants) {
+                //? if <1.21.4 {
                 if(octree.boundaryIntersects(axisAlignedBB) && octree.intersectsAnyBox(axisAlignedBB)) {
+                //?} else {
+                /*if(octree.intersectsAnyBox(axisAlignedBB)) {
+                *///?}
                     return true;
                 }
             }

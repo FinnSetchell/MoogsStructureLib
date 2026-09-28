@@ -6,9 +6,15 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 import net.minecraft.MethodsReturnNonnullByDefault;
+//? if >=1.21.4 {
+/*import net.minecraft.resources.FileToIdConverter;
+*///?}
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
+//? if >=1.21.2 {
+/*import net.minecraft.util.ExtraCodecs;
+*///?}
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+//? if <1.21.2 {
 public class StructurePieceCountsManager extends SimpleJsonResourceReloadListener {
+//?} else {
+/*public class StructurePieceCountsManager extends SimpleJsonResourceReloadListener<JsonElement> {
+*///?}
     private static final Gson GSON = (new GsonBuilder()).setPrettyPrinting().setLenient().disableHtmlEscaping().excludeFieldsWithoutExposeAnnotation().create();
     public final static StructurePieceCountsManager STRUCTURE_PIECE_COUNTS_MANAGER = new StructurePieceCountsManager();
 
@@ -29,11 +39,19 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
     private volatile Map<ResourceLocation, Map<ResourceLocation, Integer>> cachedMaxCountPiecesMap = new ConcurrentHashMap<>();
 
     public StructurePieceCountsManager() {
+        //? if <1.21.2 {
         super(GSON, "msl_pieces_spawn_counts");
+        //?}
+        //? if >=1.21.2 <1.21.4 {
+        /*super(ExtraCodecs.JSON, "msl_pieces_spawn_counts");
+        *///?}
+        //? if >=1.21.4 {
+        /*super(ExtraCodecs.JSON, FileToIdConverter.json("msl_pieces_spawn_counts"));
+        *///?}
     }
 
     @MethodsReturnNonnullByDefault
-    private List<StructurePieceCountsObj> getStructurePieceCountsObjs(ResourceLocation fileIdentifier, JsonElement jsonElement) throws Exception {
+    private List<StructurePieceCountsObj> getStructurePieceCountsObjs(ResourceLocation fileKey, JsonElement jsonElement) throws Exception {
         List<StructurePieceCountsObj> piecesSpawnCounts = GSON.fromJson(jsonElement.getAsJsonObject().get("pieces_spawn_counts"), new TypeToken<List<StructurePieceCountsObj>>() {}.getType());
         for(int i = piecesSpawnCounts.size() - 1; i >= 0; i--) {
             StructurePieceCountsObj entry = piecesSpawnCounts.get(i);
@@ -47,12 +65,12 @@ public class StructurePieceCountsManager extends SimpleJsonResourceReloadListene
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> loader, ResourceManager manager, ProfilerFiller profiler) {
         Map<ResourceLocation, List<StructurePieceCountsObj>> mapBuilder = new HashMap<>();
-        loader.forEach((fileIdentifier, jsonElement) -> {
+        loader.forEach((fileKey, jsonElement) -> {
             try {
-                mapBuilder.put(fileIdentifier, getStructurePieceCountsObjs(fileIdentifier, jsonElement));
+                mapBuilder.put(fileKey, getStructurePieceCountsObjs(fileKey, jsonElement));
             }
             catch (Exception e) {
-                MoogsStructuresCommon.LOGGER.error("Moog's Structure Lib Error: Couldn't parse msl_pieces_spawn_counts file {} - JSON looks like: {}", fileIdentifier, jsonElement, e);
+                MoogsStructuresCommon.LOGGER.error("Moog's Structure Lib Error: Couldn't parse msl_pieces_spawn_counts file {} - JSON looks like: {}", fileKey, jsonElement, e);
             }
         });
         this.StructureToPieceCountsObjs = mapBuilder;

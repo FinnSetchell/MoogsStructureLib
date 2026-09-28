@@ -68,7 +68,11 @@ public class StructureManagerMixin {
         if (!ReplacementAliases.hasAny() || predicate instanceof AliasedStructurePredicate) return;
 
         StructureManager self = (StructureManager) (Object) this;
+        //? if <1.21.2 {
         Registry<Structure> registry = self.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        //?} else {
+        /*Registry<Structure> registry = self.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        *///?}
         cir.setReturnValue(self.getStructureWithPieceAt(blockPos, new AliasedStructurePredicate(predicate, registry)));
     }
 
@@ -76,13 +80,21 @@ public class StructureManagerMixin {
         if (!ReplacementAliases.hasAny()) return null;
         if (found != null && found.isValid()) return null;
 
+        //? if <1.21.2 {
         Registry<Structure> registry = manager.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        //?} else {
+        /*Registry<Structure> registry = manager.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        *///?}
         ResourceLocation askedId = registry.getKey(asked);
         if (askedId == null) return null;
 
         ReplaceVanillaManager.Replacement replacement = ReplacementAliases.forVanilla(askedId)
                 .filter(r -> r.options().aliasLookups())
                 .orElse(null);
+        //? if <1.21.2 {
         return replacement == null ? null : registry.get(replacement.replacementStructure());
+        //?} else {
+        /*return replacement == null ? null : registry.getValue(replacement.replacementStructure());
+        *///?}
     }
 }

@@ -65,7 +65,11 @@ public class CloseOffFluidSourcesProcessor extends StructureProcessor {
             return infoIn2;
         }
 
+        //? if <1.21.2 {
         if(!GeneralUtils.isFullCube(levelReader, infoIn2.pos(), infoIn2.state()) || !infoIn2.state().blocksMotion()) {
+        //?} else {
+        /*if(!GeneralUtils.isFullCube(infoIn2.state()) || !infoIn2.state().blocksMotion()) {
+        *///?}
             ChunkAccess currentChunk = levelReader.getChunk(currentChunkPos.x, currentChunkPos.z);
 
             if(ifAirInWorld && !currentChunk.getBlockState(infoIn2.pos()).isAir()) return infoIn2;
@@ -76,7 +80,11 @@ public class CloseOffFluidSourcesProcessor extends StructureProcessor {
                 if(ignoreDown && direction == Direction.DOWN) continue;
 
                 mutable.set(infoIn2.pos()).move(direction);
+                //? if <1.21.2 {
                 if (mutable.getY() < currentChunk.getMinBuildHeight() || mutable.getY() >= currentChunk.getMaxBuildHeight()) {
+                //?} else {
+                /*if (mutable.getY() < currentChunk.getMinY() || mutable.getY() >= currentChunk.getMaxY()) {
+                *///?}
                     continue;
                 }
 
@@ -86,7 +94,11 @@ public class CloseOffFluidSourcesProcessor extends StructureProcessor {
                 }
 
                 LevelHeightAccessor levelHeightAccessor = currentChunk.getHeightAccessorForGeneration();
+                //? if <1.21.2 {
                 if(levelReader instanceof WorldGenLevel && mutable.getY() >= levelHeightAccessor.getMinBuildHeight() && mutable.getY() < levelHeightAccessor.getMaxBuildHeight()) {
+                //?} else {
+                /*if(levelReader instanceof WorldGenLevel && mutable.getY() >= levelHeightAccessor.getMinY() && mutable.getY() < levelHeightAccessor.getMaxY()) {
+                *///?}
                     int sectionYIndex = currentChunk.getSectionIndex(mutable.getY());
                     LevelChunkSection levelChunkSection = currentChunk.getSection(sectionYIndex);
                     if (levelChunkSection == null) continue;

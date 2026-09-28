@@ -9,9 +9,12 @@ val modId = property("mod_id").toString()
 val modName = property("mod_name").toString()
 val modAuthor = property("mod_author").toString()
 val requiredJava: JavaVersion = JavaVersion.toVersion(prop("mod.java"))
+// The Minecraft version this node compiles against. Usually the node version, but a range can build
+// one loader against a different patch release (Forge 1.21.3 for the 1.21.2-1.21.3 range).
+val mcBuild: String = prop("mod.mc_build")
 
 version = property("mod_version").toString()
-base.archivesName = "${property("archives_base_name")}-fabric-${sc.current.version}"
+base.archivesName = "${property("archives_base_name")}-fabric-$mcBuild"
 
 sourceSets.main {
     // Loader code sits in fabric/forge/neoforge packages; each loader compiles only its own.
@@ -25,7 +28,7 @@ repositories {
 }
 
 dependencies {
-    minecraft("com.mojang:minecraft:${sc.current.version}")
+    minecraft("com.mojang:minecraft:$mcBuild")
     // No-op on the unobfuscated versions; applies Mojang mappings on the obfuscated ones.
     loomx.applyMojangMappings()
 
@@ -86,7 +89,7 @@ tasks {
                 "Implementation-Title" to "fabric",
                 "Implementation-Version" to version,
                 "Implementation-Vendor" to modAuthor,
-                "Built-On-Minecraft" to sc.current.version,
+                "Built-On-Minecraft" to mcBuild,
             )
         }
     }

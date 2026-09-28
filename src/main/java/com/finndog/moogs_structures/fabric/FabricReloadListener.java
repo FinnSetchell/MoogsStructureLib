@@ -4,7 +4,9 @@ import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
+//? if <1.21.2 {
 import net.minecraft.util.profiling.ProfilerFiller;
+//?}
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -26,7 +28,12 @@ public class FabricReloadListener implements IdentifiableResourceReloadListener 
     }
 
     @Override
+    //? if <1.21.2 {
     public CompletableFuture<Void> reload(PreparationBarrier barrier, ResourceManager manager, ProfilerFiller profiler, ProfilerFiller profiler2, Executor executor, Executor executor2) {
         return listener.reload(barrier, manager, profiler, profiler2, executor, executor2);
+    //?} else {
+    /*public CompletableFuture<Void> reload(PreparationBarrier barrier, ResourceManager manager, Executor executor, Executor executor2) {
+        return listener.reload(barrier, manager, executor, executor2);
+    *///?}
     }
 }

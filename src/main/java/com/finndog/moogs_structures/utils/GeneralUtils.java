@@ -13,12 +13,17 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.BlockTags;
+//? if >=1.21.2 {
+/*import net.minecraft.tags.EnchantmentTags;
+*///?}
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
+//? if <1.21.2 {
 import net.minecraft.world.level.BlockGetter;
+//?}
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.NoiseColumn;
@@ -72,9 +77,17 @@ public final class GeneralUtils {
 
     private static final Map<BlockState, Boolean> IS_FULLCUBE_MAP = new ConcurrentHashMap<>();
 
+    //? if <1.21.2 {
     public static boolean isFullCube(BlockGetter world, BlockPos pos, BlockState state) {
+    //?} else {
+    /*public static boolean isFullCube(BlockState state) {
+    *///?}
         if(state == null) return false;
+        //? if <1.21.2 {
         return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape(world, pos)));
+        //?} else {
+        /*return IS_FULLCUBE_MAP.computeIfAbsent(state, (stateIn) -> Block.isShapeFullBlock(stateIn.getOcclusionShape()));
+        *///?}
     }
 
     //////////////////////////////////////////////
@@ -96,8 +109,13 @@ public final class GeneralUtils {
 
     public static ItemStack enchantRandomly(RegistryAccess registryAccess, RandomSource random, ItemStack itemToEnchant, float chance) {
         if(random.nextFloat() < chance) {
+            //? if <1.21.2 {
             List<Holder.Reference<Enchantment>> list = registryAccess.registryOrThrow(Registries.ENCHANTMENT).holders()
                     .filter(holder -> holder.value().canEnchant(itemToEnchant)).toList();
+            //?} else {
+            /*List<Holder.Reference<Enchantment>> list = registryAccess.lookupOrThrow(Registries.ENCHANTMENT).listElements()
+                    .filter(holder -> holder.value().canEnchant(itemToEnchant) && holder.is(EnchantmentTags.ON_MOB_SPAWN_EQUIPMENT)).toList();
+            *///?}
             if(!list.isEmpty()) {
                 Holder.Reference<Enchantment> enchantment = list.get(random.nextInt(list.size()));
                 // bias towards weaker enchantments
@@ -166,7 +184,11 @@ public final class GeneralUtils {
         ChunkAccess currentChunk = worldView.getChunk(mutable);
         BlockState currentState = currentChunk.getBlockState(mutable);
 
+        //? if <1.21.2 {
         while(mutable.getY() >= worldView.getMinBuildHeight() && isReplaceableByStructures(currentState)) {
+        //?} else {
+        /*while(mutable.getY() >= worldView.getMinY() && isReplaceableByStructures(currentState)) {
+        *///?}
             mutable.move(Direction.DOWN);
             currentState = currentChunk.getBlockState(mutable);
         }
@@ -195,17 +217,32 @@ public final class GeneralUtils {
     //////////////////////////////////////////////
 
     // More optimized with checking if the jigsaw blocks can connect
+    //? if <1.21.2 {
     public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
         FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
+    //?} else {
+    /*public static boolean canJigsawsAttach(StructureTemplate.JigsawBlockInfo jigsaw1, StructureTemplate.JigsawBlockInfo jigsaw2) {
+        FrontAndTop prop1 = jigsaw1.info().state().getValue(JigsawBlock.ORIENTATION);
+        FrontAndTop prop2 = jigsaw2.info().state().getValue(JigsawBlock.ORIENTATION);
+    *///?}
 
         return prop1.front() == prop2.front().getOpposite() &&
                 (prop1.top() == prop2.top() || isRollableJoint(jigsaw1, prop1)) &&
+                //? if <1.21.2 {
                 getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
+                //?} else {
+                /*getStringMicroOptimised(jigsaw1.info().nbt(), "target").equals(getStringMicroOptimised(jigsaw2.info().nbt(), "name"));
+                *///?}
     }
 
+    //? if <1.21.2 {
     private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
         String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
+    //?} else {
+    /*private static boolean isRollableJoint(StructureTemplate.JigsawBlockInfo jigsaw1, FrontAndTop prop1) {
+        String joint = getStringMicroOptimised(jigsaw1.info().nbt(), "joint");
+    *///?}
         if(!joint.equals("rollable") && !joint.equals("aligned")) {
             return !prop1.front().getAxis().isHorizontal();
         }

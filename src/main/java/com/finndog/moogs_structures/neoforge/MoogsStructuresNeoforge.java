@@ -13,7 +13,11 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
+//? if <1.21.4 {
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
+//?} else {
+/*import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+*///?}
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
@@ -52,8 +56,14 @@ public class MoogsStructuresNeoforge {
         ServerGoingToStopEvent.EVENT.invoke(ServerGoingToStopEvent.INSTANCE);
     }
 
+    //? if <1.21.4 {
     private static void onAddReloadListeners(AddReloadListenerEvent event) {
         RegisterReloadListenerEvent.EVENT.invoke(new RegisterReloadListenerEvent((id, listener) -> event.addListener(listener)));
+    //?} else {
+    /*private static void onAddReloadListeners(AddServerReloadListenersEvent event) {
+        RegisterReloadListenerEvent.EVENT.invoke(
+                new RegisterReloadListenerEvent(event::addListener));
+    *///?}
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

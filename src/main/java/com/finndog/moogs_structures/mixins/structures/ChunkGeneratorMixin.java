@@ -56,7 +56,11 @@ public class ChunkGeneratorMixin {
         if (structuresAt.isEmpty()) return;
 
         ReplacementAliases.Snapshot aliases = ReplacementAliases.snapshot();
+        //? if <1.21.2 {
         Registry<Structure> registry = structureManager.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        //?} else {
+        /*Registry<Structure> registry = structureManager.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        *///?}
 
         for (Map.Entry<Structure, LongSet> entry : structuresAt.entrySet()) {
             Structure structure = entry.getKey();
@@ -68,7 +72,11 @@ public class ChunkGeneratorMixin {
                     .orElse(null);
             if (replacement == null) continue;
 
+            //? if <1.21.2 {
             Structure vanilla = registry.get(replacement.vanillaStructure());
+            //?} else {
+            /*Structure vanilla = registry.getValue(replacement.vanillaStructure());
+            *///?}
             if (vanilla == null) continue;
             StructureSpawnOverride vanillaOverride = vanilla.spawnOverrides().get(mobCategory);
             if (vanillaOverride == null) continue;
@@ -104,7 +112,11 @@ public class ChunkGeneratorMixin {
         if (!ReplacementAliases.hasAny()) return;
 
         ReplacementAliases.Snapshot aliases = ReplacementAliases.snapshot();
+        //? if <1.21.2 {
         Registry<Structure> registry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        //?} else {
+        /*Registry<Structure> registry = serverLevel.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        *///?}
         Set<Holder<Structure>> redirected = new LinkedHashSet<>();
         boolean swapped = false;
 
@@ -117,7 +129,11 @@ public class ChunkGeneratorMixin {
                         .orElse(null);
                 if (replacement != null) {
                     Holder<Structure> replacementHolder = registry
+                            //? if <1.21.2 {
                             .getHolder(ResourceKey.create(Registries.STRUCTURE, replacement.replacementStructure()))
+                            //?} else {
+                            /*.get(ResourceKey.create(Registries.STRUCTURE, replacement.replacementStructure()))
+                            *///?}
                             .orElse(null);
                     if (replacementHolder != null) {
                         target = replacementHolder;

@@ -36,7 +36,11 @@ public final class AliasedStructurePredicate implements Predicate<Holder<Structu
                 .orElse(null);
         if (replacement == null) return false;
 
+        //? if <1.21.2 {
         return this.registry.getHolder(ResourceKey.create(Registries.STRUCTURE, replacement.vanillaStructure()))
+        //?} else {
+        /*return this.registry.get(ResourceKey.create(Registries.STRUCTURE, replacement.vanillaStructure()))
+        *///?}
                 .map(vanillaHolder -> this.original.test(vanillaHolder))
                 .orElse(false);
     }

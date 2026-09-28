@@ -15,10 +15,17 @@ public final class MoogsStructuresForgeClient {
     private MoogsStructuresForgeClient() {}
 
     public static void registerConfigScreen() {
+        //? if >=1.21.2 {
+        /*boolean clothPresent = ModList.get().isLoaded("cloth_config");
+        *///?}
         ModLoadingContext.get().registerExtensionPoint(
                 ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory(
+                        //? if <1.21.2 {
                         (minecraft, parent) -> ModList.get().isLoaded("cloth_config")
+                        //?} else {
+                        /*(minecraft, parent) -> clothPresent
+                        *///?}
                                 ? MoogsStructuresConfigScreenForge.create(parent)
                                 : new ClothRequiredScreen(parent)));
     }

@@ -1,6 +1,10 @@
 # Per-node values. Mod metadata that never varies stays in gradle.properties.
 # Tables are picked per node by `properties { tags(version, loader) }` in stonecutter.gradle.kts, so
 # `deps.fabric_api` resolves to whatever the matching [fabric."<version>"] table declares.
+#
+# A node's version (the table name) is what `//? if` conditions compare against. mod.mc_build is the
+# Minecraft version it compiles against, which is usually the same but not always.
+# mod.mc_compat is the range the jar declares, in each loader's own syntax.
 
 # Loom for the obfuscated versions, applied by dev.kikugie.loom-back-compat.
 loomx.loom_version = "1.17-SNAPSHOT"
@@ -11,6 +15,7 @@ deps.mixinextras = "0.5.3"
 mod.java = "21"
 
 [fabric."1.21.1"]
+mod.mc_build = "1.21.1"
 mod.mc_compat = ">=1.21 <1.21.2"
 deps.fabric_loader = "0.16.7"
 deps.fabric_api = "0.106.0+1.21.1"
@@ -18,13 +23,71 @@ deps.cloth_config = "15.0.140"
 deps.modmenu = "11.0.4"
 
 [forge."1.21.1"]
-mod.mc_compat = "[1.21,1.22)"
+mod.mc_build = "1.21.1"
+mod.mc_compat = "[1.21,1.21.2)"
 deps.forge = "52.0.28"
 deps.forge_range = "[52,)"
 deps.cloth_config = "15.0.140"
 
 [neoforge."1.21.1"]
+deps.neoforge_min = "21.1.0"
+mod.mc_build = "1.21.1"
 mod.mc_compat = "[1.21,1.21.2)"
 deps.neoforge = "21.1.68"
 deps.neoforge_range = "[4,)"
 deps.cloth_config = "15.0.140"
+
+# ------------------------------------------------------------------ 1.21.2-1.21.3 (Java 21)
+["1.21.2"]
+mod.java = "21"
+
+[fabric."1.21.2"]
+mod.mc_build = "1.21.2"
+mod.mc_compat = ">=1.21.2 <1.21.4"
+deps.fabric_loader = "0.17.3"
+deps.fabric_api = "0.106.1+1.21.2"
+deps.cloth_config = "16.0.143"
+deps.modmenu = "12.0.1"
+
+# Forge has no 1.21.2 build, so this one compiles against 1.21.3.
+[forge."1.21.2"]
+mod.mc_build = "1.21.3"
+mod.mc_compat = "[1.21.2,1.21.4)"
+deps.forge = "53.1.0"
+deps.forge_range = "[53,)"
+deps.cloth_config = "16.0.143"
+
+[neoforge."1.21.2"]
+deps.neoforge_min = "21.2.1-beta"
+mod.mc_build = "1.21.2"
+mod.mc_compat = "[1.21.2,1.21.4)"
+deps.neoforge = "21.2.1-beta"
+deps.neoforge_range = "[4,)"
+deps.cloth_config = "16.0.143"
+
+# ------------------------------------------------------------------ 1.21.4 (Java 21)
+["1.21.4"]
+mod.java = "21"
+
+[fabric."1.21.4"]
+mod.mc_build = "1.21.4"
+mod.mc_compat = ">=1.21.4 <1.21.5"
+deps.fabric_loader = "0.17.3"
+deps.fabric_api = "0.119.4+1.21.4"
+deps.cloth_config = "17.0.144"
+deps.modmenu = "13.0.4"
+
+[forge."1.21.4"]
+mod.mc_build = "1.21.4"
+mod.mc_compat = "[1.21.4,1.21.5)"
+deps.forge = "54.1.14"
+deps.forge_range = "[54,)"
+deps.cloth_config = "17.0.144"
+
+[neoforge."1.21.4"]
+deps.neoforge_min = "21.4.0-beta"
+mod.mc_build = "1.21.4"
+mod.mc_compat = "[1.21.4,1.21.5)"
+deps.neoforge = "21.4.94-beta"
+deps.neoforge_range = "[4,)"
+deps.cloth_config = "17.0.144"

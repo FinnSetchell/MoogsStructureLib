@@ -10,6 +10,9 @@ val modId = property("mod_id").toString()
 val modName = property("mod_name").toString()
 val modAuthor = property("mod_author").toString()
 val requiredJava: JavaVersion = JavaVersion.toVersion(prop("mod.java"))
+// The Minecraft version this node compiles against. Usually the node version, but a range can build
+// one loader against a different patch release (Forge 1.21.3 for the 1.21.2-1.21.3 range).
+val mcBuild: String = prop("mod.mc_build")
 val mixinConfigs = "$modId-common.mixins.json,$modId-forge.mixins.json"
 // Dev-only gametests are compiled into main (Forge only scans main) but never shipped.
 val gametestFiles = listOf(
@@ -18,7 +21,7 @@ val gametestFiles = listOf(
 )
 
 version = property("mod_version").toString()
-base.archivesName = "${property("archives_base_name")}-forge-${sc.current.version}"
+base.archivesName = "${property("archives_base_name")}-forge-$mcBuild"
 
 sourceSets.main {
     java.exclude("**/fabric/**", "**/neoforge/**")
@@ -26,7 +29,7 @@ sourceSets.main {
 }
 
 minecraft {
-    mappings("official", sc.current.version)
+    mappings("official", mcBuild)
     accessTransformers.from(rootProject.file("src/main/resources/META-INF/accesstransformer.cfg"))
 
     runs {
@@ -55,7 +58,7 @@ repositories {
 jarJar.register()
 
 dependencies {
-    implementation(minecraft.dependency("net.minecraftforge:forge:${sc.current.version}-${prop("deps.forge")}"))
+    implementation(minecraft.dependency("net.minecraftforge:forge:$mcBuild-${prop("deps.forge")}"))
 
     compileOnly("io.github.llamalad7:mixinextras-common:${prop("deps.mixinextras")}")
     implementation("io.github.llamalad7:mixinextras-forge:${prop("deps.mixinextras")}")
@@ -104,7 +107,7 @@ tasks {
                 "Implementation-Title" to "forge",
                 "Implementation-Version" to version,
                 "Implementation-Vendor" to modAuthor,
-                "Built-On-Minecraft" to sc.current.version,
+                "Built-On-Minecraft" to mcBuild,
             )
         }
     }

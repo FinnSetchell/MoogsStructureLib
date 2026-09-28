@@ -10,7 +10,11 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+//? if <1.21.2 {
 import net.minecraft.world.entity.MobSpawnType;
+//?} else {
+/*import net.minecraft.world.entity.EntitySpawnReason;
+*///?}
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
@@ -110,7 +114,11 @@ public class EntityProcessorMixin {
                     f += entity.getYRot() - entity.rotate(ctx.structurePlaceSettings().getRotation());
                     entity.moveTo(entityPos.x, entityPos.y, entityPos.z, f, entity.getXRot());
                     if (ctx.structurePlaceSettings().shouldFinalizeEntities() && entity instanceof Mob) {
+                        //? if <1.21.2 {
                         ((Mob) entity).finalizeSpawn(serverLevelAccessor, serverLevelAccessor.getCurrentDifficultyAt(BlockPos.containing(entityPos)), MobSpawnType.STRUCTURE, null);
+                        //?} else {
+                        /*((Mob) entity).finalizeSpawn(serverLevelAccessor, serverLevelAccessor.getCurrentDifficultyAt(BlockPos.containing(entityPos)), EntitySpawnReason.STRUCTURE, null);
+                        *///?}
                     }
                     serverLevelAccessor.addFreshEntityWithPassengers(entity);
                 });
@@ -164,7 +172,11 @@ public class EntityProcessorMixin {
     @Unique
     private static Optional<Entity> moogs_structures$tryCreateEntity(ServerLevelAccessor serverLevelAccessor, CompoundTag compoundTag) {
         try {
+            //? if <1.21.2 {
             return EntityType.create(compoundTag, serverLevelAccessor.getLevel());
+            //?} else {
+            /*return EntityType.create(compoundTag, serverLevelAccessor.getLevel(), EntitySpawnReason.STRUCTURE);
+            *///?}
         } catch (Exception exception) {
             return Optional.empty();
         }

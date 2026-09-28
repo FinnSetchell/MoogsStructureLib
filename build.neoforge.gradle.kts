@@ -9,9 +9,12 @@ val modId = property("mod_id").toString()
 val modName = property("mod_name").toString()
 val modAuthor = property("mod_author").toString()
 val requiredJava: JavaVersion = JavaVersion.toVersion(prop("mod.java"))
+// The Minecraft version this node compiles against. Usually the node version, but a range can build
+// one loader against a different patch release (Forge 1.21.3 for the 1.21.2-1.21.3 range).
+val mcBuild: String = prop("mod.mc_build")
 
 version = property("mod_version").toString()
-base.archivesName = "${property("archives_base_name")}-neoforge-${sc.current.version}"
+base.archivesName = "${property("archives_base_name")}-neoforge-$mcBuild"
 
 sourceSets.main {
     java.exclude("**/fabric/**", "**/forge/**")
@@ -77,6 +80,7 @@ tasks {
             "version" to version.toString(),
             "mod_id" to modId,
             "neoforge_loader_version_range" to prop("deps.neoforge_range"),
+            "neoforge_min" to "[${prop("deps.neoforge_min")},)",
             "mc_compat" to prop("mod.mc_compat"),
             "java_version" to requiredJava.majorVersion,
         )
@@ -94,7 +98,7 @@ tasks {
                 "Implementation-Title" to "neoforge",
                 "Implementation-Version" to version,
                 "Implementation-Vendor" to modAuthor,
-                "Built-On-Minecraft" to sc.current.version,
+                "Built-On-Minecraft" to mcBuild,
             )
         }
     }

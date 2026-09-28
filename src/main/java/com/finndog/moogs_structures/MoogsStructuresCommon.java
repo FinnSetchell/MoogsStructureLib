@@ -69,7 +69,11 @@ public class MoogsStructuresCommon {
      * volatile, so worldgen threads see the values.
      */
     private static void stampOwningSetIds(MinecraftServer server) {
+        //? if <1.21.2 {
         var registry = server.registryAccess().registryOrThrow(Registries.STRUCTURE_SET);
+        //?} else {
+        /*var registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE_SET);
+        *///?}
         for (Map.Entry<ResourceKey<StructureSet>, StructureSet> entry : registry.entrySet()) {
             ResourceLocation id = entry.getKey().location();
             StructurePlacement placement = entry.getValue().placement();

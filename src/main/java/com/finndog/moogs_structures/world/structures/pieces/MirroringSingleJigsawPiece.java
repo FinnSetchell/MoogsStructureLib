@@ -1,6 +1,9 @@
 package com.finndog.moogs_structures.world.structures.pieces;
 
 import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
+//? if >=1.21.2 {
+/*import com.finndog.moogs_structures.mixins.structures.TemplateAccessor;
+*///?}
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
@@ -16,7 +19,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
+//? if <1.21.2 {
 import net.minecraft.world.level.block.Blocks;
+//?}
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -78,12 +83,40 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
     }
 
     @Override
+    //? if <1.21.2 {
     public List<StructureTemplate.StructureBlockInfo> getShuffledJigsawBlocks(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation, RandomSource random) {
+    //?} else {
+    /*public List<StructureTemplate.JigsawBlockInfo> getShuffledJigsawBlocks(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation, RandomSource random) {
+    *///?}
         StructureTemplate template = this.getTemplate(templateManager);
+        //? if <1.21.2 {
         ObjectArrayList<StructureTemplate.StructureBlockInfo> list = template.filterBlocks(blockPos, (new StructurePlaceSettings()).setRotation(rotation).setMirror(mirror), Blocks.JIGSAW, true);
+        //?} else {
+        /*ObjectArrayList<StructureTemplate.JigsawBlockInfo> list = getJigsaws(template, blockPos, (new StructurePlaceSettings()).setRotation(rotation).setMirror(mirror));
+        *///?}
         Util.shuffle(list, random);
         return list;
     }
+
+    //? if >=1.21.2 {
+    /*private ObjectArrayList<StructureTemplate.JigsawBlockInfo> getJigsaws(StructureTemplate template, BlockPos blockPos, StructurePlaceSettings structurePlaceSettings) {
+        if (((TemplateAccessor)template).moogs_structures_getPalettes().isEmpty()) {
+            return new ObjectArrayList<>();
+        }
+        else {
+            List<StructureTemplate.JigsawBlockInfo> list = structurePlaceSettings.getRandomPalette(((TemplateAccessor)template).moogs_structures_getPalettes(), blockPos).jigsaws();
+            ObjectArrayList<StructureTemplate.JigsawBlockInfo> list2 = new ObjectArrayList<>(list.size());
+
+            for (StructureTemplate.JigsawBlockInfo jigsawBlockInfo : list) {
+                StructureTemplate.StructureBlockInfo structureBlockInfo = jigsawBlockInfo.info();
+                list2.add(jigsawBlockInfo.withInfo(new StructureTemplate.StructureBlockInfo(StructureTemplate.calculateRelativePosition(structurePlaceSettings, structureBlockInfo.pos()).offset(blockPos), structureBlockInfo.state().rotate(structurePlaceSettings.getRotation()), structureBlockInfo.nbt())));
+            }
+
+            return list2;
+        }
+    }
+
+    *///?}
 
     @Override
     public BoundingBox getBoundingBox(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation) {

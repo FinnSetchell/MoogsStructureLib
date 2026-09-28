@@ -6,6 +6,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+//? if >=1.21.2 {
+/*import net.minecraft.client.renderer.RenderType;
+*///?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
@@ -36,7 +39,13 @@ public class SupportButton extends AbstractWidget {
     }
 
     @Override
+    //? if <1.21.2 {
     public void onClick(double mouseX, double mouseY) {
+    //?} else {
+    /*public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!this.active || !this.visible || button != 0) return false;
+        if (mouseX < getX() || mouseX >= getX() + width || mouseY < getY() || mouseY >= getY() + height) return false;
+    *///?}
         if (inClose(mouseX, mouseY)) {
             MslConfig.get().setButtonHiddenAndSave(configId, true);
             this.visible = false;
@@ -44,19 +53,36 @@ public class SupportButton extends AbstractWidget {
         } else {
             ConfigButtons.openLink(url);
         }
+        //? if >=1.21.2 {
+        /*return true;
+        *///?}
     }
 
     @Override
+    //? if <1.21.2 {
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         graphics.blitSprite(icon, getX(), getY(), width, height);
+    //?} else {
+    /*protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
+        guiGraphics.blitSprite(RenderType::guiTextured, icon, getX(), getY(), width, height);
+    *///?}
         if (isHoveredOrFocused()) {
+            //? if <1.21.2 {
             graphics.fill(getX(), getY(), getX() + width, getY() + height, 0x33FFFFFF);
+            //?} else {
+            /*guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, 0x33FFFFFF);
+            *///?}
         }
         int cx = getX() + width - CLOSE;
         int cy = getY();
         boolean closeHover = inClose(mouseX, mouseY);
+        //? if <1.21.2 {
         graphics.fill(cx, cy, cx + CLOSE, cy + CLOSE, closeHover ? 0xD0000000 : 0x80000000);
         graphics.drawCenteredString(Minecraft.getInstance().font, "×", cx + CLOSE / 2, cy + 1, closeHover ? 0xFFFF5555 : 0xFFFFFFFF);
+        //?} else {
+        /*guiGraphics.fill(cx, cy, cx + CLOSE, cy + CLOSE, closeHover ? 0xD0000000 : 0x80000000);
+        guiGraphics.drawCenteredString(Minecraft.getInstance().font, "×", cx + CLOSE / 2, cy + 1, closeHover ? 0xFFFF5555 : 0xFFFFFFFF);
+        *///?}
     }
 
     @Override

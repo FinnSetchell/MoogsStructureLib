@@ -14,16 +14,23 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.MultiPackResourceManager;
 import net.minecraft.server.packs.resources.Resource;
+//? if >=1.21.2 {
+/*import net.minecraft.server.packs.resources.ResourceManager;
+*///?}
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.util.datafix.DataFixers;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+//? if <1.21.2 {
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
+//?}
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+//? if <1.21.2 {
 import java.lang.reflect.Field;
+//?}
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,6 +41,7 @@ public class StructureNbtUpdater implements DataProvider {
     private final PackOutput output;
     private final MultiPackResourceManager resources;
 
+    //? if <1.21.2 {
     public StructureNbtUpdater(String basePath, String modid, ExistingFileHelper helper, PackOutput output) {
         this.basePath = basePath;
         this.modid = modid;
@@ -47,6 +55,13 @@ public class StructureNbtUpdater implements DataProvider {
         catch (NoSuchFieldException|IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    //?} else {
+    /*public StructureNbtUpdater(String basePath, String modid, ResourceManager resourceManager, PackOutput output) {
+            this.basePath = basePath;
+            this.modid = modid;
+            this.output = output;
+            this.resources = (MultiPackResourceManager) resourceManager;
+    *///?}
     }
 
     @Override
@@ -90,7 +105,11 @@ public class StructureNbtUpdater implements DataProvider {
             DataFixers.getDataFixer(), nbt, nbt.getInt("DataVersion")
         );
         StructureTemplate template = new StructureTemplate();
+        //? if <1.21.2 {
         template.load(BuiltInRegistries.BLOCK.asLookup(), updatedNBT);
+        //?} else {
+        /*template.load(BuiltInRegistries.BLOCK, updatedNBT);
+        *///?}
         return template.save(new CompoundTag());
     }
 

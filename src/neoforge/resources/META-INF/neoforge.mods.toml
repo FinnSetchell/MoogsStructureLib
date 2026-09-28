@@ -29,3 +29,10 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 versionRange="${mc_compat}"
     ordering = "NONE"
     side = "BOTH"
+
+[[dependencies.moogs_structures]]
+    modId = "neoforge"
+    type = "required"
+    versionRange = "${neoforge_min}"
+    ordering = "NONE"
+    side = "BOTH"

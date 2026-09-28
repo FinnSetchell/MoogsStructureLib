@@ -9,7 +9,13 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+//? if >=1.21.2 {
+/*import net.minecraft.core.Holder;
+*///?}
 import net.minecraft.core.registries.Registries;
+//? if >=1.21.2 {
+/*import net.minecraft.resources.ResourceKey;
+*///?}
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
@@ -92,7 +98,15 @@ public class PillarProcessor extends StructureProcessor {
             BlockPos.MutableBlockPos currentPos = new BlockPos.MutableBlockPos().set(worldPos);
             StructureProcessorList structureProcessorList = null;
             if(processorList != null && !processorList.equals(EMPTY_RL)) {
+                //? if <1.21.2 {
                 structureProcessorList = levelReader.registryAccess().registry(Registries.PROCESSOR_LIST).get().get(processorList);
+                //?} else {
+                /*structureProcessorList = levelReader.registryAccess()
+                        .lookupOrThrow(Registries.PROCESSOR_LIST)
+                        .get(ResourceKey.create(Registries.PROCESSOR_LIST, processorList))
+                        .map(Holder::value)
+                        .orElse(null);
+                *///?}
             }
 
             if(levelReader instanceof WorldGenRegion worldGenRegion && !worldGenRegion.getCenter().equals(new ChunkPos(currentPos))) {
@@ -102,7 +116,11 @@ public class PillarProcessor extends StructureProcessor {
             int terrainY = Integer.MIN_VALUE;
             if(direction == Direction.DOWN && !forcePlacement) {
                 terrainY = GeneralUtils.getFirstLandYFromPos(levelReader, worldPos);
+                //? if <1.21.2 {
                 if(terrainY <= levelReader.getMinBuildHeight() && pillarLength + 2 >= worldPos.getY() - levelReader.getMinBuildHeight()) {
+                //?} else {
+                /*if(terrainY <= levelReader.getMinY() && pillarLength + 2 >= worldPos.getY() - levelReader.getMinY()) {
+                *///?}
                     // Replaces the data block itself
                     return getReturnBlock(worldPos, originalReplacementState);
                 }
