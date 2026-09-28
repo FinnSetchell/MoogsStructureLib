@@ -1,0 +1,30 @@
+# Per-node values. Mod metadata that never varies stays in gradle.properties.
+# Tables are picked per node by `properties { tags(version, loader) }` in stonecutter.gradle.kts, so
+# `deps.fabric_api` resolves to whatever the matching [fabric."<version>"] table declares.
+
+# Loom for the obfuscated versions, applied by dev.kikugie.loom-back-compat.
+loomx.loom_version = "1.17-SNAPSHOT"
+deps.mixinextras = "0.5.3"
+
+# ------------------------------------------------------------------ 1.21-1.21.1 (Java 21)
+["1.21.1"]
+mod.java = "21"
+
+[fabric."1.21.1"]
+mod.mc_compat = ">=1.21 <1.21.2"
+deps.fabric_loader = "0.16.7"
+deps.fabric_api = "0.106.0+1.21.1"
+deps.cloth_config = "15.0.140"
+deps.modmenu = "11.0.4"
+
+[forge."1.21.1"]
+mod.mc_compat = "[1.21,1.22)"
+deps.forge = "52.0.28"
+deps.forge_range = "[52,)"
+deps.cloth_config = "15.0.140"
+
+[neoforge."1.21.1"]
+mod.mc_compat = "[1.21,1.21.2)"
+deps.neoforge = "21.1.68"
+deps.neoforge_range = "[4,)"
+deps.cloth_config = "15.0.140"

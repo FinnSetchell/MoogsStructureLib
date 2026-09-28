@@ -1,0 +1,17 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.finndog.moogs_structures.mixins.fabric",
+    "compatibilityLevel": "JAVA_${java_version}",
+    "mixins": [
+        "structures.EntityProcessorMixin"
+    ],
+    "client": [
+    ],
+    "server": [
+    ],
+    "injectors": {
+      "defaultRequire": 1
+    }
+}
+  

@@ -35,10 +35,8 @@ bin/
 
 run/
 runs/
-fabric/run/
-fabric/runs/
-forge/run/
-forge/runs/
-neoforge/run/
-neoforge/runs/
+.loom/
 deps/
+
+# Stonecutter generates these per-node projects from settings.gradle.kts.
+versions/
