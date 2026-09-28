@@ -4,8 +4,13 @@ import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
+//? if >=1.21.11 {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.resources.ResourceKey;
+//? if <1.21.11 {
 import net.minecraft.resources.ResourceLocation;
+//?}
 import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.util.function.Predicate;
@@ -28,7 +33,11 @@ public final class AliasedStructurePredicate implements Predicate<Holder<Structu
     public boolean test(Holder<Structure> holder) {
         if (this.original.test(holder)) return true;
 
+        //? if <1.21.11 {
         ResourceLocation id = holder.unwrapKey().map(ResourceKey::location).orElse(null);
+        //?} else {
+        /*ResourceLocation id = holder.unwrapKey().map(ResourceKey::identifier).orElse(null);
+        *///?}
         if (id == null) return false;
 
         ReplaceVanillaManager.Replacement replacement = ReplacementAliases.forReplacement(id)

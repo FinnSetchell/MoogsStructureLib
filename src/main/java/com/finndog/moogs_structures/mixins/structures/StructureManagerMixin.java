@@ -42,16 +42,28 @@ public class StructureManagerMixin {
     }
 
     @Inject(
+            //? if <26.3 {
             method = "getStructureWithPieceAt(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/Structure;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;",
+            //?} else {
+            /*method = "getStructureWithPieceAt(IIILnet/minecraft/world/level/levelgen/structure/Structure;)Lnet/minecraft/world/level/levelgen/structure/StructureStart;",
+            *///?}
             at = @At("RETURN"),
             cancellable = true
     )
+    //? if <26.3 {
     private void moogs_structures_aliasStructureWithPieceAt(BlockPos blockPos, Structure structure, CallbackInfoReturnable<StructureStart> cir) {
+    //?} else {
+    /*private void moogs_structures_aliasStructureWithPieceAt(int x, int y, int z, Structure structure, CallbackInfoReturnable<StructureStart> cir) {
+    *///?}
         StructureManager self = (StructureManager) (Object) this;
         Structure replacement = moogs_structures_aliasFor(self, structure, cir.getReturnValue());
         if (replacement == null) return;
 
+        //? if <26.3 {
         StructureStart start = self.getStructureWithPieceAt(blockPos, replacement);
+        //?} else {
+        /*StructureStart start = self.getStructureWithPieceAt(x, y, z, replacement);
+        *///?}
         if (start.isValid()) cir.setReturnValue(start);
     }
 

@@ -7,13 +7,20 @@ import com.google.gson.JsonParseException;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
+//? if <26.1.2 {
 import net.minecraft.nbt.CompoundTag;
+//?}
+//? if <1.21.5 {
 import net.minecraft.nbt.StringTag;
+//?}
+//? if >=1.21.11 <26.1.2 {
+/*import net.minecraft.nbt.StringTag;
+*///?}
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.BlockTags;
-//? if >=1.21.2 {
+//? if >=1.21.2 <1.21.5 {
 /*import net.minecraft.tags.EnchantmentTags;
 *///?}
 import net.minecraft.util.GsonHelper;
@@ -24,6 +31,9 @@ import net.minecraft.world.item.enchantment.Enchantment;
 //? if <1.21.2 {
 import net.minecraft.world.level.BlockGetter;
 //?}
+//? if >=1.21.5 {
+/*import net.minecraft.world.level.BlockGetter;
+*///?}
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.NoiseColumn;
@@ -44,11 +54,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+//? if >=1.21.5 {
+/*import net.minecraft.core.Holder.Reference;
+*///?}
 import java.nio.charset.StandardCharsets;
+//? if <1.21.5 {
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+//?} else {
+/*import java.util.*;
+*///?}
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class GeneralUtils {
@@ -79,8 +96,12 @@ public final class GeneralUtils {
 
     //? if <1.21.2 {
     public static boolean isFullCube(BlockGetter world, BlockPos pos, BlockState state) {
-    //?} else {
+    //?}
+    //? if >=1.21.2 <1.21.5 {
     /*public static boolean isFullCube(BlockState state) {
+    *///?}
+    //? if >=1.21.5 {
+    /*public static boolean isFullCube(BlockGetter world, BlockPos pos, BlockState state) {
     *///?}
         if(state == null) return false;
         //? if <1.21.2 {
@@ -108,19 +129,35 @@ public final class GeneralUtils {
     //////////////////////////////////////////////
 
     public static ItemStack enchantRandomly(RegistryAccess registryAccess, RandomSource random, ItemStack itemToEnchant, float chance) {
+        //? if >=1.21.5 {
+        /*Registry<Enchantment> enchReg = registryAccess.lookupOrThrow(Registries.ENCHANTMENT);
+        *///?}
         if(random.nextFloat() < chance) {
             //? if <1.21.2 {
             List<Holder.Reference<Enchantment>> list = registryAccess.registryOrThrow(Registries.ENCHANTMENT).holders()
                     .filter(holder -> holder.value().canEnchant(itemToEnchant)).toList();
-            //?} else {
+            //?}
+            //? if >=1.21.2 <1.21.5 {
             /*List<Holder.Reference<Enchantment>> list = registryAccess.lookupOrThrow(Registries.ENCHANTMENT).listElements()
                     .filter(holder -> holder.value().canEnchant(itemToEnchant) && holder.is(EnchantmentTags.ON_MOB_SPAWN_EQUIPMENT)).toList();
             *///?}
+            //? if >=1.21.5 {
+            /*List<Enchantment> list = registryAccess.lookupOrThrow(Registries.ENCHANTMENT).stream()
+                    .filter(holder -> holder.canEnchant(itemToEnchant)).toList();
+            *///?}
             if(!list.isEmpty()) {
+                //? if <1.21.5 {
                 Holder.Reference<Enchantment> enchantment = list.get(random.nextInt(list.size()));
                 // bias towards weaker enchantments
                 int enchantmentLevel = random.nextInt(Mth.nextInt(random, enchantment.value().getMinLevel(), enchantment.value().getMaxLevel()) + 1);
                 itemToEnchant.enchant(enchantment, enchantmentLevel);
+                //?} else {
+                /*Optional<Reference<Enchantment>> enchantment = enchReg.get(enchReg.getKey(list.get(random.nextInt(list.size()))));
+                enchantment.ifPresent(val -> {
+                    int enchantmentLevel = random.nextInt(Mth.nextInt(random, val.value().getMinLevel(), val.value().getMaxLevel()) + 1);
+                    itemToEnchant.enchant(val, enchantmentLevel);
+                });
+                *///?}
             }
         }
 
@@ -221,28 +258,57 @@ public final class GeneralUtils {
     public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
         FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
-    //?} else {
+    //?}
+    //? if >=1.21.2 <1.21.5 {
     /*public static boolean canJigsawsAttach(StructureTemplate.JigsawBlockInfo jigsaw1, StructureTemplate.JigsawBlockInfo jigsaw2) {
         FrontAndTop prop1 = jigsaw1.info().state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.info().state().getValue(JigsawBlock.ORIENTATION);
     *///?}
+    //? if >=1.21.5 {
+    /*public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
+        FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
+        FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
+    *///?}
+        //? if >=26.1.2 {
+        /*String joint = String.valueOf(jigsaw1.nbt().getString("joint"));
+        if(joint.isEmpty()) {
+            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
+        }
+        *///?}
 
+        //? if >=26.1.2 {
+        /*boolean isRollable = joint.equals("rollable");
+        *///?}
         return prop1.front() == prop2.front().getOpposite() &&
+                //? if <26.1.2 {
                 (prop1.top() == prop2.top() || isRollableJoint(jigsaw1, prop1)) &&
+                //?}
                 //? if <1.21.2 {
                 getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
-                //?} else {
+                //?}
+                //? if >=1.21.2 <1.21.5 {
                 /*getStringMicroOptimised(jigsaw1.info().nbt(), "target").equals(getStringMicroOptimised(jigsaw2.info().nbt(), "name"));
                 *///?}
+                //? if >=1.21.5 <26.1.2 {
+                /*getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
+                *///?}
+    //? if <26.1.2 {
     }
 
+    //?}
     //? if <1.21.2 {
     private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
         String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
-    //?} else {
+    //?}
+    //? if >=1.21.2 <1.21.5 {
     /*private static boolean isRollableJoint(StructureTemplate.JigsawBlockInfo jigsaw1, FrontAndTop prop1) {
         String joint = getStringMicroOptimised(jigsaw1.info().nbt(), "joint");
     *///?}
+    //? if >=1.21.5 <26.1.2 {
+    /*private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
+        String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
+    *///?}
+        //? if <26.1.2 {
         if(!joint.equals("rollable") && !joint.equals("aligned")) {
             return !prop1.front().getAxis().isHorizontal();
         }
@@ -252,7 +318,20 @@ public final class GeneralUtils {
     }
 
     public static String getStringMicroOptimised(CompoundTag tag, String key) {
+        //?}
+        //? if <1.21.5 {
         return tag.get(key) instanceof StringTag stringTag ? stringTag.getAsString() : "";
+        //?}
+        //? if >=1.21.5 <1.21.11 {
+        /*return tag.getString(key).orElse("");
+        *///?}
+        //? if >=1.21.11 <26.1.2 {
+        /*return tag.get(key) instanceof StringTag stringTag ? stringTag.value() : "";
+        *///?}
+                //? if >=26.1.2 {
+                /*(isRollable || prop1.top() == prop2.top()) &&
+                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
+                *///?}
     }
 
     //////////////////////////////////////////////

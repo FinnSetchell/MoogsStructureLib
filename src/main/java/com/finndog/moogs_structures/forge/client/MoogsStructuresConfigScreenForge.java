@@ -1,3 +1,4 @@
+//? if <1.21.5 {
 package com.finndog.moogs_structures.forge.client;
 
 import com.finndog.moogs_structures.client.SpacingPreviewSliderEntry;
@@ -98,3 +99,5 @@ public final class MoogsStructuresConfigScreenForge {
         return Component.literal(String.format("%.2fx", percent / 100.0));
     }
 }
+
+//?}

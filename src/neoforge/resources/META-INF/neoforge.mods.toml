@@ -5,7 +5,7 @@ license="https://github.com/FinnSetchell/MoogsStructureLib/blob/1.21.5/LICENSE"
 
 [[mods]]
     modId="moogs_structures"
-    logoFile= "assets/moogs_structures/icon.png"
+    ${neo_icon_key}="assets/moogs_structures/icon.png"
     logoBlur=false
     version="${version}"
     displayName="Moog's Structure Lib"

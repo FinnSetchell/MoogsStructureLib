@@ -31,8 +31,12 @@ public class CustomRegistry<T> implements CustomRegistryLookup<T> {
     public @Nullable T get(ResourceLocation id) {
         //? if <1.21.2 {
         return registry.get(id);
-        //?} else {
+        //?}
+        //? if >=1.21.2 <1.21.5 {
         /*return registry.getValue(id);
+        *///?}
+        //? if >=1.21.5 {
+        /*return registry.get(id).get().value();
         *///?}
     }
 

@@ -1,6 +1,7 @@
 plugins {
     // Applies the Loom variant matching this node's Minecraft version.
     id("dev.kikugie.loom-back-compat")
+    id("mixin-config-filter")
 }
 
 fun prop(key: String): String = sc.properties.get<String>(key)
@@ -12,6 +13,9 @@ val requiredJava: JavaVersion = JavaVersion.toVersion(prop("mod.java"))
 // The Minecraft version this node compiles against. Usually the node version, but a range can build
 // one loader against a different patch release (Forge 1.21.3 for the 1.21.2-1.21.3 range).
 val mcBuild: String = prop("mod.mc_build")
+// Which access widener / transformer this node uses; the classes they open moved between versions.
+val awFile = rootProject.file("src/main/access/${prop("mod.access")}.accesswidener")
+val atFile = rootProject.file("src/main/access/${prop("mod.access")}.cfg")
 
 version = property("mod_version").toString()
 base.archivesName = "${property("archives_base_name")}-fabric-$mcBuild"
@@ -41,7 +45,7 @@ dependencies {
 }
 
 loom {
-    accessWidenerPath = rootProject.file("src/main/resources/$modId.accesswidener")
+    accessWidenerPath = awFile
 
     runs {
         // Per-node game directory, so worlds are never opened by a different Minecraft version.
@@ -72,11 +76,15 @@ tasks {
         val props = mapOf(
             "version" to version.toString(),
             "mod_id" to modId,
+            "mod_name" to modName,
             "mc_compat" to prop("mod.mc_compat"),
+            "fabric_loader_dep" to prop("mod.fabric_loader_dep"),
             "java_version" to requiredJava.majorVersion,
         )
         props.forEach { (k, v) -> inputs.property(k, v) }
-        filesMatching(listOf("fabric.mod.json", "*.mixins.json")) { expand(props) }
+        filesMatching(listOf("fabric.mod.json", "*.mixins.json", "pack.mcmeta")) { expand(props) }
+        from(awFile) { rename { "$modId.accesswidener" } }
+        from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
     }
 
     jar {

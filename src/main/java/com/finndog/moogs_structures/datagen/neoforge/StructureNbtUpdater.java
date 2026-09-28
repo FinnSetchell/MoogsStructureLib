@@ -12,9 +12,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
+//? if <1.21.5 {
 import net.minecraft.server.packs.resources.MultiPackResourceManager;
+//?}
 import net.minecraft.server.packs.resources.Resource;
-//? if >=1.21.2 {
+//? if >=1.21.2 <1.21.5 {
 /*import net.minecraft.server.packs.resources.ResourceManager;
 *///?}
 import net.minecraft.util.datafix.DataFixTypes;
@@ -23,6 +25,9 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 //? if <1.21.2 {
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 //?}
+//? if >=1.21.5 {
+/*import net.minecraft.server.packs.resources.ResourceManager;
+*///?}
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -39,7 +44,11 @@ public class StructureNbtUpdater implements DataProvider {
     private final String basePath;
     private final String modid;
     private final PackOutput output;
+    //? if <1.21.5 {
     private final MultiPackResourceManager resources;
+    //?} else {
+    /*private final ResourceManager resourceManager;
+    *///?}
 
     //? if <1.21.2 {
     public StructureNbtUpdater(String basePath, String modid, ExistingFileHelper helper, PackOutput output) {
@@ -55,19 +64,31 @@ public class StructureNbtUpdater implements DataProvider {
         catch (NoSuchFieldException|IllegalAccessException e) {
             throw new RuntimeException(e);
         }
-    //?} else {
+    //?}
+    //? if >=1.21.2 <1.21.5 {
     /*public StructureNbtUpdater(String basePath, String modid, ResourceManager resourceManager, PackOutput output) {
             this.basePath = basePath;
             this.modid = modid;
             this.output = output;
             this.resources = (MultiPackResourceManager) resourceManager;
     *///?}
+    //? if >=1.21.5 {
+    /*public StructureNbtUpdater(String basePath, String modid, PackOutput output, ResourceManager resourceManager) {
+        this.basePath = basePath;
+        this.modid = modid;
+        this.output = output;
+        this.resourceManager = resourceManager;
+    *///?}
     }
 
     @Override
     public @NotNull CompletableFuture<?> run(@Nonnull CachedOutput cache) {
         try {
+            //? if <1.21.5 {
             for (var entry : resources.listResources(basePath, $ -> true).entrySet()) {
+            //?} else {
+            /*for (var entry : resourceManager.listResources(basePath, $ -> true).entrySet()) {
+            *///?}
                 if (entry.getKey().getNamespace().equals(modid)) {
                     process(entry.getKey(), entry.getValue(), cache);
                 }
@@ -101,8 +122,15 @@ public class StructureNbtUpdater implements DataProvider {
     }
 
     private static CompoundTag updateNBT(CompoundTag nbt) {
+        //? if >=1.21.5 {
+        /*final int dataVersion = nbt.getIntOr("DataVersion", 0);
+        *///?}
         final CompoundTag updatedNBT = DataFixTypes.STRUCTURE.updateToCurrentVersion(
+            //? if <1.21.5 {
             DataFixers.getDataFixer(), nbt, nbt.getInt("DataVersion")
+            //?} else {
+            /*DataFixers.getDataFixer(), nbt, dataVersion
+            *///?}
         );
         StructureTemplate template = new StructureTemplate();
         //? if <1.21.2 {

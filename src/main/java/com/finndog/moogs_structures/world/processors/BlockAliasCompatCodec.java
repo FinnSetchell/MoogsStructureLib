@@ -47,7 +47,12 @@ public final class BlockAliasCompatCodec {
             "minecraft:chain", "minecraft:iron_chain"
     );
 
+    // Block state id key: "Name" before 26.3, "id" from 26.3 (DataVersion 5006).
+    //? if <26.3 {
     private static final String NAME_FIELD = "Name";
+    //?} else {
+    /*private static final String[] ID_FIELDS = { "Name", "id" };
+    *///?}
 
     private BlockAliasCompatCodec() {}
 
@@ -86,10 +91,25 @@ public final class BlockAliasCompatCodec {
         Optional<MapLike<T>> rootOpt = ops.getMap(input).result();
         if (rootOpt.isPresent()) {
             MapLike<T> root = rootOpt.get();
+            //? if <26.3 {
             T nameValue = root.get(NAME_FIELD);
+            //?} else {
+            /*String idField = null;
+            T nameValue = null;
+            for (String field : ID_FIELDS) {
+                nameValue = root.get(field);
+                if (nameValue != null) {
+                    idField = field;
+                    break;
+                }
+            }
+            *///?}
             if (nameValue == null) {
                 return input;
             }
+            //? if >=26.3 {
+            /*final String matchedField = idField;
+            *///?}
             String name = ops.getStringValue(nameValue).result().orElse(null);
             if (name == null) {
                 return input;
@@ -101,7 +121,11 @@ public final class BlockAliasCompatCodec {
             Map<T, T> rewritten = new LinkedHashMap<>();
             root.entries().forEach(pair -> {
                 String key = ops.getStringValue(pair.getFirst()).result().orElse(null);
+                //? if <26.3 {
                 if (NAME_FIELD.equals(key)) {
+                //?} else {
+                /*if (matchedField.equals(key)) {
+                *///?}
                     rewritten.put(pair.getFirst(), ops.createString(renamed));
                 } else {
                     rewritten.put(pair.getFirst(), pair.getSecond());
@@ -126,7 +150,11 @@ public final class BlockAliasCompatCodec {
      * Returns the modern alias for {@code name} if a rename is defined AND the
      * target block exists in the runtime registry; otherwise returns {@code name}.
      */
+    //? if <26.3 {
     private static String aliasIfRegistered(String name) {
+    //?} else {
+    /*public static String aliasIfRegistered(String name) {
+    *///?}
         String target = RENAMES.get(name);
         if (target == null) {
             return name;

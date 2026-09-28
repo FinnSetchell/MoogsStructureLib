@@ -1,21 +1,30 @@
 package com.finndog.moogs_structures.world.processors;
 
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
+//? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
+//?}
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+//? if <1.21.5 {
 import net.minecraft.nbt.Tag;
+//?}
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
+//? if <26.2 {
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
+//?}
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Map;
+//? if >=26.2 {
+/*import java.util.Optional;
+*///?}
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 
@@ -26,7 +35,11 @@ import net.minecraft.world.level.block.Blocks;
  */
 public class VanillaLootSwapProcessor extends StructureEntityProcessor {
 
+    //? if <26.2 {
     public static final MapCodec<VanillaLootSwapProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    //?} else {
+    /*public static final MapCodec<VanillaLootSwapProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    *///?}
             Codec.STRING.fieldOf("modid").forGetter(p -> p.modid),
             Codec.STRING.fieldOf("vanilla_key").forGetter(p -> p.vanillaKey),
             Codec.unboundedMap(ResourceLocation.CODEC, ResourceLocation.CODEC).fieldOf("loot_table_mapping").forGetter(p -> p.lootTableMapping),
@@ -46,26 +59,75 @@ public class VanillaLootSwapProcessor extends StructureEntityProcessor {
     }
 
     @Override
+    //? if <26.2 {
     public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldReader, BlockPos pos, BlockPos blockPos, StructureTemplate.StructureBlockInfo localInfo, StructureTemplate.StructureBlockInfo worldInfo, StructurePlaceSettings settings) {
         CompoundTag nbt = worldInfo.nbt();
+    //?} else {
+    /*public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldReader, BlockPos targetPosition, BlockPos referencePos, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo processedBlockInfo, StructurePlaceSettings settings) {
+        CompoundTag nbt = processedBlockInfo.nbt();
+    *///?}
+        //? if <1.21.5 {
         if (nbt == null || !nbt.contains("LootTable", Tag.TAG_STRING)) {
+        //?} else {
+        /*if (nbt == null) {
+        *///?}
+            //? if >=1.21.5 <26.2 {
+            /*return worldInfo;
+            *///?}
+            //? if >=26.2 {
+            /*return processedBlockInfo;
+            *///?}
+        //? if >=1.21.5 {
+        /*}
+        // 1.21.5: CompoundTag.getString returns Optional<String> (empty when absent or non-string);
+        // the old contains(key, TAG_STRING) overload was removed.
+        *///?}
+        //? if >=1.21.5 <26.2 {
+        /*java.util.Optional<String> lootTable = nbt.getString("LootTable");
+        *///?}
+        //? if >=26.2 {
+        /*Optional<String> lootTable = nbt.getString("LootTable");
+        *///?}
+        //? if >=1.21.5 {
+        /*if (lootTable.isEmpty()) {
+        *///?}
+            //? if <26.2 {
             return worldInfo;
+            //?} else {
+            /*return processedBlockInfo;
+            *///?}
         }
 
+        //? if <1.21.5 {
         ResourceLocation current = ResourceLocation.tryParse(nbt.getString("LootTable"));
+        //?} else {
+        /*ResourceLocation current = ResourceLocation.tryParse(lootTable.get());
+        *///?}
         ResourceLocation target = current == null ? null : lootTableMapping.get(current);
         if (target == null || !ReplaceVanillaManager.isEnabled(modid, vanillaKey)) {
+            //? if <26.2 {
             return worldInfo;
+            //?} else {
+            /*return processedBlockInfo;
+            *///?}
         }
 
         CompoundTag newNbt = nbt.copy();
         newNbt.putString("LootTable", target.toString());
         switch (seedStrategy) {
+            //? if <26.2 {
             case "randomize" -> newNbt.putLong("LootTableSeed", settings.getRandom(worldInfo.pos()).nextLong());
+            //?} else {
+            /*case "randomize" -> newNbt.putLong("LootTableSeed", settings.getRandom(processedBlockInfo.pos()).nextLong());
+            *///?}
             case "clear" -> newNbt.remove("LootTableSeed");
             default -> { }
         }
+        //? if <26.2 {
         return new StructureTemplate.StructureBlockInfo(worldInfo.pos(), worldInfo.state(), newNbt);
+        //?} else {
+        /*return new StructureTemplate.StructureBlockInfo(processedBlockInfo.pos(), processedBlockInfo.state(), newNbt);
+        *///?}
     }
 
     // Chest and hopper minecarts carry the same LootTable/LootTableSeed keys as containers, so run the
@@ -83,7 +145,11 @@ public class VanillaLootSwapProcessor extends StructureEntityProcessor {
         StructureTemplate.StructureBlockInfo asBlock = new StructureTemplate.StructureBlockInfo(
                 globalEntityInfo.blockPos, Blocks.AIR.defaultBlockState(), globalEntityInfo.nbt);
         StructureTemplate.StructureBlockInfo swapped = processBlock(serverLevelAccessor, structurePiecePos,
+                //? if <26.2 {
                 structurePieceBottomCenterPos, asBlock, asBlock, structurePlaceSettings);
+                //?} else {
+                /*structurePieceBottomCenterPos, globalEntityInfo.blockPos, asBlock, structurePlaceSettings);
+                *///?}
         if (swapped == asBlock || swapped == null) {
             return globalEntityInfo;
         }
@@ -91,7 +157,12 @@ public class VanillaLootSwapProcessor extends StructureEntityProcessor {
     }
 
     @Override
+    //? if <26.2 {
     protected StructureProcessorType<?> getType() {
         return MoogsStructuresProcessors.VANILLA_LOOT_SWAP_PROCESSOR.get();
+    //?} else {
+    /*public MapCodec<VanillaLootSwapProcessor> codec() {
+        return MAP_CODEC;
+    *///?}
     }
 }

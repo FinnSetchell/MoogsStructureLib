@@ -9,8 +9,13 @@ import com.google.common.collect.ImmutableSet;
 //?}
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
+//? if >=1.21.11 {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.resources.ResourceKey;
+//? if <1.21.11 {
 import net.minecraft.resources.ResourceLocation;
+//?}
 import net.minecraft.tags.TagLoader;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -47,8 +52,12 @@ public class TagLoaderMixin {
     @Final
     //? if <1.21.2 {
     Function<ResourceLocation, Optional<?>> idToValue;
-    //?} else {
+    //?}
+    //? if >=1.21.2 <26.1.2 {
     /*TagLoader.ElementLookup<Object> elementLookup;
+    *///?}
+    //? if >=26.1.2 {
+    /*private TagLoader.ElementLookup<Object> elementLookup;
     *///?}
 
     @Inject(method = "build(Ljava/util/Map;)Ljava/util/Map;", at = @At("HEAD"))
@@ -87,7 +96,11 @@ public class TagLoaderMixin {
             Map<ResourceLocation, Object> additions = null;
 
             for (Object holder : holders) {
+                //? if <1.21.11 {
                 ResourceLocation id = ((Holder<?>) holder).unwrapKey().map(ResourceKey::location).orElse(null);
+                //?} else {
+                /*ResourceLocation id = ((Holder<?>) holder).unwrapKey().map(ResourceKey::identifier).orElse(null);
+                *///?}
                 if (id == null) continue;
 
                 ResourceLocation replacementId = aliases.forVanilla(id)

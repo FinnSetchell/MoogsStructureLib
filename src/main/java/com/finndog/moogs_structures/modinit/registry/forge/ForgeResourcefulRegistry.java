@@ -36,6 +36,10 @@ public class ForgeResourcefulRegistry<T> implements ResourcefulRegistry<T> {
 
     @Override
     public void init() {
+        //? if <1.21.5 {
         register.register(MoogsStructuresForge.modEventBusTempHolder);
+        //?} else {
+        /*register.register(MoogsStructuresForge.modBusGroupTempHolder);
+        *///?}
     }
 }

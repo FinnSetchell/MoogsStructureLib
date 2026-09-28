@@ -1,3 +1,4 @@
+//? if <26.1.2 {
 package com.finndog.moogs_structures.misc.trialspawnerconfig;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
@@ -49,8 +50,12 @@ public class TrialSpawnerConfigManager extends SimpleJsonResourceReloadListener 
         //? if >=1.21.2 <1.21.4 {
         /*super(ExtraCodecs.JSON, "trial_spawner");
         *///?}
-        //? if >=1.21.4 {
+        //? if >=1.21.4 <1.21.5 {
         /*super(ExtraCodecs.JSON, FileToIdConverter.json("trial_spawner"));
+        *///?}
+        // 1.21.5: SimpleJsonResourceReloadListener takes a FileToIdConverter instead of a String directory.
+        //? if >=1.21.5 {
+        /*super(ExtraCodecs.JSON, new FileToIdConverter("trial_spawner", ".json"));
         *///?}
     }
 
@@ -77,3 +82,5 @@ public class TrialSpawnerConfigManager extends SimpleJsonResourceReloadListener 
         return configs.get(id);
     }
 }
+
+//?}

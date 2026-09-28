@@ -1,3 +1,4 @@
+//? if <26.1.2 {
 package com.finndog.moogs_structures.mixins.structures;
 
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -10,3 +11,5 @@ public interface StructureTemplateManagerAccessor {
     @Accessor("resourceManager")
     ResourceManager moogs_structures_getResourceManager();
 }
+
+//?}

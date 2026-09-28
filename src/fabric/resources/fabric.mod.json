@@ -27,9 +27,10 @@
     "moogs_structures-common.mixins.json"
   ],
   "depends": {
-    "fabricloader": "*",
+    "fabricloader": "${fabric_loader_dep}",
     "minecraft": "${mc_compat}",
-    "fabric": "*"
+    "fabric-api": "*",
+    "java": ">=${java_version}"
   },
   "suggests": {
     "another-mod": "*"

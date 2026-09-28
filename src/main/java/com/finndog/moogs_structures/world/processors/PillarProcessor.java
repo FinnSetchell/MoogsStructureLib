@@ -1,6 +1,8 @@
 package com.finndog.moogs_structures.world.processors;
 
+//? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
+//?}
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.world.randomize.BlockStateRandomizer;
 import com.mojang.datafixers.util.Pair;
@@ -20,12 +22,17 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelReader;
+//? if >=1.21.5 {
+/*import net.minecraft.world.level.block.Block;
+*///?}
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorList;
+//? if <26.2 {
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
+//?}
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Map;
@@ -37,7 +44,11 @@ import java.util.stream.Collectors;
  * blocks (air, lava/water, plants, etc.) until it hits solid ground or bedrock.
  * Ported from RepurposedStructures' PillarProcessor (TelepathicGrunt) to MSL.
  */
+//? if <26.2 {
 public class PillarProcessor extends StructureProcessor {
+//?} else {
+/*public class PillarProcessor implements StructureProcessor {
+*///?}
     private static final ResourceLocation EMPTY_RL = ResourceLocation.fromNamespaceAndPath("minecraft", "empty");
 
     // Wrap vanilla BlockState codec so datapacks authored against legacy block names
@@ -46,7 +57,11 @@ public class PillarProcessor extends StructureProcessor {
     // the modern alias isn't registered on this MC version.
     private static final Codec<BlockState> BLOCK_STATE_CODEC = BlockAliasCompatCodec.wrap(BlockState.CODEC);
 
+    //? if <26.2 {
     public static final MapCodec<PillarProcessor> CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    //?} else {
+    /*public static final MapCodec<PillarProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec((instance) -> instance.group(
+    *///?}
             Codec.mapPair(BLOCK_STATE_CODEC.fieldOf("trigger"), BLOCK_STATE_CODEC.fieldOf("replacement"))
                     .codec().listOf()
                     .xmap((list) -> list.stream().collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)),
@@ -87,11 +102,23 @@ public class PillarProcessor extends StructureProcessor {
     }
 
     @Override
+    //? if <26.2 {
     public StructureTemplate.StructureBlockInfo processBlock(LevelReader levelReader, BlockPos templateOffset, BlockPos worldOffset, StructureTemplate.StructureBlockInfo structureBlockInfoLocal, StructureTemplate.StructureBlockInfo structureBlockInfoWorld, StructurePlaceSettings structurePlacementData) {
+    //?} else {
+    /*public StructureTemplate.StructureBlockInfo processBlock(LevelReader levelReader, BlockPos targetPosition, BlockPos referencePos, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo processedBlockInfo, StructurePlaceSettings structurePlacementData) {
+    *///?}
 
+        //? if <26.2 {
         BlockState blockState = structureBlockInfoWorld.state();
+        //?} else {
+        /*BlockState blockState = processedBlockInfo.state();
+        *///?}
         if (pillarTriggerAndReplacementBlocks.containsKey(blockState)) {
+            //? if <26.2 {
             BlockPos worldPos = structureBlockInfoWorld.pos();
+            //?} else {
+            /*BlockPos worldPos = processedBlockInfo.pos();
+            *///?}
 
             BlockState replacementState = pillarTriggerAndReplacementBlocks.get(blockState);
             BlockState originalReplacementState = originalReplacedBlock.orElse(replacementState);
@@ -109,7 +136,11 @@ public class PillarProcessor extends StructureProcessor {
                 *///?}
             }
 
+            //? if <26.1.2 {
             if(levelReader instanceof WorldGenRegion worldGenRegion && !worldGenRegion.getCenter().equals(new ChunkPos(currentPos))) {
+            //?} else {
+            /*if(levelReader instanceof WorldGenRegion worldGenRegion && !worldGenRegion.getCenter().equals(new ChunkPos(currentPos.getX() >> 4, currentPos.getZ() >> 4))) {
+            *///?}
                 return getReturnBlock(worldPos, originalReplacementState);
             }
 
@@ -137,20 +168,44 @@ public class PillarProcessor extends StructureProcessor {
                 BlockState fillState = pillarRandomizer.isPresent()
                         ? pillarRandomizer.get().get(structurePlacementData.getRandom(currentPos), currentPos.getY())
                         : replacementState;
+                //? if <26.2 {
                 StructureTemplate.StructureBlockInfo newPillarState1 = new StructureTemplate.StructureBlockInfo(currentPos.subtract(worldPos).offset(templateOffset), fillState, null);
                 StructureTemplate.StructureBlockInfo newPillarState2 = new StructureTemplate.StructureBlockInfo(currentPos.immutable(), fillState, null);
+                //?} else {
+                /*BlockPos pillarTemplateRelativePos = currentPos.subtract(worldPos).offset(targetPosition);
+                StructureTemplate.StructureBlockInfo newPillarState = new StructureTemplate.StructureBlockInfo(currentPos.immutable(), fillState, null);
+                *///?}
 
                 if(structureProcessorList != null) {
                     for(StructureProcessor processor : structureProcessorList.list()) {
+                        //? if <26.2 {
                         if(newPillarState2 == null) {
+                        //?} else {
+                        /*if(newPillarState == null) {
+                        *///?}
                             break;
                         }
+                        //? if <26.2 {
                         newPillarState2 = processor.processBlock(levelReader, newPillarState1.pos(), newPillarState2.pos(), newPillarState1, newPillarState2, structurePlacementData);
+                        //?} else {
+                        /*newPillarState = processor.processBlock(levelReader, targetPosition, referencePos, pillarTemplateRelativePos, newPillarState, structurePlacementData);
+                        *///?}
                     }
                 }
 
+                //? if <26.2 {
                 if(newPillarState2 != null) {
+                //?}
+                    //? if <1.21.5 {
                     levelReader.getChunk(currentPos).setBlockState(currentPos, newPillarState2.state(), false);
+                    //?}
+                    //? if >=1.21.5 <26.2 {
+                    /*levelReader.getChunk(currentPos).setBlockState(currentPos, newPillarState2.state(), Block.UPDATE_CLIENTS);
+                    *///?}
+                //? if >=26.2 {
+                /*if(newPillarState != null) {
+                    levelReader.getChunk(currentPos).setBlockState(currentPos, newPillarState.state(), Block.UPDATE_CLIENTS);
+                *///?}
                 }
 
                 currentPos.move(direction);
@@ -161,7 +216,11 @@ public class PillarProcessor extends StructureProcessor {
             return getReturnBlock(worldPos, originalReplacementState);
         }
 
+        //? if <26.2 {
         return structureBlockInfoWorld;
+        //?} else {
+        /*return processedBlockInfo;
+        *///?}
     }
 
     private static StructureTemplate.StructureBlockInfo getReturnBlock(BlockPos worldPos, BlockState originalReplacementState) {
@@ -170,7 +229,12 @@ public class PillarProcessor extends StructureProcessor {
     }
 
     @Override
+    //? if <26.2 {
     protected StructureProcessorType<?> getType() {
         return MoogsStructuresProcessors.PILLAR_PROCESSOR.get();
+    //?} else {
+    /*public MapCodec<PillarProcessor> codec() {
+        return MAP_CODEC;
+    *///?}
     }
 }

@@ -1,6 +1,8 @@
 package com.finndog.moogs_structures.world.processors;
 
+//? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
+//?}
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
@@ -12,7 +14,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
+//? if <26.2 {
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
+//?}
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Optional;
@@ -25,12 +29,20 @@ import java.util.Optional;
  *
  * <p>The blockstate is preserved; only the block entity NBT is rewritten.
  */
+//? if <26.2 {
 public class VaultRandomizingProcessor extends StructureProcessor {
+//?} else {
+/*public class VaultRandomizingProcessor implements StructureProcessor {
+*///?}
 
     private static final ResourceLocation DEFAULT_KEY = ResourceLocation.parse("minecraft:trial_key");
     private static final ResourceLocation DEFAULT_OMINOUS_KEY = ResourceLocation.parse("minecraft:ominous_trial_key");
 
+    //? if <26.2 {
     public static final MapCodec<VaultRandomizingProcessor> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    //?} else {
+    /*public static final MapCodec<VaultRandomizingProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    *///?}
             ResourceLocation.CODEC.fieldOf("loot_table").forGetter(p -> p.lootTable),
             ResourceLocation.CODEC.optionalFieldOf("ominous_loot_table").forGetter(p -> p.ominousLootTable),
             ResourceLocation.CODEC.optionalFieldOf("key_item", DEFAULT_KEY).forGetter(p -> p.keyItem),
@@ -50,23 +62,44 @@ public class VaultRandomizingProcessor extends StructureProcessor {
     }
 
     @Override
+    //? if <26.2 {
     public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldView, BlockPos pos, BlockPos blockPos, StructureTemplate.StructureBlockInfo structureBlockInfoLocal, StructureTemplate.StructureBlockInfo structureBlockInfoWorld, StructurePlaceSettings structurePlacementData) {
         BlockState state = structureBlockInfoWorld.state();
+    //?} else {
+    /*public StructureTemplate.StructureBlockInfo processBlock(LevelReader worldView, BlockPos targetPosition, BlockPos referencePos, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo processedBlockInfo, StructurePlaceSettings structurePlacementData) {
+        BlockState state = processedBlockInfo.state();
+    *///?}
         if (!(state.getBlock() instanceof VaultBlock)) {
+            //? if <26.2 {
             return structureBlockInfoWorld;
+            //?} else {
+            /*return processedBlockInfo;
+            *///?}
         }
 
         boolean ominous = state.getValue(BlockStateProperties.OMINOUS);
         ResourceLocation chosenLoot = ominous ? ominousLootTable.orElse(lootTable) : lootTable;
         ResourceLocation chosenKey = ominous ? ominousKeyItem : keyItem;
 
+        //? if <26.2 {
         CompoundTag existing = structureBlockInfoWorld.nbt();
+        //?} else {
+        /*CompoundTag existing = processedBlockInfo.nbt();
+        *///?}
         CompoundTag newNbt = existing != null ? existing.copy() : new CompoundTag();
 
         newNbt.remove("server_data");
         newNbt.remove("shared_data");
 
+        //? if <1.21.5 {
         CompoundTag config = newNbt.contains("config") ? newNbt.getCompound("config").copy() : new CompoundTag();
+        //?}
+        //? if >=1.21.5 <26.1.2 {
+        /*CompoundTag config = newNbt.getCompound("config").map(CompoundTag::copy).orElseGet(CompoundTag::new);
+        *///?}
+        //? if >=26.1.2 {
+        /*CompoundTag config = newNbt.getCompoundOrEmpty("config").copy();
+        *///?}
         config.putString("loot_table", chosenLoot.toString());
 
         CompoundTag keyItemTag = new CompoundTag();
@@ -76,11 +109,20 @@ public class VaultRandomizingProcessor extends StructureProcessor {
 
         newNbt.put("config", config);
 
+        //? if <26.2 {
         return new StructureTemplate.StructureBlockInfo(structureBlockInfoWorld.pos(), state, newNbt);
+        //?} else {
+        /*return new StructureTemplate.StructureBlockInfo(processedBlockInfo.pos(), state, newNbt);
+        *///?}
     }
 
     @Override
+    //? if <26.2 {
     protected StructureProcessorType<?> getType() {
         return MoogsStructuresProcessors.VAULT_RANDOMIZING_PROCESSOR.get();
+    //?} else {
+    /*public MapCodec<VaultRandomizingProcessor> codec() {
+        return MAP_CODEC;
+    *///?}
     }
 }

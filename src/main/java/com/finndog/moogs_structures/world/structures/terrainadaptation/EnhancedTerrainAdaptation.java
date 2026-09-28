@@ -2,7 +2,11 @@ package com.finndog.moogs_structures.world.structures.terrainadaptation;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+//? if <1.21.11 {
 import net.minecraft.Util;
+//?} else {
+/*import net.minecraft.util.Util;
+*///?}
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;

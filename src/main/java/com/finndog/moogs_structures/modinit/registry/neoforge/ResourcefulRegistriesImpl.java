@@ -1,8 +1,13 @@
 package com.finndog.moogs_structures.modinit.registry.neoforge;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
+//? if >=26.1.2 {
+/*import com.finndog.moogs_structures.modinit.registry.IResourcefulRegistriesProvider;
+*///?}
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
+//? if <26.1.2 {
 import com.finndog.moogs_structures.platform.IRegistryPlatform;
+//?}
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.neoforged.neoforge.registries.NewRegistryEvent;
@@ -13,7 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+//? if <26.1.2 {
 public class ResourcefulRegistriesImpl implements IRegistryPlatform {
+//?} else {
+/*public class ResourcefulRegistriesImpl implements IResourcefulRegistriesProvider {
+*///?}
 
     private static final List<CustomRegistryInfo<?, ?>> CUSTOM_REGISTRIES = new ArrayList<>();
 
@@ -24,7 +33,11 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
 
     @Override
     public <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification) {
+        //? if <26.1.2 {
         CustomRegistryInfo<T, T> info = new CustomRegistryInfo<>(new LateSupplier<>(), key, save, sync, allowModification);
+        //?} else {
+        /*CustomRegistryInfo<T, ?> info = new CustomRegistryInfo<>(new LateSupplier<>(), key, save, sync, allowModification);
+        *///?}
         CUSTOM_REGISTRIES.add(info);
         return Pair.of(info.lookup(), new NeoForgeResourcefulRegistry<>(key, modId));
     }

@@ -1,3 +1,4 @@
+//? if <26.1.2 {
 package com.finndog.moogs_structures.platform;
 
 import java.util.ServiceLoader;
@@ -12,3 +13,5 @@ public class Services {
                 .orElseThrow(() -> new NullPointerException("Failed to load service for " + clazz.getName()));
     }
 }
+
+//?}

@@ -1,10 +1,15 @@
 package com.finndog.moogs_structures.config;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
+//? if >=1.21.5 {
+/*import com.finndog.moogs_structures.utils.VersionResolver;
+*///?}
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+//? if <1.21.5 {
 import net.minecraft.SharedConstants;
+//?}
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -247,7 +252,13 @@ public final class StructureListManager {
     private static String mcVersion() {
         if (cachedMcVersion == null) {
             try {
+                // WorldVersion.getName() (1.21.5) was renamed to name() (1.21.9+); VersionResolver
+                // resolves the running version string reflectively so this compiles across the branch.
+                //? if <1.21.5 {
                 cachedMcVersion = SharedConstants.getCurrentVersion().getName();
+                //?} else {
+                /*cachedMcVersion = VersionResolver.getCurrentVersionString();
+                *///?}
             } catch (Throwable t) {
                 cachedMcVersion = "";
             }

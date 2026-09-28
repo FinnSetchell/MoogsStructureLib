@@ -1,3 +1,4 @@
+//? if <26.1.2 {
 package com.finndog.moogs_structures.platform;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
@@ -12,3 +13,5 @@ public interface IRegistryPlatform {
     <T> ResourcefulRegistry<T> create(Registry<T> registry, String id);
     <T, K extends Registry<T>> Pair<Supplier<CustomRegistryLookup<T>>, ResourcefulRegistry<T>> createCustomRegistryInternal(String modId, ResourceKey<K> key, boolean save, boolean sync, boolean allowModification);
 }
+
+//?}

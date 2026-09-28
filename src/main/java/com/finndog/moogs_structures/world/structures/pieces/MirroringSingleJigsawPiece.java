@@ -1,7 +1,7 @@
 package com.finndog.moogs_structures.world.structures.pieces;
 
 import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
-//? if >=1.21.2 {
+//? if >=1.21.2 <1.21.5 {
 /*import com.finndog.moogs_structures.mixins.structures.TemplateAccessor;
 *///?}
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
@@ -12,7 +12,11 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+//? if <1.21.11 {
 import net.minecraft.Util;
+//?} else {
+/*import net.minecraft.util.Util;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
@@ -22,6 +26,9 @@ import net.minecraft.world.level.WorldGenLevel;
 //? if <1.21.2 {
 import net.minecraft.world.level.block.Blocks;
 //?}
+//? if >=1.21.5 {
+/*import net.minecraft.world.level.block.Blocks;
+*///?}
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -85,20 +92,56 @@ public class MirroringSingleJigsawPiece extends SinglePoolElement implements Poo
     @Override
     //? if <1.21.2 {
     public List<StructureTemplate.StructureBlockInfo> getShuffledJigsawBlocks(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation, RandomSource random) {
-    //?} else {
+    //?}
+    //? if >=1.21.2 <1.21.5 {
     /*public List<StructureTemplate.JigsawBlockInfo> getShuffledJigsawBlocks(StructureTemplateManager templateManager, BlockPos blockPos, Rotation rotation, RandomSource random) {
+    *///?}
+    //? if >=1.21.5 {
+    /*public List<StructureTemplate.JigsawBlockInfo> getShuffledJigsawBlocks(
+            StructureTemplateManager templateManager,
+            BlockPos blockPos,
+            Rotation rotation,
+            RandomSource random
+    ) {
     *///?}
         StructureTemplate template = this.getTemplate(templateManager);
         //? if <1.21.2 {
         ObjectArrayList<StructureTemplate.StructureBlockInfo> list = template.filterBlocks(blockPos, (new StructurePlaceSettings()).setRotation(rotation).setMirror(mirror), Blocks.JIGSAW, true);
-        //?} else {
+        //?}
+        //? if >=1.21.2 <1.21.5 {
         /*ObjectArrayList<StructureTemplate.JigsawBlockInfo> list = getJigsaws(template, blockPos, (new StructurePlaceSettings()).setRotation(rotation).setMirror(mirror));
         *///?}
+
+        //? if <1.21.5 {
         Util.shuffle(list, random);
         return list;
+        //?} else {
+        /*ObjectArrayList<StructureTemplate.StructureBlockInfo> raw =
+                template.filterBlocks(
+                        blockPos,
+                        new StructurePlaceSettings().setRotation(rotation).setMirror(mirror),
+                        Blocks.JIGSAW,
+                        true
+                );
+
+        ObjectArrayList<StructureTemplate.JigsawBlockInfo> out = new ObjectArrayList<>(raw.size());
+        for (StructureTemplate.StructureBlockInfo info : raw) {
+        *///?}
+            //? if >=1.21.5 <26.3 {
+            /*out.add(StructureTemplate.JigsawBlockInfo.of(info));
+            *///?}
+            //? if >=26.3 {
+            /*out.add(StructureTemplate.JigsawBlockInfo.parse(info));
+            *///?}
+        //? if >=1.21.5 {
+        /*}
+
+        Util.shuffle(out, random);
+        return out;
+        *///?}
     }
 
-    //? if >=1.21.2 {
+    //? if >=1.21.2 <1.21.5 {
     /*private ObjectArrayList<StructureTemplate.JigsawBlockInfo> getJigsaws(StructureTemplate template, BlockPos blockPos, StructurePlaceSettings structurePlaceSettings) {
         if (((TemplateAccessor)template).moogs_structures_getPalettes().isEmpty()) {
             return new ObjectArrayList<>();

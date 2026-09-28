@@ -9,14 +9,29 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
+//? if >=1.21.11 {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.resources.ResourceKey;
+//? if <1.21.11 {
 import net.minecraft.resources.ResourceLocation;
+//?}
 import net.minecraft.server.level.ServerLevel;
+//? if <1.21.5 {
 import net.minecraft.util.random.WeightedRandomList;
+//?} else {
+/*import net.minecraft.util.random.Weighted;
+import net.minecraft.util.random.WeightedList;
+*///?}
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+//? if >=26.3 {
+/*import net.minecraft.world.level.Level;
+*///?}
 import net.minecraft.world.level.StructureManager;
+//? if <26.3 {
 import net.minecraft.world.level.biome.Biome;
+//?}
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -44,12 +59,28 @@ import java.util.function.Predicate;
 public class ChunkGeneratorMixin {
 
     @Inject(
+            //? if <1.21.5 {
             method = "getMobsAt(Lnet/minecraft/core/Holder;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/entity/MobCategory;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/util/random/WeightedRandomList;",
+            //?}
+            //? if >=1.21.5 <26.3 {
+            /*method = "getMobsAt(Lnet/minecraft/core/Holder;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/entity/MobCategory;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/util/random/WeightedList;",
+            *///?}
+            //? if >=26.3 {
+            /*method = "getMobsAt(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/entity/MobCategory;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/util/random/WeightedList;",
+            *///?}
             at = @At("HEAD"),
             cancellable = true
     )
+    //? if <26.3 {
     private void moogs_structures_inheritSpawnOverrides(Holder<Biome> biome, StructureManager structureManager, MobCategory mobCategory, BlockPos blockPos,
+    //?} else {
+    /*private void moogs_structures_inheritSpawnOverrides(Level level, StructureManager structureManager, MobCategory mobCategory, BlockPos blockPos,
+    *///?}
+                                                        //? if <1.21.5 {
                                                         CallbackInfoReturnable<WeightedRandomList<MobSpawnSettings.SpawnerData>> cir) {
+                                                        //?} else {
+                                                        /*CallbackInfoReturnable<WeightedList<MobSpawnSettings.SpawnerData>> cir) {
+                                                        *///?}
         if (!ReplacementAliases.hasAny()) return;
 
         Map<Structure, LongSet> structuresAt = structureManager.getAllStructuresAt(blockPos);
@@ -91,13 +122,27 @@ public class ChunkGeneratorMixin {
                 return;
             }
 
+            //? if <1.21.5 {
             List<MobSpawnSettings.SpawnerData> merged = new ArrayList<>(ownOverride.spawns().unwrap());
+            //?} else {
+            /*List<Weighted<MobSpawnSettings.SpawnerData>> merged = new ArrayList<>(ownOverride.spawns().unwrap());
+            *///?}
             Set<EntityType<?>> present = new HashSet<>();
+            //? if <1.21.5 {
             for (MobSpawnSettings.SpawnerData data : merged) present.add(data.type);
             for (MobSpawnSettings.SpawnerData data : vanillaOverride.spawns().unwrap()) {
                 if (present.add(data.type)) merged.add(data);
+            //?} else {
+            /*for (Weighted<MobSpawnSettings.SpawnerData> spawn : merged) present.add(spawn.value().type());
+            for (Weighted<MobSpawnSettings.SpawnerData> spawn : vanillaOverride.spawns().unwrap()) {
+                if (present.add(spawn.value().type())) merged.add(spawn);
+            *///?}
             }
+            //? if <1.21.5 {
             cir.setReturnValue(WeightedRandomList.create(merged));
+            //?} else {
+            /*cir.setReturnValue(WeightedList.of(merged));
+            *///?}
             return;
         }
     }
@@ -122,7 +167,11 @@ public class ChunkGeneratorMixin {
 
         for (Holder<Structure> holder : holderSet) {
             Holder<Structure> target = holder;
+            //? if <1.21.11 {
             ResourceLocation id = holder.unwrapKey().map(ResourceKey::location).orElse(null);
+            //?} else {
+            /*ResourceLocation id = holder.unwrapKey().map(ResourceKey::identifier).orElse(null);
+            *///?}
             if (id != null) {
                 ReplaceVanillaManager.Replacement replacement = aliases.forVanilla(id)
                         .filter(r -> r.options().redirectLocate())

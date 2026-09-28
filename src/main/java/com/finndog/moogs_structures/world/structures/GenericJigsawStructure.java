@@ -10,7 +10,11 @@ import com.google.common.collect.Maps;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+//? if <1.21.11 {
 import net.minecraft.Util;
+//?} else {
+/*import net.minecraft.util.Util;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
@@ -24,10 +28,16 @@ import net.minecraft.world.level.biome.CheckerboardColumnBiomeSource;
 //? if <1.21.4 {
 import net.minecraft.world.level.block.Blocks;
 //?}
+//? if >=1.21.5 <26.1.2 {
+/*import net.minecraft.world.level.block.Blocks;
+*///?}
 import net.minecraft.world.level.block.state.BlockState;
 //? if <1.21.4 {
 import net.minecraft.world.level.chunk.ChunkGenerator;
 //?}
+//? if >=1.21.5 <26.1.2 {
+/*import net.minecraft.world.level.chunk.ChunkGenerator;
+*///?}
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.LegacyRandomSource;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
@@ -147,15 +157,31 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             if (projectStartToHeightmap.isPresent()) {
                 //? if <1.21.4 {
                 sectionY += GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), blockPos.getX() + 7, blockPos.getZ() + 7, projectStartToHeightmap.get(), context.heightAccessor(), context.randomState()) - 1;
-                //?} else {
+                //?}
+                //? if >=1.21.4 <1.21.5 {
+                /*sectionY += context.chunkGenerator().getFirstOccupiedHeight(blockPos.getX(), blockPos.getZ(), projectStartToHeightmap.get(), context.heightAccessor(), context.randomState());
+                *///?}
+                //? if >=1.21.5 <26.1.2 {
+                /*sectionY += GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), blockPos.getX() + 7, blockPos.getZ() + 7, projectStartToHeightmap.get(), context.heightAccessor(), context.randomState()) - 1;
+                *///?}
+                //? if >=26.1.2 {
                 /*sectionY += context.chunkGenerator().getFirstOccupiedHeight(blockPos.getX(), blockPos.getZ(), projectStartToHeightmap.get(), context.heightAccessor(), context.randomState());
                 *///?}
             }
             sectionY = QuartPos.fromBlock(sectionY);
 
+            //? if <26.1.2 {
             for (int curChunkX = chunkPos.x - validBiomeRange; curChunkX <= chunkPos.x + validBiomeRange; curChunkX++) {
                 for (int curChunkZ = chunkPos.z - validBiomeRange; curChunkZ <= chunkPos.z + validBiomeRange; curChunkZ++) {
+            //?} else {
+            /*for (int curChunkX = chunkPos.x() - validBiomeRange; curChunkX <= chunkPos.x() + validBiomeRange; curChunkX++) {
+                for (int curChunkZ = chunkPos.z() - validBiomeRange; curChunkZ <= chunkPos.z() + validBiomeRange; curChunkZ++) {
+            *///?}
+                    //? if <26.3 {
                     Holder<Biome> biome = context.biomeSource().getNoiseBiome(QuartPos.fromSection(curChunkX), sectionY, QuartPos.fromSection(curChunkZ), context.randomState().sampler());
+                    //?} else {
+                    /*Holder<Biome> biome = context.biomeResolver().getNoiseBiome(QuartPos.fromSection(curChunkX), sectionY, QuartPos.fromSection(curChunkZ));
+                    *///?}
                     if (!context.validBiome().test(biome)) {
                         return false;
                     }
@@ -176,7 +202,25 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                     break;
                 }
             }
-            //?} else {
+            //?}
+            //? if >=1.21.4 <1.21.5 {
+            /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerOfChunk.getX(), centerOfChunk.getZ(), Heightmap.Types.WORLD_SURFACE_WG, context.heightAccessor(), context.randomState());
+            NoiseColumn columnOfBlocks = context.chunkGenerator().getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
+            BlockState topBlock = columnOfBlocks.getBlock(centerOfChunk.getY() + landHeight);
+            *///?}
+            //? if >=1.21.5 <26.1.2 {
+            /*ChunkGenerator chunkGenerator = context.chunkGenerator();
+            NoiseColumn columnOfBlocks = chunkGenerator.getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
+            BlockState topBlock = Blocks.AIR.defaultBlockState();
+            for (int i = chunkGenerator.getMinY() + chunkGenerator.getGenDepth(); i > chunkGenerator.getMinY(); i--) {
+                BlockState block = columnOfBlocks.getBlock(i);
+                if (!block.isAir()) {
+                    topBlock = block;
+                    break;
+                }
+            }
+            *///?}
+            //? if >=26.1.2 {
             /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerOfChunk.getX(), centerOfChunk.getZ(), Heightmap.Types.WORLD_SURFACE_WG, context.heightAccessor(), context.randomState());
             NoiseColumn columnOfBlocks = context.chunkGenerator().getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
             BlockState topBlock = columnOfBlocks.getBlock(centerOfChunk.getY() + landHeight);
@@ -194,13 +238,24 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             int minTerrainHeight = Integer.MAX_VALUE;
             int terrainCheckRange = this.terrainHeightCheckRadius.get();
 
+            //? if <26.1.2 {
             for (int curChunkX = chunkPos.x - terrainCheckRange; curChunkX <= chunkPos.x + terrainCheckRange; curChunkX++) {
                 for (int curChunkZ = chunkPos.z - terrainCheckRange; curChunkZ <= chunkPos.z + terrainCheckRange; curChunkZ++) {
+            //?}
                     //? if <1.21.4 {
                     int height = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), (curChunkX << 4) + 7, (curChunkZ << 4) + 7, this.projectStartToHeightmap.orElse(Heightmap.Types.WORLD_SURFACE_WG), context.heightAccessor(), context.randomState());
-                    //?} else {
+                    //?}
+                    //? if >=1.21.4 <1.21.5 {
                     /*int height = context.chunkGenerator().getBaseHeight((curChunkX << 4) + 7, (curChunkZ << 4) + 7, this.projectStartToHeightmap.orElse(Heightmap.Types.WORLD_SURFACE_WG), context.heightAccessor(), context.randomState());
                     *///?}
+                    //? if >=1.21.5 <26.1.2 {
+                    /*int height = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), (curChunkX << 4) + 7, (curChunkZ << 4) + 7, this.projectStartToHeightmap.orElse(Heightmap.Types.WORLD_SURFACE_WG), context.heightAccessor(), context.randomState());
+                    *///?}
+            //? if >=26.1.2 {
+            /*for (int curChunkX = chunkPos.x() - terrainCheckRange; curChunkX <= chunkPos.x() + terrainCheckRange; curChunkX++) {
+                for (int curChunkZ = chunkPos.z() - terrainCheckRange; curChunkZ <= chunkPos.z() + terrainCheckRange; curChunkZ++) {
+                    int height = context.chunkGenerator().getBaseHeight((curChunkX << 4) + 7, (curChunkZ << 4) + 7, this.projectStartToHeightmap.orElse(Heightmap.Types.WORLD_SURFACE_WG), context.heightAccessor(), context.randomState());
+            *///?}
                     maxTerrainHeight = Math.max(maxTerrainHeight, height);
                     minTerrainHeight = Math.min(minTerrainHeight, height);
 
@@ -285,7 +340,20 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             highestLandPos = Math.min(highestLandPos, GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), box.minX(), box.maxZ(), heightMapToUse, context.heightAccessor(), context.randomState()) - 1);
             highestLandPos = Math.min(highestLandPos, GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), box.maxX(), box.minZ(), heightMapToUse, context.heightAccessor(), context.randomState()) - 1);
             highestLandPos = Math.min(highestLandPos, GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), box.maxX(), box.maxZ(), heightMapToUse, context.heightAccessor(), context.randomState()) - 1);
-            //?} else {
+            //?}
+            //? if >=1.21.4 <1.21.5 {
+            /*int highestLandPos = context.chunkGenerator().getFirstOccupiedHeight(box.minX(), box.minZ(), heightMapToUse, context.heightAccessor(), context.randomState());
+            highestLandPos = Math.min(highestLandPos, context.chunkGenerator().getFirstOccupiedHeight(box.minX(), box.maxZ(), heightMapToUse, context.heightAccessor(), context.randomState()));
+            highestLandPos = Math.min(highestLandPos, context.chunkGenerator().getFirstOccupiedHeight(box.maxX(), box.minZ(), heightMapToUse, context.heightAccessor(), context.randomState()));
+            highestLandPos = Math.min(highestLandPos, context.chunkGenerator().getFirstOccupiedHeight(box.maxX(), box.maxZ(), heightMapToUse, context.heightAccessor(), context.randomState()));
+            *///?}
+            //? if >=1.21.5 <26.1.2 {
+            /*int highestLandPos = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), box.minX(), box.minZ(), heightMapToUse, context.heightAccessor(), context.randomState()) - 1;
+            highestLandPos = Math.min(highestLandPos, GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), box.minX(), box.maxZ(), heightMapToUse, context.heightAccessor(), context.randomState()) - 1);
+            highestLandPos = Math.min(highestLandPos, GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), box.maxX(), box.minZ(), heightMapToUse, context.heightAccessor(), context.randomState()) - 1);
+            highestLandPos = Math.min(highestLandPos, GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), box.maxX(), box.maxZ(), heightMapToUse, context.heightAccessor(), context.randomState()) - 1);
+            *///?}
+            //? if >=26.1.2 {
             /*int highestLandPos = context.chunkGenerator().getFirstOccupiedHeight(box.minX(), box.minZ(), heightMapToUse, context.heightAccessor(), context.randomState());
             highestLandPos = Math.min(highestLandPos, context.chunkGenerator().getFirstOccupiedHeight(box.minX(), box.maxZ(), heightMapToUse, context.heightAccessor(), context.randomState()));
             highestLandPos = Math.min(highestLandPos, context.chunkGenerator().getFirstOccupiedHeight(box.maxX(), box.minZ(), heightMapToUse, context.heightAccessor(), context.randomState()));
@@ -304,7 +372,11 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
         }
         else if(this.buryingType.get() == BURYING_TYPE.AVERAGE_LAND) {
             BoundingBox box = pieces.get(0).getBoundingBox();
+            //? if <26.3 {
             BlockPos centerPos = new BlockPos(box.getCenter());
+            //?} else {
+            /*BlockPos centerPos = box.getCenter();
+            *///?}
             int radius = (int) Math.sqrt((box.getLength().getX() * box.getLength().getX()) + (box.getLength().getZ() * box.getLength().getZ())) / 2;
 
             Heightmap.Types heightMapToUse = this.projectStartToHeightmap.orElse(Heightmap.Types.WORLD_SURFACE_WG);
@@ -313,7 +385,14 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                 for(int zOffset = -radius; zOffset <= radius; zOffset += (radius/2)) {
                     //? if <1.21.4 {
                     int landHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), centerPos.getX() + xOffset, centerPos.getZ() + zOffset, heightMapToUse, context.heightAccessor(), context.randomState()) - 1;
-                    //?} else {
+                    //?}
+                    //? if >=1.21.4 <1.21.5 {
+                    /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerPos.getX() + xOffset, centerPos.getZ() + zOffset, heightMapToUse, context.heightAccessor(), context.randomState());
+                    *///?}
+                    //? if >=1.21.5 <26.1.2 {
+                    /*int landHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), centerPos.getX() + xOffset, centerPos.getZ() + zOffset, heightMapToUse, context.heightAccessor(), context.randomState()) - 1;
+                    *///?}
+                    //? if >=26.1.2 {
                     /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerPos.getX() + xOffset, centerPos.getZ() + zOffset, heightMapToUse, context.heightAccessor(), context.randomState());
                     *///?}
                     landHeights.add(landHeight);
@@ -420,7 +499,11 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
         }
 
         WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
+        //? if <26.1.2 {
         random.setLargeFeatureSeed(context.seed(), context.chunkPos().x, context.chunkPos().z);
+        //?} else {
+        /*random.setLargeFeatureSeed(context.seed(), context.chunkPos().x(), context.chunkPos().z());
+        *///?}
         int heightDiff = highestLandPos - box.minY();
         for(StructurePiece structurePiece : pieces) {
             structurePiece.move(0, heightDiff + offsetY, 0);

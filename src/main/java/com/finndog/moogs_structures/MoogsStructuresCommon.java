@@ -8,7 +8,9 @@ import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.config.StructureListManager;
 import com.finndog.moogs_structures.config.StructureManifestReloadListener;
 import com.finndog.moogs_structures.misc.structurepiececounter.StructurePieceCountsManager;
+//? if <26.1.2 {
 import com.finndog.moogs_structures.misc.trialspawnerconfig.TrialSpawnerConfigManager;
+//?}
 import com.finndog.moogs_structures.modinit.MoogsStructuresPlacements;
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
@@ -75,7 +77,11 @@ public class MoogsStructuresCommon {
         /*var registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE_SET);
         *///?}
         for (Map.Entry<ResourceKey<StructureSet>, StructureSet> entry : registry.entrySet()) {
+            //? if <1.21.11 {
             ResourceLocation id = entry.getKey().location();
+            //?} else {
+            /*ResourceLocation id = entry.getKey().identifier();
+            *///?}
             StructurePlacement placement = entry.getValue().placement();
             if (placement instanceof AdvancedRandomSpread ars) {
                 ars.setOwningSetId(id);
@@ -90,7 +96,9 @@ public class MoogsStructuresCommon {
     }
 
     public static void registerDatapackListener(final RegisterReloadListenerEvent event) {
+        //? if <26.1.2 {
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "trial_spawner_config_manager"), TrialSpawnerConfigManager.INSTANCE);
+        //?}
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "structure_manifests"), new StructureManifestReloadListener());
         // Without this the msl_pieces_spawn_counts data is never loaded, so per-piece spawn counts are inert.
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "msl_pieces_spawn_counts"), StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER);

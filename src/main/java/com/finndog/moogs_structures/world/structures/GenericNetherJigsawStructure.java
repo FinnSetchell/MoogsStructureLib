@@ -8,7 +8,11 @@ import com.google.common.collect.Maps;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+//? if <1.21.11 {
 import net.minecraft.Util;
+//?} else {
+/*import net.minecraft.util.Util;
+*///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
@@ -100,7 +104,11 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
         }
         else {
             WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
+            //? if <26.1.2 {
             random.setLargeFeatureSeed(context.seed(), context.chunkPos().x, context.chunkPos().z);
+            //?} else {
+            /*random.setLargeFeatureSeed(context.seed(), context.chunkPos().x(), context.chunkPos().z());
+            *///?}
             BlockPos placementPos;
 
             if (this.searchDirection == LAND_SEARCH_DIRECTION.HIGHEST_LAND) {

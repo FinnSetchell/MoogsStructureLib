@@ -17,7 +17,11 @@ import org.jetbrains.annotations.Nullable;
  * spawns the results; on Forge and NeoForge, a {@code StructureEntityProcessorMixin} overrides the
  * loader's native {@code processEntity} and forwards to this method. Ported/adapted from YUNG's API.
  */
+//? if <26.2 {
 public abstract class StructureEntityProcessor extends StructureProcessor {
+//?} else {
+/*public abstract class StructureEntityProcessor implements StructureProcessor {
+*///?}
 
     /**
      * Applies a processor to an entity in a structure component or jigsaw piece.

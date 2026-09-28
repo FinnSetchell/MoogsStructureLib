@@ -6,6 +6,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
+//? if >=1.21.5 {
+/*import net.minecraft.util.ProblemReporter;
+*///?}
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -15,7 +18,14 @@ import net.minecraft.world.entity.MobSpawnType;
 //?} else {
 /*import net.minecraft.world.entity.EntitySpawnReason;
 *///?}
+//? if >=26.2 {
+/*import net.minecraft.world.entity.EntitySpawnRequest;
+*///?}
 import net.minecraft.world.level.ServerLevelAccessor;
+//? if >=1.21.10 {
+/*import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.ValueInput;
+*///?}
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -54,11 +64,23 @@ public class EntityProcessorMixin {
     @Unique
     private static final ThreadLocal<StructureProcessingContext> moogs_structures$context = new ThreadLocal<>();
 
+    //? if <1.21.5 {
     @Inject(
             method = "placeInWorld",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate;placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Z)V"))
+    //?}
+    //? if >=1.21.5 <1.21.11 {
+    /*@Inject(method = "placeInWorld", at = @At("HEAD"))
+    *///?}
+    //? if >=1.21.11 {
+    /*@Inject(
+            method = "placeInWorld",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate;placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;ZLnet/minecraft/util/ProblemReporter;)V"))
+    *///?}
     private void moogs_structures$captureContext(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, BlockPos structurePiecePivotPos,
                                                  StructurePlaceSettings structurePlaceSettings, RandomSource randomSource, int i, CallbackInfoReturnable<Boolean> cir) {
         moogs_structures$context.set(new StructureProcessingContext(
@@ -70,22 +92,70 @@ public class EntityProcessorMixin {
         ));
     }
 
+    //? if <1.21.5 {
     @Inject(
             method = "placeInWorld",
             at = @At(
                     value = "INVOKE",
                     shift = At.Shift.AFTER,
                     target = "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate;placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Z)V"))
+    //?}
+    //? if >=1.21.5 <1.21.11 {
+    /*@Inject(method = "placeInWorld", at = @At("RETURN"))
+    *///?}
+    //? if >=1.21.11 {
+    /*@Inject(
+            method = "placeInWorld",
+            at = @At(
+                    value = "INVOKE",
+                    shift = At.Shift.AFTER,
+                    target = "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate;placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;ZLnet/minecraft/util/ProblemReporter;)V"))
+    *///?}
     private void moogs_structures$clearContext(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, BlockPos structurePiecePivotPos,
                                                StructurePlaceSettings structurePlaceSettings, RandomSource randomSource, int i, CallbackInfoReturnable<Boolean> cir) {
         moogs_structures$context.remove();
     }
 
     @Inject(
+            //? if <1.21.5 {
             method = "placeEntities",
+            //?}
+            //? if >=1.21.5 <1.21.11 {
+            /*method = "placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Z)V",
+            *///?}
+            //? if >=1.21.11 {
+            /*method = "placeEntities",
+            *///?}
             at = @At(value = "HEAD"),
+            //? if <1.21.5 {
             cancellable = true)
     private void moogs_structures$processAndPlaceEntities(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, CallbackInfo ci) {
+            //?}
+            //? if >=1.21.5 <1.21.11 {
+            /*cancellable = true,
+            require = 0)
+    private void moogs_structures$processAndPlaceEntities_legacy(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, CallbackInfo ci) {
+        moogs_structures$processAndPlaceEntitiesImpl(serverLevelAccessor, ci);
+    }
+
+    // Handler for MC 1.21.9 - 1.21.10 (vanilla placeEntities has trailing ProblemReporter param).
+    // require = 0 so this silently skips on MC versions where the signature does not match.
+    @Inject(
+            method = "placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;ZLnet/minecraft/util/ProblemReporter;)V",
+            at = @At(value = "HEAD"),
+            cancellable = true,
+            require = 0)
+    private void moogs_structures$processAndPlaceEntities_modern(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, ProblemReporter problemReporter, CallbackInfo ci) {
+        moogs_structures$processAndPlaceEntitiesImpl(serverLevelAccessor, ci);
+    }
+
+    @Unique
+    private void moogs_structures$processAndPlaceEntitiesImpl(ServerLevelAccessor serverLevelAccessor, CallbackInfo ci) {
+            *///?}
+            //? if >=1.21.11 {
+            /*cancellable = true)
+    private void moogs_structures$processAndPlaceEntities(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, ProblemReporter problemReporter, CallbackInfo ci) {
+            *///?}
         StructureProcessingContext ctx = moogs_structures$context.get();
         if (ctx == null) {
             return;
@@ -112,7 +182,11 @@ public class EntityProcessorMixin {
                 moogs_structures$tryCreateEntity(serverLevelAccessor, entityNbt).ifPresent((entity) -> {
                     float f = entity.mirror(ctx.structurePlaceSettings().getMirror());
                     f += entity.getYRot() - entity.rotate(ctx.structurePlaceSettings().getRotation());
+                    //? if <1.21.5 {
                     entity.moveTo(entityPos.x, entityPos.y, entityPos.z, f, entity.getXRot());
+                    //?} else {
+                    /*entity.snapTo(entityPos.x, entityPos.y, entityPos.z, f, entity.getXRot());
+                    *///?}
                     if (ctx.structurePlaceSettings().shouldFinalizeEntities() && entity instanceof Mob) {
                         //? if <1.21.2 {
                         ((Mob) entity).finalizeSpawn(serverLevelAccessor, serverLevelAccessor.getCurrentDifficultyAt(BlockPos.containing(entityPos)), MobSpawnType.STRUCTURE, null);
@@ -174,8 +248,18 @@ public class EntityProcessorMixin {
         try {
             //? if <1.21.2 {
             return EntityType.create(compoundTag, serverLevelAccessor.getLevel());
-            //?} else {
+            //?}
+            //? if >=1.21.2 <1.21.10 {
             /*return EntityType.create(compoundTag, serverLevelAccessor.getLevel(), EntitySpawnReason.STRUCTURE);
+            *///?}
+            //? if >=1.21.10 {
+            /*ValueInput valueInput = TagValueInput.create(ProblemReporter.DISCARDING, serverLevelAccessor.registryAccess(), compoundTag);
+            *///?}
+            //? if >=1.21.10 <26.2 {
+            /*return EntityType.create(valueInput, serverLevelAccessor.getLevel(), EntitySpawnReason.STRUCTURE);
+            *///?}
+            //? if >=26.2 {
+            /*return EntityType.create(valueInput, serverLevelAccessor.getLevel(), new EntitySpawnRequest(EntitySpawnReason.STRUCTURE, false));
             *///?}
         } catch (Exception exception) {
             return Optional.empty();

@@ -2,13 +2,19 @@ package com.finndog.moogs_structures.world.structures.placements;
 
 import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
+//? if <26.3 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
+//?}
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
+//? if <26.3 {
 import net.minecraft.core.RegistryCodecs;
+//?} else {
+/*import net.minecraft.core.registries.codec.RegistryCodecs;
+*///?}
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.util.ExtraCodecs;
@@ -19,7 +25,9 @@ import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadType;
+//? if <26.3 {
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacementType;
+//?}
 
 import net.minecraft.resources.ResourceLocation;
 
@@ -221,12 +229,22 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         }
 
         ChunkPos chunkpos = this.getPotentialStructureChunk(chunkGeneratorStructureState.getLevelSeed(), x, z);
+        //? if <26.1.2 {
         return chunkpos.x == x && chunkpos.z == z;
+        //?} else {
+        /*return chunkpos.x() == x && chunkpos.z() == z;
+        *///?}
     }
 
     @Override
+    //? if <26.3 {
     public StructurePlacementType<?> type() {
         return MoogsStructuresStructurePlacementType.ADVANCED_RANDOM_SPREAD.get();
+    //?} else {
+    /*@SuppressWarnings({"unchecked", "rawtypes"})
+    public MapCodec<RandomSpreadStructurePlacement> codec() {
+        return (MapCodec) CODEC;
+    *///?}
     }
 
     public record ReplacementSpacing(String modid, String vanillaKey, int spacing, int separation) {
@@ -242,7 +260,11 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         private static final ThreadLocal<Set<ResourceLocation>> EVALUATING_SETS = ThreadLocal.withInitial(HashSet::new);
 
         public static final Codec<SuperExclusionZone> CODEC = RecordCodecBuilder.create(builder -> builder.group(
+                //? if <26.3 {
                 RegistryCodecs.homogeneousList(Registries.STRUCTURE_SET, StructureSet.DIRECT_CODEC).fieldOf("other_set").forGetter(SuperExclusionZone::otherSet),
+                //?} else {
+                /*RegistryCodecs.holderSet(Registries.STRUCTURE_SET, StructureSet.DIRECT_CODEC).fieldOf("other_set").forGetter(SuperExclusionZone::otherSet),
+                *///?}
                 Codec.intRange(1, Integer.MAX_VALUE).fieldOf("chunk_count").forGetter(SuperExclusionZone::chunkCount),
                 Codec.intRange(1, Integer.MAX_VALUE).optionalFieldOf("allowed_chunk_count").forGetter(SuperExclusionZone::allowedChunkCount)
         ).apply(builder, SuperExclusionZone::new));
@@ -251,7 +273,11 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             Set<ResourceLocation> evaluating = EVALUATING_SETS.get();
 
             for (Holder<StructureSet> holder : this.otherSet) {
+                //? if <1.21.11 {
                 ResourceLocation setId = holder.unwrapKey().map(key -> key.location()).orElse(null);
+                //?} else {
+                /*ResourceLocation setId = holder.unwrapKey().map(key -> key.identifier()).orElse(null);
+                *///?}
                 if (setId == null) continue;
                 if (evaluating.contains(setId)) continue;
                 evaluating.add(setId);
@@ -267,7 +293,11 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             if (this.allowedChunkCount.isPresent() && this.allowedChunkCount.get() > this.chunkCount) {
                 boolean isAnyInRange = false;
                 for (Holder<StructureSet> holder : this.otherSet) {
+                    //? if <1.21.11 {
                     ResourceLocation setId = holder.unwrapKey().map(key -> key.location()).orElse(null);
+                    //?} else {
+                    /*ResourceLocation setId = holder.unwrapKey().map(key -> key.identifier()).orElse(null);
+                    *///?}
                     if (setId == null) continue;
                     if (evaluating.contains(setId)) continue;
                     evaluating.add(setId);

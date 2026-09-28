@@ -7,15 +7,25 @@ import com.google.common.base.Stopwatch;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.datafixers.util.Pair;
+//? if <1.21.11 {
 import net.minecraft.Util;
+//?} else {
+/*import net.minecraft.util.Util;
+*///?}
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.ResourceOrTagKeyArgument;
 import net.minecraft.core.BlockPos;
+//? if >=26.2 {
+/*import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
+//? if <26.2 {
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+//?}
 import net.minecraft.server.commands.LocateCommand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -49,7 +59,11 @@ public class LocateCommandMixin {
                                                                 ResourceOrTagKeyArgument.Result<Structure> result,
                                                                 CallbackInfoReturnable<Integer> cir) {
         result.unwrap().ifLeft(key -> {
+            //? if <1.21.11 {
             ResourceLocation id = key.location();
+            //?} else {
+            /*ResourceLocation id = key.identifier();
+            *///?}
             if (MslConfig.get().isStructureDisabled(id)) {
                 source.sendSuccess(() -> Component.literal(
                         id + " is disabled in the Moogs Structures config (config/moogs_structures.json)."), false);

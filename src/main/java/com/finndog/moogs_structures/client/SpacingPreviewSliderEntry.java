@@ -2,7 +2,11 @@ package com.finndog.moogs_structures.client;
 
 import com.finndog.moogs_structures.config.MslConfig;
 import me.shedaniel.clothconfig2.gui.entries.IntegerSliderEntry;
+//? if <26.1.2 {
 import net.minecraft.client.gui.GuiGraphics;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
@@ -54,17 +58,33 @@ public class SpacingPreviewSliderEntry extends IntegerSliderEntry {
     }
 
     @Override
+    //? if <26.1.2 {
     public void render(GuiGraphics graphics, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float delta) {
+    //?} else {
+    /*public void extractRenderState(GuiGraphicsExtractor extractor, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float delta) {
+    *///?}
         int reserved = ConfigButtons.PREVIEW_WIDTH + ConfigButtons.DISABLE_WIDTH + GAP * 2;
+        //? if <26.1.2 {
         super.render(graphics, index, y, x, Math.max(0, entryWidth - reserved), entryHeight, mouseX, mouseY, hovered, delta);
+        //?} else {
+        /*super.extractRenderState(extractor, index, y, x, Math.max(0, entryWidth - reserved), entryHeight, mouseX, mouseY, hovered, delta);
+        *///?}
 
         int stripX = x + entryWidth - reserved + GAP;
         this.previewButton.setX(stripX);
         this.previewButton.setY(y);
+        //? if <26.1.2 {
         this.previewButton.render(graphics, mouseX, mouseY, delta);
+        //?} else {
+        /*this.previewButton.extractRenderState(extractor, mouseX, mouseY, delta);
+        *///?}
         this.disableButton.setX(stripX + ConfigButtons.PREVIEW_WIDTH + GAP);
         this.disableButton.setY(y);
+        //? if <26.1.2 {
         this.disableButton.render(graphics, mouseX, mouseY, delta);
+        //?} else {
+        /*this.disableButton.extractRenderState(extractor, mouseX, mouseY, delta);
+        *///?}
     }
 
     @Override

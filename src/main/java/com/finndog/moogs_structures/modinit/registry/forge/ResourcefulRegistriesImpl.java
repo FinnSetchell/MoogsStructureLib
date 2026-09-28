@@ -2,7 +2,11 @@ package com.finndog.moogs_structures.modinit.registry.forge;
 
 import com.finndog.moogs_structures.modinit.registry.CustomRegistryLookup;
 import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
+//? if <26.1.2 {
 import com.finndog.moogs_structures.platform.IRegistryPlatform;
+//?} else {
+/*import com.finndog.moogs_structures.modinit.registry.IResourcefulRegistriesProvider;
+*///?}
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraftforge.registries.NewRegistryEvent;
@@ -13,7 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+//? if <26.1.2 {
 public class ResourcefulRegistriesImpl implements IRegistryPlatform {
+//?} else {
+/*public class ResourcefulRegistriesImpl implements IResourcefulRegistriesProvider {
+*///?}
 
     private static final List<CustomRegistryInfo<?, ?>> CUSTOM_REGISTRIES = new ArrayList<>();
 
@@ -65,7 +73,11 @@ public class ResourcefulRegistriesImpl implements IRegistryPlatform {
 
         public RegistryBuilder<T> getBuilder() {
             RegistryBuilder<T> builder = new RegistryBuilder<T>()
+                    //? if <1.21.11 {
                     .setName(key.location());
+                    //?} else {
+                    /*.setName(key.identifier());
+                    *///?}
             if (!sync) builder.disableSync();
             return builder;
         }

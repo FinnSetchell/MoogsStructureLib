@@ -61,9 +61,14 @@ public class MoogsStructuresNeoforge {
         RegisterReloadListenerEvent.EVENT.invoke(new RegisterReloadListenerEvent((id, listener) -> event.addListener(listener)));
     //?} else {
     /*private static void onAddReloadListeners(AddServerReloadListenersEvent event) {
-        RegisterReloadListenerEvent.EVENT.invoke(
-                new RegisterReloadListenerEvent(event::addListener));
     *///?}
+        //? if >=1.21.4 <1.21.5 {
+        /*RegisterReloadListenerEvent.EVENT.invoke(
+                new RegisterReloadListenerEvent(event::addListener));
+        *///?}
+        //? if >=1.21.5 {
+        /*RegisterReloadListenerEvent.EVENT.invoke(new RegisterReloadListenerEvent(event::addListener));
+        *///?}
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

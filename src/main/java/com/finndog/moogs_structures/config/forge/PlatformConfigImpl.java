@@ -24,7 +24,11 @@ public class PlatformConfigImpl implements PlatformConfig {
     @Override
     public Map<String, String> getOptionalPackManifests() {
         Map<String, String> out = new LinkedHashMap<>();
+        //? if <26.1.2 {
         for (IModInfo mod : ModList.get().getMods()) {
+        //?} else {
+        /*for (IModInfo mod : ModList.getMods()) {
+        *///?}
             String modid = mod.getModId();
             Path path = mod.getOwningFile().getFile().findResource("data", modid, "moogs_structures", "replace_vanilla.json");
             if (path == null || !Files.exists(path)) continue;
@@ -40,7 +44,11 @@ public class PlatformConfigImpl implements PlatformConfig {
     @Override
     public Map<String, String> getStructureSetJsons(String modid) {
         Map<String, String> out = new LinkedHashMap<>();
+        //? if <26.1.2 {
         for (IModInfo mod : ModList.get().getMods()) {
+        //?} else {
+        /*for (IModInfo mod : ModList.getMods()) {
+        *///?}
             if (!mod.getModId().equals(modid)) continue;
             Path dir = mod.getOwningFile().getFile().findResource("data", modid, "worldgen", "structure_set");
             if (dir == null || !Files.exists(dir)) return out;
@@ -65,7 +73,11 @@ public class PlatformConfigImpl implements PlatformConfig {
     @Override
     public List<String> getAllModIds() {
         List<String> out = new ArrayList<>();
+        //? if <26.1.2 {
         for (IModInfo mod : ModList.get().getMods()) {
+        //?} else {
+        /*for (IModInfo mod : ModList.getMods()) {
+        *///?}
             out.add(mod.getModId());
         }
         return out;
@@ -73,7 +85,11 @@ public class PlatformConfigImpl implements PlatformConfig {
 
     @Override
     public String getModName(String modid) {
+        //? if <26.1.2 {
         return ModList.get().getModContainerById(modid)
+        //?} else {
+        /*return ModList.getModContainerById(modid)
+        *///?}
                 .map(c -> c.getModInfo().getDisplayName())
                 .orElse(null);
     }

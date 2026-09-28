@@ -18,7 +18,32 @@ import java.util.StringJoiner;
  */
 public final class VersionResolver {
 
+    //? if <1.21.5 {
     private static final String CURRENT_VERSION_STRING = SharedConstants.VERSION_STRING;
+    //?}
+    //? if >=1.21.5 <1.21.11 {
+    /*private static final String CURRENT_VERSION_STRING = detectVersionString();
+
+    // WorldVersion.getName() was renamed to name() in MC 1.21.9+ (Mojang names).
+    // Under Fabric intermediary, neither Mojang name exists at runtime:
+    //   method_48019 = getName in MC 1.21.5 intermediary (WorldVersion interface method)
+    //   comp_4025    = name   in MC 1.21.8+ intermediary (WorldVersion$Simple record component)
+    private static String detectVersionString() {
+        Object ver = SharedConstants.getCurrentVersion();
+        for (String candidate : new String[]{"getName", "name", "method_48019", "comp_4025"}) {
+            try {
+                return (String) ver.getClass().getMethod(candidate).invoke(ver);
+            } catch (NoSuchMethodException ignored) {
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException("MSL: cannot determine Minecraft version", e);
+            }
+        }
+        throw new RuntimeException("MSL: cannot determine Minecraft version");
+    }
+    *///?}
+    //? if >=1.21.11 {
+    /*private static final String CURRENT_VERSION_STRING = SharedConstants.getCurrentVersion().id();
+    *///?}
     private static final VersionNumber CURRENT_VERSION = VersionNumber.parseInternal(CURRENT_VERSION_STRING);
 
     private VersionResolver() {

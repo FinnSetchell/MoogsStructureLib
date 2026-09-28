@@ -13,6 +13,10 @@ public class PlatformHooksImpl {
 
     @Contract(pure = true)
     public static boolean isDevEnvironment() {
+        //? if <1.21.10 {
         return !FMLEnvironment.production;
+        //?} else {
+        /*return !FMLEnvironment.isProduction();
+        *///?}
     }
 }

@@ -3,7 +3,11 @@ package com.finndog.moogs_structures.client;
 import com.finndog.moogs_structures.config.MslConfig;
 import me.shedaniel.clothconfig2.gui.entries.TooltipListEntry;
 import net.minecraft.client.Minecraft;
+//? if <26.1.2 {
 import net.minecraft.client.gui.GuiGraphics;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
@@ -49,22 +53,39 @@ public class StructureActionsEntry extends TooltipListEntry<Object> {
     }
 
     @Override
+    //? if <26.1.2 {
     public void render(GuiGraphics graphics, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float delta) {
         super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, hovered, delta);
+    //?} else {
+    /*public void extractRenderState(GuiGraphicsExtractor extractor, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float delta) {
+        super.extractRenderState(extractor, index, y, x, entryWidth, entryHeight, mouseX, mouseY, hovered, delta);
+    *///?}
         Minecraft mc = Minecraft.getInstance();
+        //? if <26.1.2 {
         graphics.drawString(mc.font, getFieldName(), x, y + entryHeight / 2 - mc.font.lineHeight / 2, getPreferredTextColor());
+        //?} else {
+        /*extractor.text(mc.font, getFieldName(), x, y + entryHeight / 2 - mc.font.lineHeight / 2, getPreferredTextColor());
+        *///?}
 
         int reserved = ConfigButtons.DISABLE_WIDTH + (previewButton != null ? ConfigButtons.PREVIEW_WIDTH + GAP : 0);
         int stripX = x + entryWidth - reserved;
         if (previewButton != null) {
             previewButton.setX(stripX);
             previewButton.setY(y);
+            //? if <26.1.2 {
             previewButton.render(graphics, mouseX, mouseY, delta);
+            //?} else {
+            /*previewButton.extractRenderState(extractor, mouseX, mouseY, delta);
+            *///?}
             stripX += ConfigButtons.PREVIEW_WIDTH + GAP;
         }
         disableButton.setX(stripX);
         disableButton.setY(y);
+        //? if <26.1.2 {
         disableButton.render(graphics, mouseX, mouseY, delta);
+        //?} else {
+        /*disableButton.extractRenderState(extractor, mouseX, mouseY, delta);
+        *///?}
     }
 
     @Override

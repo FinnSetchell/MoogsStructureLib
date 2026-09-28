@@ -103,8 +103,12 @@ public final class MixinUtils {
         for (long reference : references) {
             //? if <1.21.2 {
             SectionPos structureStartSectionPos = SectionPos.of(new ChunkPos(reference), worldGenRegion.getMinSection());
-            //?} else {
+            //?}
+            //? if >=1.21.2 <26.1.2 {
             /*SectionPos structureStartSectionPos = SectionPos.of(new ChunkPos(reference), worldGenRegion.getMinSectionY());
+            *///?}
+            //? if >=26.1.2 {
+            /*SectionPos structureStartSectionPos = SectionPos.of(new ChunkPos(ChunkPos.getX(reference), ChunkPos.getZ(reference)), worldGenRegion.getMinSectionY());
             *///?}
             if (!worldGenRegion.hasChunk(structureStartSectionPos.x(), structureStartSectionPos.z())) {
                 continue;
@@ -112,7 +116,11 @@ public final class MixinUtils {
 
             ChunkAccess structureStartChunkAccess = worldGenRegion.getChunk(structureStartSectionPos.x(), structureStartSectionPos.z(), ChunkStatus.STRUCTURE_STARTS);
 
+            //? if <26.3 {
             StructureStart structureStart = structureManager.getStartForStructure(structureStartSectionPos, structure, structureStartChunkAccess);
+            //?} else {
+            /*StructureStart structureStart = structureManager.getStartForStructure(structure, structureStartChunkAccess);
+            *///?}
             if (structureStart != null && structureStart.isValid() && filter.test(structureStart)) {
                 return true;
             }

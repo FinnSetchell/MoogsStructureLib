@@ -2,6 +2,7 @@ plugins {
     id("net.minecraftforge.gradle") version "[7.0.29,8.0)"
     id("net.minecraftforge.jarjar") version "0.2.3"
     id("minecraft-mutex")
+    id("mixin-config-filter")
 }
 
 fun prop(key: String): String = sc.properties.get<String>(key)
@@ -13,11 +14,15 @@ val requiredJava: JavaVersion = JavaVersion.toVersion(prop("mod.java"))
 // The Minecraft version this node compiles against. Usually the node version, but a range can build
 // one loader against a different patch release (Forge 1.21.3 for the 1.21.2-1.21.3 range).
 val mcBuild: String = prop("mod.mc_build")
+// Which access widener / transformer this node uses; the classes they open moved between versions.
+val awFile = rootProject.file("src/main/access/${prop("mod.access")}.accesswidener")
+val atFile = rootProject.file("src/main/access/${prop("mod.access")}.cfg")
 val mixinConfigs = "$modId-common.mixins.json,$modId-forge.mixins.json"
 // Dev-only gametests are compiled into main (Forge only scans main) but never shipped.
 val gametestFiles = listOf(
     "com/finndog/moogs_structures/gametest/**",
     "data/minecraft/structure/moogs_structures.armor_stand_processor_test_empty.nbt",
+    "data/moogs_structures/structure/armor_stand_processor_test_empty.nbt",
 )
 
 version = property("mod_version").toString()
@@ -30,7 +35,7 @@ sourceSets.main {
 
 minecraft {
     mappings("official", mcBuild)
-    accessTransformers.from(rootProject.file("src/main/resources/META-INF/accesstransformer.cfg"))
+    accessTransformers.from(atFile)
 
     runs {
         // Per-node game directory, so worlds are never opened by a different Minecraft version.
@@ -65,7 +70,7 @@ dependencies {
     "jarJar"("io.github.llamalad7:mixinextras-forge:${prop("deps.mixinextras")}")
 
     // In-game config screen: compiled against, never bundled or required at runtime.
-    compileOnly("me.shedaniel.cloth:cloth-config-forge:${prop("deps.cloth_config")}") { isTransitive = false }
+    compileOnly("me.shedaniel.cloth:cloth-config-${prop("deps.cloth_config_loader")}:${prop("deps.cloth_config")}") { isTransitive = false }
 }
 
 java {
@@ -91,7 +96,9 @@ tasks {
             "java_version" to minOf(requiredJava.majorVersion.toInt(), 21).toString(),
         )
         props.forEach { (k, v) -> inputs.property(k, v) }
-        filesMatching(listOf("META-INF/mods.toml", "*.mixins.json")) { expand(props) }
+        filesMatching(listOf("META-INF/mods.toml", "*.mixins.json", "pack.mcmeta")) { expand(props) }
+        from(awFile) { rename { "$modId.accesswidener" } }
+        from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
     }
 
     jar {
@@ -121,6 +128,10 @@ tasks {
 
     // Forge's Minecraft setup must not run before Stonecutter has written the processed sources.
     withType<JavaCompile>().configureEach { dependsOn("stonecutterGenerate") }
+
+    // Shared classes a Forge node leaves out, e.g. config-screen widgets on a range where Forge's
+    // config is file-only and the GUI API differs from the version the shared code targets.
+    compileJava { exclude(prop("mod.forge_compile_excludes").split(',').filter { it.isNotBlank() }) }
 
     register<Copy>("buildAndCollect") {
         group = "build"

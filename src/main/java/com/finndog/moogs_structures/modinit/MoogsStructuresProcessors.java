@@ -15,13 +15,25 @@ import com.finndog.moogs_structures.world.processors.SuperGravityProcessor;
 import com.finndog.moogs_structures.world.processors.TrialSpawnerRandomizingProcessor;
 import com.finndog.moogs_structures.world.processors.VanillaLootSwapProcessor;
 import com.finndog.moogs_structures.world.processors.VaultRandomizingProcessor;
+//? if >=26.2 {
+/*import com.mojang.serialization.MapCodec;
+*///?}
 import net.minecraft.core.registries.BuiltInRegistries;
+//? if <26.2 {
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
+//?} else {
+/*import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
+*///?}
 import com.finndog.moogs_structures.world.processors.HangingEntityAnchorProcessor;
 
 public final class MoogsStructuresProcessors {
+    //? if <26.2 {
     public static final ResourcefulRegistry<StructureProcessorType<?>> STRUCTURE_PROCESSOR = ResourcefulRegistries.create(BuiltInRegistries.STRUCTURE_PROCESSOR, MoogsStructuresCommon.MODID);
+    //?} else {
+    /*public static final ResourcefulRegistry<MapCodec<? extends StructureProcessor>> STRUCTURE_PROCESSOR = ResourcefulRegistries.create(BuiltInRegistries.STRUCTURE_PROCESSOR, MoogsStructuresCommon.MODID);
+    *///?}
 
+    //? if <26.2 {
     public static final RegistryEntry<StructureProcessorType<PillarProcessor>> PILLAR_PROCESSOR = STRUCTURE_PROCESSOR.register("pillar_processor", () -> () -> PillarProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<CloseOffFluidSourcesProcessor>> CLOSE_OFF_FLUID_SOURCES_PROCESSOR = STRUCTURE_PROCESSOR.register("close_off_fluid_sources_processor", () -> () -> CloseOffFluidSourcesProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<RemoveFloatingBlocksProcessor>> REMOVE_FLOATING_BLOCKS_PROCESSOR = STRUCTURE_PROCESSOR.register("remove_floating_blocks_processor", () -> () -> RemoveFloatingBlocksProcessor.CODEC);
@@ -34,4 +46,18 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<StructureProcessorType<TrialSpawnerRandomizingProcessor>> TRIAL_SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("trial_spawner_randomizing_processor", () -> () -> TrialSpawnerRandomizingProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<VaultRandomizingProcessor>> VAULT_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("vault_randomizing_processor", () -> () -> VaultRandomizingProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<VanillaLootSwapProcessor>> VANILLA_LOOT_SWAP_PROCESSOR = STRUCTURE_PROCESSOR.register("vanilla_loot_swap_processor", () -> () -> VanillaLootSwapProcessor.CODEC);
+    //?} else {
+    /*public static final RegistryEntry<MapCodec<PillarProcessor>> PILLAR_PROCESSOR = STRUCTURE_PROCESSOR.register("pillar_processor", () -> PillarProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<CloseOffFluidSourcesProcessor>> CLOSE_OFF_FLUID_SOURCES_PROCESSOR = STRUCTURE_PROCESSOR.register("close_off_fluid_sources_processor", () -> CloseOffFluidSourcesProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<RemoveFloatingBlocksProcessor>> REMOVE_FLOATING_BLOCKS_PROCESSOR = STRUCTURE_PROCESSOR.register("remove_floating_blocks_processor", () -> RemoveFloatingBlocksProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<RandomReplaceWithPropertiesProcessor>> RANDOM_REPLACE_WITH_PROPERTIES_PROCESSOR = STRUCTURE_PROCESSOR.register("random_replace_with_properties_processor", () -> RandomReplaceWithPropertiesProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<SuperGravityProcessor>> SUPER_GRAVITY_PROCESSOR = STRUCTURE_PROCESSOR.register("super_gravity_processor", () -> SuperGravityProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<FloodWithWaterProcessor>> FLOOD_WITH_WATER_PROCESSOR = STRUCTURE_PROCESSOR.register("flood_with_water_processor", () -> FloodWithWaterProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<SpawnerRandomizingProcessor>> SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("spawner_randomizing_processor", () -> SpawnerRandomizingProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> EquipArmorStandProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<HangingEntityAnchorProcessor>> HANGING_ENTITY_ANCHOR_PROCESSOR = STRUCTURE_PROCESSOR.register("hanging_entity_anchor_processor", () -> HangingEntityAnchorProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<TrialSpawnerRandomizingProcessor>> TRIAL_SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("trial_spawner_randomizing_processor", () -> TrialSpawnerRandomizingProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<VaultRandomizingProcessor>> VAULT_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("vault_randomizing_processor", () -> VaultRandomizingProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<VanillaLootSwapProcessor>> VANILLA_LOOT_SWAP_PROCESSOR = STRUCTURE_PROCESSOR.register("vanilla_loot_swap_processor", () -> VanillaLootSwapProcessor.MAP_CODEC);
+    *///?}
 }

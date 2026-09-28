@@ -1,3 +1,4 @@
+//? if <1.21.5 {
 package com.finndog.moogs_structures.forge.client;
 
 import com.finndog.moogs_structures.client.ClothRequiredScreen;
@@ -30,3 +31,5 @@ public final class MoogsStructuresForgeClient {
                                 : new ClothRequiredScreen(parent)));
     }
 }
+
+//?}

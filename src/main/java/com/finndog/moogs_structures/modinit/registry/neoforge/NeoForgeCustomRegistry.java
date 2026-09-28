@@ -27,8 +27,12 @@ public class NeoForgeCustomRegistry<T, K extends T> implements CustomRegistryLoo
     public @Nullable T get(ResourceLocation id) {
         //? if <1.21.2 {
         return registry.get(id);
-        //?} else {
+        //?}
+        //? if >=1.21.2 <1.21.5 {
         /*return registry.getValue(id);
+        *///?}
+        //? if >=1.21.5 {
+        /*return registry.get(id).map(net.minecraft.core.Holder.Reference::value).orElse(null);
         *///?}
     }
 

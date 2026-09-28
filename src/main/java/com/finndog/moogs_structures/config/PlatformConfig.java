@@ -1,10 +1,15 @@
 package com.finndog.moogs_structures.config;
 
+//? if <26.1.2 {
 import com.finndog.moogs_structures.platform.Services;
+//?}
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+//? if >=26.1.2 {
+/*import java.util.ServiceLoader;
+*///?}
 
 /**
  * Loader-abstraction SPI for reading loader metadata and bundled data files. Each loader ships a
@@ -13,7 +18,13 @@ import java.util.Map;
  */
 public interface PlatformConfig {
 
+    //? if <26.1.2 {
     PlatformConfig INSTANCE = Services.load(PlatformConfig.class);
+    //?} else {
+    /*PlatformConfig INSTANCE = ServiceLoader.load(PlatformConfig.class)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Failed to load service for " + PlatformConfig.class.getName()));
+    *///?}
 
     Path getConfigDir();
 

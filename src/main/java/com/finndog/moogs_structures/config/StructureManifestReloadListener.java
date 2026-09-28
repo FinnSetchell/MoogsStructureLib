@@ -2,20 +2,28 @@ package com.finndog.moogs_structures.config;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
 import net.minecraft.resources.ResourceLocation;
+//? if <1.21.5 {
 import net.minecraft.server.packs.resources.PreparableReloadListener;
+//?}
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 //? if <1.21.2 {
 import net.minecraft.util.profiling.ProfilerFiller;
 //?}
+//? if >=1.21.5 {
+/*import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
+*///?}
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+//? if <1.21.5 {
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+//?}
 
 /**
  * On server-data reload (world load or /reload) re-scans every data pack - mod jars AND datapacks -
@@ -23,18 +31,40 @@ import java.util.concurrent.Executor;
  * structure list. This lets datapacks declare structures for the Disable / spacing / preview screen,
  * not just bundled mods. The mod-init scan remains the pre-world baseline.
  */
+//? if <1.21.5 {
 public class StructureManifestReloadListener implements PreparableReloadListener {
+//?} else {
+/*public class StructureManifestReloadListener extends SimplePreparableReloadListener<StructureManifestReloadListener.Prepared> {
+*///?}
     private static final String DIR = "moogs_structures";
     private static final String FILE = "replace_vanilla.json";
     private static final String SET_DIR = "worldgen/structure_set";
 
+    //? if <1.21.5 {
     private record Prepared(Map<String, String> manifests, Map<String, Map<String, String>> setJsons) {}
+    //?} else {
+    /*protected record Prepared(Map<String, String> manifests, Map<String, Map<String, String>> setJsons) {}
+
+    // SimplePreparableReloadListener handles reload() internally and exposes the version-stable
+    // prepare()/apply() hooks. This avoids the PreparableReloadListener.reload() signature, which
+    // changed across this branch (1.21.5: (PreparationBarrier, ResourceManager, Executor, Executor);
+    // 1.21.10: (SharedState, Executor, PreparationBarrier, Executor)).
+    @Override
+    protected Prepared prepare(ResourceManager manager, ProfilerFiller profiler) {
+        Map<String, String> manifests = readManifests(manager);
+        Map<String, Map<String, String>> setJsons = readStructureSets(manager);
+        return new Prepared(manifests, setJsons);
+    }
+    *///?}
 
     @Override
+    //? if <1.21.5 {
     public CompletableFuture<Void> reload(PreparationBarrier barrier, ResourceManager manager,
+    //?}
                                           //? if <1.21.2 {
                                           ProfilerFiller prepProfiler, ProfilerFiller applyProfiler,
                                           //?}
+                                          //? if <1.21.5 {
                                           Executor prepExecutor, Executor applyExecutor) {
         return CompletableFuture.supplyAsync(() -> {
                     Map<String, String> manifests = readManifests(manager);
@@ -48,6 +78,13 @@ public class StructureManifestReloadListener implements PreparableReloadListener
                     // changes to newly generated chunks without a full world reload.
                     ReplaceVanillaManager.reloadConfig();
                 }, applyExecutor);
+                                          //?} else {
+    /*protected void apply(Prepared prepared, ResourceManager manager, ProfilerFiller profiler) {
+        StructureListManager.reload(prepared.manifests(), prepared.setJsons());
+        // Re-read config on datapack reload so /reload applies preset/disable/spacing
+        // changes to newly generated chunks without a full world reload.
+        ReplaceVanillaManager.reloadConfig();
+                                          *///?}
     }
 
     private static Map<String, String> readManifests(ResourceManager manager) {
