@@ -1,4 +1,4 @@
-# v2 publish manifest - FinnSetchell/MoogsStructureLib, Stonecutter shape (draft until cutover).
+# v2 publish manifest - FinnSetchell/MoogsStructureLib, Stonecutter shape.
 # Lives only on the default branch. Schema per release-actions docs/v2-contracts.md.
 schema: 1
 mod:
@@ -27,7 +27,7 @@ artifacts:
 # builds[].java is the JDK that RUNS Gradle. The whole tree configures in one JVM and needs 25;
 # each node compiles on its own toolchain (17 / 21 / 25), provisioned by the foojay resolver.
 targets:
-  - branch: stonecutter
+  - branch: main
     tagLabel: fabric
     loaders: [fabric]
     buildCommand: ":{mc}-fabric:build"
@@ -44,7 +44,7 @@ targets:
       - { mc: "26.1.2", from: "26.1", java: 25 }
       - { mc: "26.2", java: 25 }
       - { mc: "26.3", java: 25 }
-  - branch: stonecutter
+  - branch: main
     tagLabel: forge
     loaders: [forge]
     buildCommand: ":{mc}-forge:build"
@@ -60,7 +60,7 @@ targets:
       - { mc: "26.1.2", from: "26.1.1", java: 25 }
       - { mc: "26.2", java: 25 }
       - { mc: "26.3", java: 25 }
-  - branch: stonecutter
+  - branch: main
     tagLabel: neoforge
     loaders: [neoforge]
     buildCommand: ":{mc}-neoforge:build"
