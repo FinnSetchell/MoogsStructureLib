@@ -1,17 +1,15 @@
-# v2 publish manifest - FinnSetchell/MoogsStructureLib, Stonecutter shape.
-# Lives only on the default branch. Schema per release-actions docs/v2-contracts.md.
+# Publishing settings for release-actions. Only the copy on main is read.
 schema: 1
 mod:
   id: msl
   displayName: "Moog's Structure Lib"
-  environments: [Server]   # verified against live CF files 2026-07-26
+  environments: [Server]
   name: MoogsStructureLib
   validate: false
 platforms:
-  curseforge: { projectId: 1337167, slug: moogs-structure-lib }   # slug from gradle.properties; CF /mods API 403 — verified via files endpoint only
-  modrinth:   { projectId: 1oUDhxuy, slug: moogs-structure-lib }  # live-verified 2026-07-25
+  curseforge: { projectId: 1337167, slug: moogs-structure-lib }
+  modrinth:   { projectId: 1oUDhxuy, slug: moogs-structure-lib }
 discord:
-  # Older branches (1.20-1.20.4 .. 1.21.5-1.21.10) still carry #3c3040; newest branches use #39313f.
   embedColor: "#39313f"
   avatarUrl: "https://media.forgecdn.net/avatars/thumbnails/1441/422/256/256/638934552218182240.webp"
   bannerUrl: "https://www.bisecthosting.com/images/CF/Moogs_Structure_Lib/MP_MoogsStructureLib_header.webp"
@@ -19,13 +17,12 @@ discord:
   pingDefault: true
 artifacts:
   - type: mod-jar
-# One Stonecutter branch builds every MC version for every loader, one node per range
-# (settings.gradle.kts). Each loader is its own target, addressed by its tag label:
-# `3.5.0-fabric`, `3.5.0-forge`, `3.5.0-neoforge`. A build's window is [from, upTo] around the
-# node it builds, matching the range its old release branch published for.
+# Each loader has its own target and its own release tag: 3.5.0-fabric, 3.5.0-forge and
+# 3.5.0-neoforge. Each build is one node from settings.gradle.kts. When a jar covers more than
+# one Minecraft version, `from` and `upTo` set the range it is published for.
 #
-# builds[].java is the JDK that RUNS Gradle. The whole tree configures in one JVM and needs 25;
-# each node compiles on its own toolchain (17 / 21 / 25), provisioned by the foojay resolver.
+# `java` is the Java that runs Gradle. It is 25 for everything; the Java 17 and 21 toolchains the
+# older nodes compile with are downloaded automatically.
 targets:
   - branch: main
     tagLabel: fabric
@@ -49,7 +46,7 @@ targets:
     loaders: [forge]
     buildCommand: ":{mc}-forge:build"
     jarDir: "versions/{mc}-forge/build/libs"
-    # No 1.20.5-1.20.6 Forge (NeoForge only), and 1.21.5-1.21.8 is left out until Trello card 537.
+    # No Forge for 1.20.5-1.20.6, or for 1.21.5-1.21.8 yet.
     builds:
       - { mc: "1.20", upTo: "1.20.4", java: 25 }
       - { mc: "1.21.1", from: "1.21", java: 25 }

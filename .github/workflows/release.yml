@@ -1,13 +1,6 @@
-# .github/workflows/release.yml (per publish branch)
-#
-# Checkout-composite caller shape (docs/v2-contracts.md, "Caller workflow
-# shape"). release-actions is PRIVATE and GitHub does not allow a public repo
-# to call a reusable workflow hosted in a private repo, so this caller
-# checks release-actions out with RELEASE_ACTIONS_TOKEN and runs its logic as
-# a LOCAL composite action instead of `uses: FinnSetchell/release-actions/...`.
-#
-# The trigger, tag globs, and concurrency group are UNCHANGED from the
-# reusable-workflow era — only the calling mechanism moved.
+# Runs when a release tag is pushed, for example 3.5.0-fabric. It builds the jars and posts a
+# review card in Discord. The publishing code lives in the private release-actions repo, so this
+# checks it out with RELEASE_ACTIONS_TOKEN and runs it from there.
 
 name: Release
 

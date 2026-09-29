@@ -1,14 +1,6 @@
-# .github/workflows/publish.yml (per publish branch)
-#
-# Checkout-composite caller shape (docs/v2-contracts.md, "Caller workflow
-# shape"). The workflow_dispatch input set is a Discord-bot CONTRACT — the
-# bot dispatches this workflow by filename with exactly these inputs — and
-# must not change as part of this migration.
-#
-# Two jobs, mirroring the old publish-v2.yml job graph 1:1: `publish` (the
-# reconcile + GitHub release) and `verify` (needs: publish, runs even if
-# publish failed, never if the run was cancelled). Each job does its own
-# checkout of release-actions since jobs do not share a workspace.
+# Started by the Discord bot when a release is approved. It uploads the jars, makes the GitHub
+# release, then checks the uploads went live. The bot calls this file by name with exactly these
+# inputs, so don't rename it or change them.
 
 name: Publish
 
