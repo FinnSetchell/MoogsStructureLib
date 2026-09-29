@@ -8,11 +8,24 @@
 
 ![Overview](https://i.moogsmods.com/images/27c33c2b91f34acdba695fb2001b0169.webp)
 
-This Mod works for Forge, Fabric and NeoForge! It can also be installed server-side only. Forge support was dropped after 1.20.4
+This Mod works for Forge, Fabric and NeoForge! It can also be installed server-side only. It supports Minecraft 1.20 through 26.3.
 
 ### ABOUT
 
 Moog's Structure Lib is a powerful library mod that provides flexible, data-driven structure generation systems for other mods to build upon.
+
+### MODS THAT USE MSL
+
+<a href="https://modrinth.com/mod/mes-moogs-end-structures"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mes.png" alt="Moog's End Structures" title="Moog's End Structures" width="80"></a>
+<a href="https://modrinth.com/mod/moogs-voyager-structures"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mvs.png" alt="Moog's Voyager Structures" title="Moog's Voyager Structures" width="80"></a>
+<a href="https://modrinth.com/mod/mns-moogs-nether-structures"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mns.png" alt="Moog's Nether Structures" title="Moog's Nether Structures" width="80"></a>
+<a href="https://modrinth.com/mod/mss-moogs-soaring-structures"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mss.png" alt="Moog's Soaring Structures" title="Moog's Soaring Structures" width="80"></a>
+<a href="https://modrinth.com/mod/mmv-moogs-missing-villages"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mmv.png" alt="Moog's Missing Villages" title="Moog's Missing Villages" width="80"></a>
+<a href="https://modrinth.com/mod/mtr-moogs-temples-reimagined"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mtr.png" alt="Moog's Temples Reimagined" title="Moog's Temples Reimagined" width="80"></a>
+<a href="https://modrinth.com/mod/mbs-moogs-bountiful-structures"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mbs.png" alt="Moog's Bountiful Structures" title="Moog's Bountiful Structures" width="80"></a>
+<a href="https://modrinth.com/mod/mmr-moogs-mineshafts-reimagined"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mmr.png" alt="Moog's Mineshafts Reimagined" title="Moog's Mineshafts Reimagined" width="80"></a>
+<a href="https://modrinth.com/mod/mos-moogs-ocean-structures"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mos.png" alt="Moog's Ocean Structures" title="Moog's Ocean Structures" width="80"></a>
+<a href="https://modrinth.com/mod/mvsi-moogs-voyager-structures-integrated"><img src="https://raw.githubusercontent.com/FinnSetchell/MoogsStructureLib/main/.github/icons/mvsi.png" alt="Moog's Voyager Structures Integrated" title="Moog's Voyager Structures Integrated" width="80"></a>
 
 ### FOR MOD DEVELOPERS
 
