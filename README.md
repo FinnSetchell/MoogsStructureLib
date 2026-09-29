@@ -1,123 +1,33 @@
-# Moog's Structure Lib
+![Banner](https://i.moogsmods.com/images/95829aeec1614e838548fa7f6c8f1634.webp)
 
-A library mod for Minecraft that provides flexible, data-driven structure generation systems. Other mods can use this to create custom structures without writing Java code.
+[![Discord](https://img.shields.io/discord/869218732650688543?color=3c3040&label=DISCORD&style=for-the-badge)](https://moogsmods.com/discord?r=modrinth-msl)
 
-## Quick Start
+[![My projects](https://img.shields.io/badge/CurseForge-projects-3c3040?style=for-the-badge&logo=curseforge)](https://www.curseforge.com/members/finndog_123/projects)
 
-### Add as Dependency
-```gradle
-dependencies {
-    modImplementation "com.finndog:moogs_structures:${version}"
-}
-```
+[![My projects](https://img.shields.io/badge/Modrinth-projects-3c3040?style=for-the-badge&logo=modrinth)](https://modrinth.com/user/FinnDog_123)
 
-### Basic Usage
-1. Copy the `.example` files to your mod's data folder
-2. Rename them to `.json`
-3. Remove comment markers and customize settings
+![Overview](https://i.moogsmods.com/images/27c33c2b91f34acdba695fb2001b0169.webp)
 
-## Available Features
+This Mod works for Forge, Fabric and NeoForge! It can also be installed server-side only. Forge support was dropped after 1.20.4
 
-### 🏗️ Structure Types
-- **`moogs_structures:moogs_structures_generic_jigsaw_structure`** - Main jigsaw structure for overworld and end
-- **`moogs_structures:moogs_structures_generic_nether_jigsaw_structure`** - Specialized for Nether structures
+### ABOUT
 
-### 🧩 Pool Elements
-- **`moogs_structures:mirroring_single_pool_element`** - Single element with mirroring
-- **`moogs_structures:legacy_ocean_bottom_single_pool_element`** - Ocean bottom placement
+Moog's Structure Lib is a powerful library mod that provides flexible, data-driven structure generation systems for other mods to build upon.
 
-### 📍 Placement Modifiers
-- **`moogs_structures:minus_eight_placement`** - Places 8 blocks lower
-- **`moogs_structures:unlimited_count`** - Bypasses count limits
-- **`moogs_structures:snap_to_lower_non_air_placement`** - Snaps to lowest solid block
+### FOR MOD DEVELOPERS
 
-### 🎯 Structure Placement
-- **`moogs_structures:advanced_random_spread`** - Enhanced random spread with advanced options
+Simply add it as a dependency and use the provided structure types and placement systems. The mod includes a complete barn structure example that demonstrates how to use all the features.
 
-### ⚙️ Processors
-- **`moogs_structures:waterlogging_fix_processor`** - Fixes waterlogging issues
+### DOCUMENTATION
 
-### 🏷️ Biome Tags
-- **`moogs_structures:has_structure/overworld_biomes`** - Comprehensive overworld biome collection
+**[Complete Wiki Documentation](https://github.com/FinnSetchell/MoogsStructureLib/wiki)**
 
-## Example Structure Configuration
+The wiki includes step-by-step guides, complete JSON references, real examples from MoogsVoyagerStructures, and troubleshooting tips.
 
-### Basic Structure
-```json
-{
-  "type": "moogs_structures:moogs_structures_generic_jigsaw_structure",
-  "start_pool": "your_mod:your_structure/start_pool",
-  "size": 1,
-  "biomes": "#moogs_structures:has_structure/overworld_biomes",
-  "project_start_to_heightmap": "WORLD_SURFACE_WG",
-  "cannot_spawn_in_liquid": true,
-  "step": "surface_structures",
-  "terrain_adaptation": "beard_thin"
-}
-```
+![banner](https://i.moogsmods.com/images/ad415a2a332f464b894f7a55696222d6.webp)
 
-### Advanced Placement
-```json
-{
-  "type": "moogs_structures:advanced_random_spread",
-  "salt": 123456789,
-  "spacing": 31,
-  "separation": 26
-}
-```
+The best and fastest way to get replies is to join our [Discord server](https://moogsmods.com/discord?r=modrinth-msl).
 
-### Template Pool
-```json
-{
-  "name": "your_mod:your_structure/start_pool",
-  "fallback": "minecraft:empty",
-  "elements": [
-    {
-      "weight": 1,
-      "element": {
-        "location": "your_mod:your_piece",
-        "processors": "moogs_structures:waterlogging_fix_processor",
-        "projection": "rigid",
-        "element_type": "minecraft:single_pool_element"
-      }
-    }
-  ]
-}
-```
+[![BHsponser](https://i.moogsmods.com/images/8562a095959645f9bbb58c91e5532378.webp)](https://bisecthosting.com/moogsmods?r=mrmsl)
 
-## Structure Options
-
-### Burying Types
-- **`LOWEST_CORNER`** - Buries to lowest corner
-- **`AVERAGE_LAND`** - Buries to average land height  
-- **`LOWEST_SIDE`** - Buries to lowest side
-
-### Heightmap Types
-- **`WORLD_SURFACE_WG`** - World surface with generation
-- **`OCEAN_FLOOR_WG`** - Ocean floor with generation
-- **`MOTION_BLOCKING_NO_LEAVES`** - Motion blocking without leaves
-
-## Example Structure: Barn
-
-The mod includes a complete barn structure example (disabled by default) showing:
-- Structure definition
-- Template pools
-- Structure set configuration
-- Biome targeting
-
-## Benefits
-
-✅ **No Java Code Required** - Fully data-driven  
-✅ **Advanced Placement** - Sophisticated algorithms  
-✅ **Biome Integration** - Comprehensive biome system  
-✅ **Cross-Platform** - Works on Fabric, Quilt, and Forge  
-✅ **Extensible** - Easy to add custom features
-
-## License
-
-GNU Lesser General Public License v3.0
-
-## Credits
-
-- **Special Thanks**: 
-  - TelepathicGrunt for structure mod template inspiration and Repurposed Structures
+AI note: some of this project's code is written with AI assistance. Assets and creative work are always mine and everything is intensively tested and reviewed before release <3
