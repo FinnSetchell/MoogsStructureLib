@@ -5,7 +5,7 @@
 ## [3.4.1] - Unreleased
 
 ### Fixed
-- Eyes of ender, explorer maps and other structure searches now find Moog's replacement structures even when another mod, such as Integrated Stronghold, takes over where they point
+- Eyes of ender and explorer maps now find Moog's structures even when another mod, like Integrated Stronghold, changes where they point
 
 ---
 
