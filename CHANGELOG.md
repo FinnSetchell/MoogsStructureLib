@@ -2,6 +2,13 @@
 
 ---
 
+## [3.4.1] - Unreleased
+
+### Fixed
+- Eyes of ender and explorer maps now find Moog's structures even when another mod, like Integrated Stronghold, changes where they point
+
+---
+
 ## [3.4.0] - 2026-09-28
 
 ### Added
