@@ -2,6 +2,13 @@
 
 ---
 
+## [3.4.1] - Unreleased
+
+### Fixed
+- Eyes of ender, explorer maps and other structure searches now find Moog's replacement structures even when another mod, such as Integrated Stronghold, takes over where they point
+
+---
+
 ## [3.4.0] - 2026-09-28
 
 ### Added

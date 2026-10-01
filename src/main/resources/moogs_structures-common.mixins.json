@@ -8,6 +8,7 @@
         "features.NoDeltasInStructuresMixin",
         "resources.NamespaceResourceManagerAccessor",
         "resources.RegistryLoadTaskMixin",
+        "resources.TagEntryAccessor",
         "resources.TagLoaderMixin",
         "structures.AbstractVillagerAccessor",
         "structures.ChunkGeneratorMixin",
