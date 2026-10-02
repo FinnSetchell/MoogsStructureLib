@@ -62,8 +62,9 @@ targets:
     loaders: [neoforge]
     buildCommand: ":{mc}-neoforge:build"
     jarDir: "versions/{mc}-neoforge/build/libs"
+    # No 1.20.5: NeoForge's 1.20.5 betas can't run MSL on a server.
     builds:
-      - { mc: "1.20.6", from: "1.20.5", java: 25 }
+      - { mc: "1.20.6", java: 25 }
       - { mc: "1.21.1", from: "1.21", java: 25 }
       - { mc: "1.21.2", upTo: "1.21.3", java: 25 }
       - { mc: "1.21.4", java: 25 }
