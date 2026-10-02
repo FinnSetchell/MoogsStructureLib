@@ -2,10 +2,11 @@
 
 ---
 
-## [3.4.1] - 2026-10-01
+## [3.4.1] - 2026-10-02
 
 ### Fixed
 - Eyes of ender and explorer maps now find Moog's structures even when another mod, like Integrated Stronghold, changes where they point
+- Fixed the Forge version not loading on Minecraft 1.21
 
 ---
 
