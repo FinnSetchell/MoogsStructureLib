@@ -67,6 +67,10 @@ neoForge {
 }
 
 dependencies {
+    // @WrapMethod needs MixinExtras 0.4 or newer, which older loader versions don't ship.
+    implementation("io.github.llamalad7:mixinextras-neoforge:${prop("deps.mixinextras")}")
+    "jarJar"("io.github.llamalad7:mixinextras-neoforge:${prop("deps.mixinextras")}")
+
     // In-game config screen: compiled against, never bundled or required at runtime.
     compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${prop("deps.cloth_config")}") { isTransitive = false }
 }

@@ -76,6 +76,7 @@ tasks.named<JavaCompile>("compileJava") {
             .filter { f ->
                 val bytes = f.readText(Charsets.ISO_8859_1)
                 "Lorg/spongepowered/asm/mixin/gen/Invoker;" in bytes || "Lorg/spongepowered/asm/mixin/gen/Accessor;" in bytes
+                    || "Lcom/llamalad7/mixinextras/injector/" in bytes
             }
             .map { it.relativeTo(classes).invariantSeparatorsPath.removeSuffix(".class") }
             .filter { it !in mappings }
@@ -88,6 +89,12 @@ tasks.named<JavaCompile>("compileJava") {
 
 dependencies {
     annotationProcessor("org.spongepowered:mixin:0.8.7:processor")
+    annotationProcessor("io.github.llamalad7:mixinextras-common:${prop("deps.mixinextras")}")
+
+    // @WrapMethod needs MixinExtras 0.4 or newer, which older loader versions don't ship.
+    compileOnly("io.github.llamalad7:mixinextras-common:${prop("deps.mixinextras")}")
+    implementation("io.github.llamalad7:mixinextras-forge:${prop("deps.mixinextras")}")
+    "jarJar"("io.github.llamalad7:mixinextras-forge:${prop("deps.mixinextras")}")
 
     // In-game config screen: compiled against, never bundled or required at runtime. Cloth's Forge jar
     // is SRG-named here, so it goes through the remapping configuration.

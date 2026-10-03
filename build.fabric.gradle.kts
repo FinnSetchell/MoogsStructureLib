@@ -39,6 +39,12 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${prop("deps.fabric_loader")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${prop("deps.fabric_api")}")
 
+    // @WrapMethod needs MixinExtras 0.4 or newer, which older loader versions don't ship.
+    val mixinExtras = "io.github.llamalad7:mixinextras-fabric:${prop("deps.mixinextras")}"
+    implementation(mixinExtras)
+    annotationProcessor(mixinExtras)
+    include(mixinExtras)
+
     // In-game config screen: compiled against, never bundled or required at runtime.
     modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:${prop("deps.cloth_config")}")
     modCompileOnly("com.terraformersmc:modmenu:${prop("deps.modmenu")}")

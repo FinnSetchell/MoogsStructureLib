@@ -1,9 +1,6 @@
 package com.finndog.moogs_structures.world.structures.terrainadaptation.beardifier;
 
-//? if <1.21.5 {
-import com.finndog.moogs_structures.mixins.terrainadaptation.BeardifierAccessor;
-//?}
-//? if >=1.21.11 {
+//? if >=1.21.10 {
 /*import com.finndog.moogs_structures.mixins.terrainadaptation.BeardifierAccessor;
 *///?}
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
@@ -11,10 +8,7 @@ import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedT
 import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
-//? if >=1.21.5 <1.21.11 {
-/*import it.unimi.dsi.fastutil.objects.ObjectListIterator;
-*///?}
-//? if >=1.21.5 {
+//? if >=1.21.10 {
 /*import net.minecraft.core.BlockPos;
 *///?}
 import net.minecraft.core.Direction;
@@ -32,10 +26,6 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 
-//? if >=1.21.5 <1.21.11 {
-/*import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-*///?}
 import java.util.List;
 import java.util.Optional;
 
@@ -45,70 +35,6 @@ import java.util.Optional;
  * Reduced port of YUNG's API EnhancedBeardifierHelper (aquifer override removed; per-element overrides kept).
  */
 public class EnhancedBeardifierHelper {
-
-    // MC 1.21.9 changed Beardifier from iterator-based fields (pieceIterator, junctionIterator)
-    // to list-based fields (pieces, junctions, affectedBox) with a different constructor.
-    // We probe once at class-load time and cache the result + field/constructor handles.
-    //? if >=1.21.5 <1.21.11 {
-    /*static final boolean USE_NEW_API;
-    private static final Field PIECES_FIELD;
-    private static final Field JUNCTIONS_FIELD;
-    private static final Field AFFECTED_BOX_FIELD;
-    private static final Field PIECE_ITER_FIELD;
-    private static final Field JUNCTION_ITER_FIELD;
-    @SuppressWarnings("rawtypes")
-    private static final Constructor BEARDIFIER_CTOR;
-
-    static {
-        Field piecesF = null, junctionsF = null, affectedBoxF = null;
-        Field pieceIterF = null, junctionIterF = null;
-        Constructor<?> ctor = null;
-        boolean newApi = false;
-
-        try {
-            // MC 1.21.9+ path: List-based fields + 3-arg constructor.
-            // field_61465/66/67 are the Fabric intermediary names for pieces/junctions/affectedBox.
-            piecesF = getField("pieces", "field_61465");
-            piecesF.setAccessible(true);
-            junctionsF = getField("junctions", "field_61466");
-            junctionsF.setAccessible(true);
-            affectedBoxF = getField("affectedBox", "field_61467");
-            affectedBoxF.setAccessible(true);
-            ctor = Beardifier.class.getDeclaredConstructor(List.class, List.class, BoundingBox.class);
-            ctor.setAccessible(true);
-            newApi = true;
-        } catch (NoSuchFieldException | NoSuchMethodException ignored) {
-            try {
-                // MC 1.21.5-1.21.8 path: ObjectListIterator fields + 2-arg constructor.
-                // field_28744/45 are the Fabric intermediary names for pieceIterator/junctionIterator.
-                pieceIterF = getField("pieceIterator", "field_28744");
-                pieceIterF.setAccessible(true);
-                junctionIterF = getField("junctionIterator", "field_28745");
-                junctionIterF.setAccessible(true);
-                ctor = Beardifier.class.getDeclaredConstructor(ObjectListIterator.class, ObjectListIterator.class);
-                ctor.setAccessible(true);
-            } catch (ReflectiveOperationException fatal) {
-                throw new RuntimeException("MSL: cannot locate Beardifier fields or constructor", fatal);
-            }
-        }
-
-        USE_NEW_API = newApi;
-        PIECES_FIELD = piecesF;
-        JUNCTIONS_FIELD = junctionsF;
-        AFFECTED_BOX_FIELD = affectedBoxF;
-        PIECE_ITER_FIELD = pieceIterF;
-        JUNCTION_ITER_FIELD = junctionIterF;
-        BEARDIFIER_CTOR = ctor;
-    }
-
-    private static Field getField(String mojangName, String intermediaryName) throws NoSuchFieldException {
-        try {
-            return Beardifier.class.getDeclaredField(mojangName);
-        } catch (NoSuchFieldException e) {
-            return Beardifier.class.getDeclaredField(intermediaryName);
-        }
-    }
-    *///?}
 
     public static Beardifier forStructuresInChunk(StructureManager structureManager, ChunkPos chunkPos, Beardifier original) {
         ObjectList<EnhancedBeardifierRigid> enhancedBeardifierRigidList = new ObjectArrayList<>(10);
@@ -198,80 +124,21 @@ public class EnhancedBeardifierHelper {
             }
         }
 
-        //? if <1.21.5 {
-        Beardifier newBeardifier = new Beardifier(
-                ((BeardifierAccessor) original).getPieceIterator(),
-                ((BeardifierAccessor) original).getJunctionIterator());
-        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
+        //? if <1.21.10 {
+        // Attach to the instance we were handed rather than replacing it, or whatever another mod
+        // stored on it would be lost.
+        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) original;
         enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
         enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
-        return newBeardifier;
+        return original;
         //?}
-        //? if >=1.21.5 <1.21.11 {
-        /*try {
-            Beardifier newBeardifier;
-            if (USE_NEW_API) {
-                // MC 1.21.9+: list-based fields, 3-arg constructor, nullable affectedBox short-circuit.
-                // Union the original affectedBox with enhanced pieces/junctions so the compute() hook fires.
-                @SuppressWarnings("unchecked")
-                List<Beardifier.Rigid> pieces = (List<Beardifier.Rigid>) PIECES_FIELD.get(original);
-                @SuppressWarnings("unchecked")
-                List<JigsawJunction> junctions = (List<JigsawJunction>) JUNCTIONS_FIELD.get(original);
-                BoundingBox originalBox = (BoundingBox) AFFECTED_BOX_FIELD.get(original);
-                BoundingBox affectedBox = computeEnhancedAffectedBox(
-                        enhancedBeardifierRigidList, enhancedJunctionList, originalBox);
-                @SuppressWarnings("unchecked")
-                Beardifier b = (Beardifier) BEARDIFIER_CTOR.newInstance(pieces, junctions, affectedBox);
-                newBeardifier = b;
-            } else {
-                // MC 1.21.5-1.21.8: iterator-based fields, 2-arg constructor.
-                @SuppressWarnings("unchecked")
-                ObjectListIterator<Beardifier.Rigid> pieceIter =
-                        (ObjectListIterator<Beardifier.Rigid>) PIECE_ITER_FIELD.get(original);
-                @SuppressWarnings("unchecked")
-                ObjectListIterator<JigsawJunction> junctionIter =
-                        (ObjectListIterator<JigsawJunction>) JUNCTION_ITER_FIELD.get(original);
-                @SuppressWarnings("unchecked")
-                Beardifier b = (Beardifier) BEARDIFIER_CTOR.newInstance(pieceIter, junctionIter);
-                newBeardifier = b;
-            }
-            EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
-            enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
-            enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
-            return newBeardifier;
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("MSL: failed to construct Beardifier via reflection", e);
-        }
-        *///?}
-        // 1.21.11's Beardifier is List-based with a nullable affectedBox; both compute() and
-        // fillArray() short-circuit to 0 when affectedBox is null. So the reconstructed Beardifier
-        // must carry an affectedBox covering the enhanced regions, or the enhanced density (added
-        // via the compute mixin) would never be evaluated. Union the original box with the enhanced
-        // pieces/junctions (inflated by their kernel radius) to keep enhanced adaptation active.
-        //? if >=1.21.11 {
-        /*BoundingBox affectedBox = computeEnhancedAffectedBox(
-                enhancedBeardifierRigidList,
-                enhancedJunctionList,
-                ((BeardifierAccessor) original).getAffectedBox());
-
-        *///?}
-        //? if >=1.21.11 <26.1.2 {
-        /*Beardifier newBeardifier = new Beardifier(
-                ((BeardifierAccessor) original).getPieces(),
-                ((BeardifierAccessor) original).getJunctions(),
-                affectedBox);
-        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
-        enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
-        enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
-        return newBeardifier;
-        *///?}
         // Vanilla returns its shared static Beardifier.EMPTY whenever no *vanilla* terrain-adapting
         // structure start touches this chunk. That is the normal case for our structures, which adapt
         // terrain through enhanced adaptation rather than vanilla's terrainAdaptation(). Writing this
         // chunk's data onto EMPTY would publish it to a global singleton that every concurrently
         // generating chunk shares across every world-gen worker thread, so each chunk would read
         // whichever chunk wrote last. Give ourselves a private instance instead.
-        //? if >=26.1.2 {
+        //? if >=1.21.10 {
         /*Beardifier target = original;
         if (target == Beardifier.EMPTY) {
             if (enhancedBeardifierRigidList.isEmpty() && enhancedJunctionList.isEmpty()) {
@@ -281,27 +148,29 @@ public class EnhancedBeardifierHelper {
             target = new Beardifier(List.of(), List.of(), null);
         }
 
-        // For a per-chunk instance, mutate in place rather than constructing a replacement. YUNG's API's
-        // BeardifierMixin also swaps the returned Beardifier at this same injection point; if
-        // either mod replaces the other's instance, the replaced instance's @Unique duck data
-        // is lost and that mod's compute handler sees null iterators (BUG17: deterministic
-        // world-gen crash on fabric/26.1.x with both mods installed). YUNG's handler runs first
-        // (priority 1000 vs our 1500) and always returns a fresh Beardifier, so when it is present
-        // `original` is never EMPTY and we never take the replacement branch above.
-        ((BeardifierAccessor) target).setAffectedBox(affectedBox);
+        // compute() and fillArray() return 0 outside affectedBox, so it has to cover the enhanced pieces.
+        BeardifierAccessor accessor = (BeardifierAccessor) target;
+        accessor.setAffectedBox(computeEnhancedAffectedBox(enhancedBeardifierRigidList, enhancedJunctionList, accessor.getAffectedBox()));
         EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) target;
+        *///?}
+        //? if >=1.21.10 <26.1.2 {
+        /*enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
+        enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
+        *///?}
         // Store the lists themselves, never iterators: compute() is called from world-gen worker
         // threads and re-entrantly per noise cell, so a shared cursor gets advanced out from under
         // a running loop (hasNext() passes, next() throws NoSuchElementException). computeDensity()
         // takes a fresh local cursor per call instead.
-        enhancedBeardifier.moogs_structures_setEnhancedPieces(enhancedBeardifierRigidList);
+        //? if >=26.1.2 {
+        /*enhancedBeardifier.moogs_structures_setEnhancedPieces(enhancedBeardifierRigidList);
         enhancedBeardifier.moogs_structures_setEnhancedJunctions(enhancedJunctionList);
-        return target;
         *///?}
-    //? if >=1.21.5 {
+        //? if >=1.21.10 {
+        /*return target;
+        *///?}
+    //? if >=1.21.10 {
     /*}
 
-    // Only called on MC 1.21.9+ (USE_NEW_API path).
     private static BoundingBox computeEnhancedAffectedBox(ObjectList<EnhancedBeardifierRigid> rigids,
                                                           ObjectList<EnhancedJigsawJunction> junctions,
                                                           BoundingBox originalBox) {
@@ -310,13 +179,13 @@ public class EnhancedBeardifierHelper {
             int radius = Math.max(1, rigid.pieceTerrainAdaptation().getKernelRadius());
             BoundingBox pieceBox = rigid.pieceBoundingBox().inflatedBy(radius);
     *///?}
-            //? if >=1.21.5 <1.21.11 {
+            //? if >=1.21.10 <1.21.11 {
             /*box = box == null ? pieceBox : box.encapsulate(pieceBox);
             *///?}
             //? if >=1.21.11 {
             /*box = box == null ? pieceBox : BoundingBox.encapsulating(box, pieceBox);
             *///?}
-        //? if >=1.21.5 {
+        //? if >=1.21.10 {
         /*}
         for (EnhancedJigsawJunction junction : junctions) {
             JigsawJunction jigsawJunction = junction.jigsawJunction();
@@ -326,13 +195,13 @@ public class EnhancedBeardifierHelper {
                     jigsawJunction.getSourceGroundY(),
                     jigsawJunction.getSourceZ())).inflatedBy(radius);
         *///?}
-            //? if >=1.21.5 <1.21.11 {
+            //? if >=1.21.10 <1.21.11 {
             /*box = box == null ? junctionBox : box.encapsulate(junctionBox);
             *///?}
             //? if >=1.21.11 {
             /*box = box == null ? junctionBox : BoundingBox.encapsulating(box, junctionBox);
             *///?}
-        //? if >=1.21.5 {
+        //? if >=1.21.10 {
         /*}
         return box;
         *///?}
@@ -346,6 +215,9 @@ public class EnhancedBeardifierHelper {
 
     //?}
         //? if <26.1.2 {
+        if (data.moogs_structures_getEnhancedPieceIterator() == null || data.moogs_structures_getEnhancedJunctionIterator() == null) {
+            return density;
+        }
         while (data.moogs_structures_getEnhancedPieceIterator() != null && data.moogs_structures_getEnhancedPieceIterator().hasNext()) {
             EnhancedBeardifierRigid rigid = data.moogs_structures_getEnhancedPieceIterator().next();
             if (rigid == null) continue;
