@@ -2,6 +2,13 @@
 
 ---
 
+## [3.4.2] - 2026-10-03
+
+### Fixed
+- Fixed the game crashing on startup with Forge on Minecraft 1.20 to 1.20.4
+
+---
+
 ## [3.4.1] - 2026-10-02
 
 ### Fixed
