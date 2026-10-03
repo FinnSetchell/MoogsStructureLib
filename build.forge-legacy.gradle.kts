@@ -65,6 +65,44 @@ mixin {
     config("$modId-forge.mixins.json")
 }
 
+// The mixin processor can't map ScreenInvoker's generic target, so its entry is added by hand.
+val refmapPatches = mapOf(
+    "com/finndog/moogs_structures/mixins/client/ScreenInvoker" to mapOf(
+        "addRenderableWidget" to "m_142416_(Lnet/minecraft/client/gui/components/events/GuiEventListener;)Lnet/minecraft/client/gui/components/events/GuiEventListener;",
+    ),
+)
+
+tasks.named<JavaCompile>("compileJava") {
+    doLast {
+        val refmapFile = layout.buildDirectory.file("mixin/$modId.refmap.json").get().asFile
+        @Suppress("UNCHECKED_CAST")
+        val refmap = groovy.json.JsonSlurper().parse(refmapFile) as MutableMap<String, Any?>
+        @Suppress("UNCHECKED_CAST")
+        fun section(map: MutableMap<String, Any?>, key: String) = map.getOrPut(key) { mutableMapOf<String, Any?>() } as MutableMap<String, Any?>
+        val mappings = section(refmap, "mappings")
+        val searge = section(section(refmap, "data"), "searge")
+        for ((owner, members) in refmapPatches) {
+            section(mappings, owner).putAll(members)
+            section(searge, owner).putAll(members)
+        }
+        refmapFile.writeText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(refmap)))
+
+        val classes = destinationDirectory.get().asFile
+        val unmapped = classes.walk()
+            .filter { it.extension == "class" && "/mixins/" in it.invariantSeparatorsPath }
+            .filter { f ->
+                val bytes = f.readText(Charsets.ISO_8859_1)
+                "Lorg/spongepowered/asm/mixin/gen/Invoker;" in bytes || "Lorg/spongepowered/asm/mixin/gen/Accessor;" in bytes
+            }
+            .map { it.relativeTo(classes).invariantSeparatorsPath.removeSuffix(".class") }
+            .filter { it !in mappings }
+            .toList()
+        if (unmapped.isNotEmpty()) {
+            throw GradleException("No refmap entry for $unmapped, so SRG-named Forge can't find their targets.")
+        }
+    }
+}
+
 dependencies {
     annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 
