@@ -25,8 +25,9 @@ import org.spongepowered.asm.mixin.Unique;
  * Reduced port of YUNG's API BeardifierMixin (no aquifer-override / NoiseChunk handling).
  */
 // Wrapped rather than injected at RETURN. YUNG's API cancels at RETURN, so whichever of the two ran
-// first switched the other off.
-@Mixin(Beardifier.class)
+// first switched the other off. Priority below YUNG's keeps this wrapper innermost, so swapping out
+// vanilla's shared EMPTY happens before any other mod has written to it.
+@Mixin(value = Beardifier.class, priority = 900)
 public class BeardifierMixin implements EnhancedBeardifierData {
     @Unique
     //? if <26.1.2 {
