@@ -65,8 +65,29 @@ mixin {
     config("$modId-forge.mixins.json")
 }
 
+tasks.named<JavaCompile>("compileJava") {
+    doLast {
+        @Suppress("UNCHECKED_CAST")
+        val mappings = (groovy.json.JsonSlurper().parse(layout.buildDirectory.file("mixin/$modId.refmap.json").get().asFile)
+            as Map<String, Any?>)["mappings"] as Map<String, Any?>
+        val classes = destinationDirectory.get().asFile
+        val unmapped = classes.walk()
+            .filter { it.extension == "class" && "/mixins/" in it.invariantSeparatorsPath }
+            .filter { f ->
+                val bytes = f.readText(Charsets.ISO_8859_1)
+                "Lorg/spongepowered/asm/mixin/gen/Invoker;" in bytes || "Lorg/spongepowered/asm/mixin/gen/Accessor;" in bytes
+            }
+            .map { it.relativeTo(classes).invariantSeparatorsPath.removeSuffix(".class") }
+            .filter { it !in mappings }
+            .toList()
+        if (unmapped.isNotEmpty()) {
+            throw GradleException("No refmap entry for $unmapped, so SRG-named Forge can't find their targets.")
+        }
+    }
+}
+
 dependencies {
-    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+    annotationProcessor("org.spongepowered:mixin:0.8.7:processor")
 
     // In-game config screen: compiled against, never bundled or required at runtime. Cloth's Forge jar
     // is SRG-named here, so it goes through the remapping configuration.
