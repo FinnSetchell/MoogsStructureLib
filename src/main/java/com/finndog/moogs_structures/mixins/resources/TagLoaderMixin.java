@@ -45,6 +45,9 @@ import java.util.function.Function;
 /**
  * Adds a replacement structure to every structure tag that lists the vanilla structure it stands in for,
  * so anything keyed on those tags (other mods, biome modifiers, tag-based locate) still matches.
+ * <p>
+ * That includes tags another pack overrides with {@code "replace": true}. The override drops the vanilla
+ * structure before the tag is built, so the entries it wipes out are remembered while the tag files load.
  */
 @Mixin(TagLoader.class)
 public class TagLoaderMixin {
@@ -65,7 +68,9 @@ public class TagLoaderMixin {
     /*private TagLoader.ElementLookup<Object> elementLookup;
     *///?}
 
-    // What "replace": true tag files wiped. Created on first use; Mixin skips initialisers here.
+    // Structures that "replace": true files wiped out of a tag, first keyed by the entry list that was
+    // cleared, then by tag id once loading has finished. Both are created on first use: Mixin left
+    // field initialisers here unset, so a null means nothing was replaced.
     @Unique
     private Map<List<?>, List<ResourceLocation>> moogs_structures_replacedByList;
     @Unique
@@ -143,7 +148,7 @@ public class TagLoaderMixin {
                 if (id != null) moogs_structures_addReplacement(aliases, id, holders, additions);
             }
 
-            // A tag replaced with nothing stays empty.
+            // A pack that replaces a tag with nothing wants it empty, so those are left alone.
             int beforeReplaced = additions.size();
             List<ResourceLocation> replaced = this.moogs_structures_replacedByTag != null
                     ? this.moogs_structures_replacedByTag.get(tag.getKey()) : null;
