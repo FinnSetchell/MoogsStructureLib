@@ -6,10 +6,8 @@ import com.finndog.moogs_structures.utils.DebugFlags;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionEntry;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionNumber;
-//? if >=1.21.1 {
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
-//?}
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 //? if >=1.20.6 {
@@ -42,11 +40,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
  * A {@link SinglePoolElement} that can resolve different structure templates based
  * on the running Minecraft version.
  */
-//? if >=1.21.1 {
 public class VersionAwareSinglePoolElement extends SinglePoolElement implements PoolElementAdaptationOverride {
-//?} else {
-/*public class VersionAwareSinglePoolElement extends SinglePoolElement {
-*///?}
 
     private static final Codec<List<VersionEntry>> VERSION_ENTRIES_CODEC =
             Codec.unboundedMap(Codec.STRING, ResourceLocation.CODEC)
@@ -61,27 +55,26 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
                     ResourceLocation.CODEC.optionalFieldOf("location").forGetter(VersionAwareSinglePoolElement::singleLocation),
                     VERSION_ENTRIES_CODEC.optionalFieldOf("locations").forGetter(VersionAwareSinglePoolElement::versionEntriesOptional),
                     processorsCodec(),
-                    //? if >=1.21.1 {
                     projectionCodec(),
+                    //? if >=1.21.1 {
                     overrideLiquidSettingsCodec(),
+                    //?}
                     EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation")
                             .forGetter(VersionAwareSinglePoolElement::moogs_structures_getAdaptationOverride)
+            //? if >=1.21.1 {
             ).apply(instance, (singleLocation, versionEntries, processors, projection, overrideLiquidSettings, adaptationOverride) ->
-                    //?} else {
-                    /*projectionCodec()
-            ).apply(instance, (singleLocation, versionEntries, processors, projection) ->
-                    *///?}
+            //?} else {
+            /*).apply(instance, (singleLocation, versionEntries, processors, projection, adaptationOverride) ->
+            *///?}
                     new VersionAwareSinglePoolElement(
                             singleLocation.orElse(null),
                             versionEntries.map(List::copyOf).orElse(List.of()),
                             processors,
-                            //? if >=1.21.1 {
                             projection,
+                            //? if >=1.21.1 {
                             overrideLiquidSettings.orElse(null),
+                            //?}
                             adaptationOverride
-                            //?} else {
-                            /*projection
-                            *///?}
                     )));
 
     @Nullable
@@ -89,20 +82,16 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
     private final List<VersionEntry> versionEntries;
     private final ResourceLocation defaultLocation;
     private final String versionEntriesDescription;
-    //? if >=1.21.1 {
     private final Optional<EnhancedTerrainAdaptation> adaptationOverride;
-    //?}
 
     private VersionAwareSinglePoolElement(@Nullable ResourceLocation singleLocation,
                                           List<VersionEntry> versionEntries,
                                           Holder<StructureProcessorList> processors,
-                                          //? if >=1.21.1 {
                                           StructureTemplatePool.Projection projection,
+                                          //? if >=1.21.1 {
                                           @Nullable LiquidSettings overrideLiquidSettings,
+                                          //?}
                                           Optional<EnhancedTerrainAdaptation> adaptationOverride) {
-                                          //?} else {
-                                          /*StructureTemplatePool.Projection projection) {
-                                          *///?}
         super(Either.left(resolveTargetLocation(singleLocation, versionEntries)),
                 processors,
                 //? if >=1.21.1 {
@@ -119,9 +108,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
         }
         this.defaultLocation = fallback;
         this.versionEntriesDescription = describeVersionEntries(this.versionEntries);
-        //? if >=1.21.1 {
         this.adaptationOverride = adaptationOverride;
-        //?}
         logFallbackIfNeeded();
     }
 
@@ -196,13 +183,11 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
         return Optional.ofNullable(this.singleLocation);
     }
 
-    //? if >=1.21.1 {
     @Override
     public Optional<EnhancedTerrainAdaptation> moogs_structures_getAdaptationOverride() {
         return this.adaptationOverride;
     }
 
-    //?}
     // Block-attached entities need their anchor rewritten at placement time; attaching the
     // processor here means structures get the fix without touching their datapacks.
     @Override

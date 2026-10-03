@@ -6,6 +6,11 @@
 
 ### Fixed
 - Fixed the game crashing on startup with Forge on Minecraft 1.20 to 1.20.4
+- Structures now blend into the terrain properly when YUNG's API is installed. Before, either this mod's or YUNG's terrain blending was switched off
+- Fixed parts of structures ignoring their own terrain blending settings on Minecraft 1.20 to 1.20.6, such as mineshaft entrances getting boxed in
+
+### Changed
+- Fabric on Minecraft 1.20 to 1.20.4 now needs Fabric Loader 0.14.25 or newer
 
 ---
 
