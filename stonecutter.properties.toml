@@ -51,12 +51,14 @@ deps.fabric_api = "0.98.0+1.20.6"
 deps.cloth_config = "14.0.123"
 deps.modmenu = "11.0.4"
 
+# Also runs on 1.20.5 (NeoForge 20.5 betas). Their FML runs only one @Mod class per mod id, so the
+# client side is started from the main @Mod class, never from a second one.
 [neoforge."1.20.6"]
 mod.mc_build = "1.20.6"
-mod.mc_compat = "[1.20.6,1.20.7)"
+mod.mc_compat = "[1.20.5,1.20.7)"
 mod.neo_icon_key = "logoFile"
 deps.neoforge = "20.6.139"
-deps.neoforge_min = "20.6.0-beta"
+deps.neoforge_min = "20.5.0-beta"
 deps.neoforge_range = "[2,)"
 deps.cloth_config = "14.0.126"
 
@@ -175,17 +177,17 @@ deps.fabric_api = "0.120.0+1.21.5"
 deps.cloth_config = "18.0.145"
 deps.modmenu = "14.0.2"
 
-# Not built yet: this range's Forge code uses NewRegistryEvent.BUS, which Forge only has from
-# 1.21.9, so no jar here would load (see SKIP below). The release branch built it against 1.21.10
-# by mistake. Trello card 537.
+# Forge 1.21.5 only. Forge 56 (1.21.6) replaced the event bus, so 1.21.6-1.21.8 has its own Forge
+# node below. MSL 3.0.0-3.4.0 listed one Forge jar built against 1.21.10 for 1.21.5-1.21.8; it
+# declared Minecraft 1.21.9 or newer, so Forge refused it on every version it was listed for.
 [forge."1.21.5"]
-mod.mc_build = "1.21.8"
-mod.mc_compat = "[1.21.8,1.21.9)"
-deps.forge = "58.1.0"
-deps.forge_range = "[58,)"
+mod.mc_build = "1.21.5"
+mod.mc_compat = "[1.21.5,1.21.6)"
+deps.forge = "55.1.0"
+deps.forge_range = "[55,)"
 deps.cloth_config = "18.0.145"
 deps.cloth_config_loader = "neoforge"
-mod.forge_compile_excludes = "**/client/SupportButton.java,**/client/SupportLinks.java"
+mod.forge_compile_excludes = ""
 
 [neoforge."1.21.5"]
 mod.mc_build = "1.21.5"
@@ -195,6 +197,24 @@ deps.neoforge = "21.5.0-beta"
 deps.neoforge_min = "21.5.0-beta"
 deps.neoforge_range = "[4,)"
 deps.cloth_config = "18.0.145"
+
+# ------------------------------------------------------------------ Forge 1.21.6-1.21.8 (Java 21)
+# Forge only. Fabric and NeoForge run their 1.21.5 jars on 1.21.6-1.21.8. Forge 56-58 have the
+# BusGroup event bus but not NewRegistryEvent.BUS (added in Forge 59), so this node registers
+# through getBus instead. Compiled against the oldest of the three so it runs on all of them.
+["1.21.6"]
+mod.java = "21"
+mod.access = "classic"
+
+[forge."1.21.6"]
+mod.mc_build = "1.21.6"
+mod.mc_compat = "[1.21.6,1.21.9)"
+deps.forge = "56.0.9"
+deps.forge_range = "[56,)"
+deps.cloth_config = "19.0.146"
+deps.cloth_config_loader = "neoforge"
+# Forge has no config screen here, and these widgets use the 1.21.5 GUI API that 1.21.6 replaced.
+mod.forge_compile_excludes = "**/client/SupportButton.java,**/client/SupportLinks.java"
 
 # ------------------------------------------------------------------ 1.21.10 (Java 21)
 ["1.21.10"]
@@ -277,12 +297,13 @@ deps.fabric_api = "0.145.4+26.1.2"
 deps.cloth_config = "26.1.154"
 deps.modmenu = "18.0.0"
 
-# Forge only exists from 26.1.1.
+# Forge for 26.1 is Forge 62, for 26.1.1 Forge 63 and for 26.1.2 Forge 64. Compiled against the
+# oldest so one jar runs on all three.
 [forge."26.1.2"]
-mod.mc_build = "26.1.1"
-mod.mc_compat = "[26.1.1,26.1.2]"
-deps.forge = "63.0.2"
-deps.forge_range = "[63,)"
+mod.mc_build = "26.1"
+mod.mc_compat = "[26.1,26.1.2]"
+deps.forge = "62.0.9"
+deps.forge_range = "[62,)"
 deps.cloth_config = "26.1.154"
 deps.cloth_config_loader = "neoforge"
 mod.forge_compile_excludes = ""

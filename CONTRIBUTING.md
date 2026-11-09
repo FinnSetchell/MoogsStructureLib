@@ -17,7 +17,8 @@ A node is compiled against one Minecraft version and published for a range of th
 | 1.21-1.21.1 | `1.21.1` | yes | yes | yes |
 | 1.21.2-1.21.3 | `1.21.2` | yes | yes | yes |
 | 1.21.4 | `1.21.4` | yes | yes | yes |
-| 1.21.5-1.21.8 | `1.21.5` | yes | not yet | yes |
+| 1.21.5-1.21.8 | `1.21.5` | yes | 1.21.5 only | yes |
+| 1.21.6-1.21.8 | `1.21.6` | no | yes | no |
 | 1.21.10 | `1.21.10` | yes | yes | yes |
 | 1.21.11 | `1.21.11` | yes | yes | yes |
 | 26.1-26.1.2 | `26.1.2` | yes | yes | yes |
