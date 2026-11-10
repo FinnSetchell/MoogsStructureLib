@@ -2,6 +2,14 @@
 
 ---
 
+## [3.4.3] - 2026-11-10
+
+### Fixed
+- The Forge version now loads on Minecraft 1.21.5 to 1.21.8 and 26.1
+- Servers on NeoForge 1.20.5 no longer crash on startup
+
+---
+
 ## [3.4.2] - 2026-10-03
 
 ### Fixed
