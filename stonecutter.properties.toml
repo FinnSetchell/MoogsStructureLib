@@ -167,9 +167,12 @@ deps.cloth_config = "17.0.144"
 mod.java = "21"
 mod.access = "classic"
 
+# Fabric 1.21.5 only. 1.21.6 changed how entities load and how structures place them, and the
+# GUI drawing calls, so code built against 1.21.5 skips entity processors and can't draw MSL's
+# config buttons there. Fabric 1.21.6-1.21.8 has its own node below.
 [fabric."1.21.5"]
 mod.mc_build = "1.21.5"
-mod.mc_compat = ">=1.21.5 <1.21.9"
+mod.mc_compat = ">=1.21.5 <1.21.6"
 mod.fabric_loader_dep = "*"
 mod.fabric_aw_entry = "false"
 deps.fabric_loader = "0.16.13"
@@ -198,13 +201,25 @@ deps.neoforge_min = "21.5.0-beta"
 deps.neoforge_range = "[4,)"
 deps.cloth_config = "18.0.145"
 
-# ------------------------------------------------------------------ Forge 1.21.6-1.21.8 (Java 21)
-# Forge only. Fabric and NeoForge run their 1.21.5 jars on 1.21.6-1.21.8. Forge 56-58 have the
-# BusGroup event bus but not NewRegistryEvent.BUS (added in Forge 59), so this node registers
-# through getBus instead. Compiled against the oldest of the three so it runs on all of them.
+# ------------------------------------------------------------------ Fabric and Forge 1.21.6-1.21.8 (Java 21)
+# NeoForge runs its 1.21.5 jar on 1.21.6-1.21.8. Compiled against the oldest of the three so it
+# runs on all of them.
 ["1.21.6"]
 mod.java = "21"
 mod.access = "classic"
+
+[fabric."1.21.6"]
+mod.mc_build = "1.21.6"
+mod.mc_compat = ">=1.21.6 <1.21.9"
+mod.fabric_loader_dep = "*"
+mod.fabric_aw_entry = "false"
+deps.fabric_loader = "0.16.14"
+deps.fabric_api = "0.128.2+1.21.6"
+deps.cloth_config = "19.0.147"
+deps.modmenu = "15.0.0"
+
+# Forge 56-58 have the BusGroup event bus but not NewRegistryEvent.BUS (added in Forge 59), so this
+# node registers through getBus instead.
 
 [forge."1.21.6"]
 mod.mc_build = "1.21.6"
@@ -213,7 +228,7 @@ deps.forge = "56.0.9"
 deps.forge_range = "[56,)"
 deps.cloth_config = "19.0.146"
 deps.cloth_config_loader = "neoforge"
-# Forge has no config screen here, and these widgets use the 1.21.5 GUI API that 1.21.6 replaced.
+# Forge has no config screen here, so the config screen widgets are left out.
 mod.forge_compile_excludes = "**/client/SupportButton.java,**/client/SupportLinks.java"
 
 # ------------------------------------------------------------------ 1.21.10 (Java 21)

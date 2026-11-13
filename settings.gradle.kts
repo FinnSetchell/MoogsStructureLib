@@ -37,8 +37,8 @@ stonecutter {
         match("1.21.2", "fabric", "forge", "neoforge")
         match("1.21.4", "fabric", "forge", "neoforge")
         match("1.21.5", "fabric", "forge", "neoforge")
-        // Forge only: Forge 1.21.6-1.21.8 needs its own jar (see stonecutter.properties.toml).
-        match("1.21.6", "forge")
+        // Fabric and Forge 1.21.6-1.21.8 need their own jars (see stonecutter.properties.toml).
+        match("1.21.6", "fabric", "forge")
         match("1.21.10", "fabric", "forge", "neoforge")
         match("1.21.11", "fabric", "forge", "neoforge")
         match("26.1.2", "fabric", "forge", "neoforge")

@@ -10,12 +10,14 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-//? if >=1.21.2 <1.21.10 {
+//? if >=1.21.2 <1.21.6 {
 /*import net.minecraft.client.renderer.RenderType;
 *///?}
 //? if >=1.21.10 {
 /*import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
+*///?}
+//? if >=1.21.6 {
+/*import net.minecraft.client.renderer.RenderPipelines;
 *///?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -93,11 +95,11 @@ public class SupportButton extends AbstractWidget {
     /*public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         graphics.blit(icon, getX(), getY(), width, height, 0.0F, 0.0F, texWidth, texHeight, texWidth, texHeight);
     *///?}
-    //? if >=1.21.2 <1.21.10 {
+    //? if >=1.21.2 <1.21.6 {
     /*protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
         guiGraphics.blitSprite(RenderType::guiTextured, icon, getX(), getY(), width, height);
     *///?}
-    //? if >=1.21.10 <26.1.2 {
+    //? if >=1.21.6 <26.1.2 {
     /*protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon, getX(), getY(), width, height);
     *///?}
@@ -109,10 +111,10 @@ public class SupportButton extends AbstractWidget {
             //? if <1.21.2 {
             graphics.fill(getX(), getY(), getX() + width, getY() + height, 0x33FFFFFF);
             //?}
-            //? if >=1.21.2 <1.21.10 {
+            //? if >=1.21.2 <1.21.6 {
             /*guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, 0x33FFFFFF);
             *///?}
-            //? if >=1.21.10 <26.1.2 {
+            //? if >=1.21.6 <26.1.2 {
             /*graphics.fill(getX(), getY(), getX() + width, getY() + height, 0x33FFFFFF);
             *///?}
             //? if >=26.1.2 {
@@ -126,11 +128,11 @@ public class SupportButton extends AbstractWidget {
         graphics.fill(cx, cy, cx + CLOSE, cy + CLOSE, closeHover ? 0xD0000000 : 0x80000000);
         graphics.drawCenteredString(Minecraft.getInstance().font, "×", cx + CLOSE / 2, cy + 1, closeHover ? 0xFFFF5555 : 0xFFFFFFFF);
         //?}
-        //? if >=1.21.2 <1.21.10 {
+        //? if >=1.21.2 <1.21.6 {
         /*guiGraphics.fill(cx, cy, cx + CLOSE, cy + CLOSE, closeHover ? 0xD0000000 : 0x80000000);
         guiGraphics.drawCenteredString(Minecraft.getInstance().font, "×", cx + CLOSE / 2, cy + 1, closeHover ? 0xFFFF5555 : 0xFFFFFFFF);
         *///?}
-        //? if >=1.21.10 <26.1.2 {
+        //? if >=1.21.6 <26.1.2 {
         /*graphics.fill(cx, cy, cx + CLOSE, cy + CLOSE, closeHover ? 0xD0000000 : 0x80000000);
         graphics.drawCenteredString(Minecraft.getInstance().font, "×", cx + CLOSE / 2, cy + 1, closeHover ? 0xFFFF5555 : 0xFFFFFFFF);
         *///?}
