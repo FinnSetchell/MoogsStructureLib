@@ -7,6 +7,7 @@ import com.finndog.moogs_structures.modinit.registry.ResourcefulRegistry;
 import com.finndog.moogs_structures.world.processors.CloseOffFluidSourcesProcessor;
 import com.finndog.moogs_structures.world.processors.EquipArmorStandProcessor;
 import com.finndog.moogs_structures.world.processors.FloodWithWaterProcessor;
+import com.finndog.moogs_structures.world.processors.FollowFloorProcessor;
 import com.finndog.moogs_structures.world.processors.PillarProcessor;
 import com.finndog.moogs_structures.world.processors.RandomReplaceWithPropertiesProcessor;
 import com.finndog.moogs_structures.world.processors.RemoveFloatingBlocksProcessor;
@@ -45,6 +46,7 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<StructureProcessorType<RemoveFloatingBlocksProcessor>> REMOVE_FLOATING_BLOCKS_PROCESSOR = STRUCTURE_PROCESSOR.register("remove_floating_blocks_processor", () -> () -> RemoveFloatingBlocksProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<RandomReplaceWithPropertiesProcessor>> RANDOM_REPLACE_WITH_PROPERTIES_PROCESSOR = STRUCTURE_PROCESSOR.register("random_replace_with_properties_processor", () -> () -> RandomReplaceWithPropertiesProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<SuperGravityProcessor>> SUPER_GRAVITY_PROCESSOR = STRUCTURE_PROCESSOR.register("super_gravity_processor", () -> () -> SuperGravityProcessor.CODEC);
+    public static final RegistryEntry<StructureProcessorType<FollowFloorProcessor>> FOLLOW_FLOOR_PROCESSOR = STRUCTURE_PROCESSOR.register("follow_floor_processor", () -> () -> FollowFloorProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<FloodWithWaterProcessor>> FLOOD_WITH_WATER_PROCESSOR = STRUCTURE_PROCESSOR.register("flood_with_water_processor", () -> () -> FloodWithWaterProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<SpawnerRandomizingProcessor>> SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("spawner_randomizing_processor", () -> () -> SpawnerRandomizingProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> () -> EquipArmorStandProcessor.CODEC);
@@ -65,6 +67,7 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<MapCodec<RemoveFloatingBlocksProcessor>> REMOVE_FLOATING_BLOCKS_PROCESSOR = STRUCTURE_PROCESSOR.register("remove_floating_blocks_processor", () -> RemoveFloatingBlocksProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<RandomReplaceWithPropertiesProcessor>> RANDOM_REPLACE_WITH_PROPERTIES_PROCESSOR = STRUCTURE_PROCESSOR.register("random_replace_with_properties_processor", () -> RandomReplaceWithPropertiesProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<SuperGravityProcessor>> SUPER_GRAVITY_PROCESSOR = STRUCTURE_PROCESSOR.register("super_gravity_processor", () -> SuperGravityProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<FollowFloorProcessor>> FOLLOW_FLOOR_PROCESSOR = STRUCTURE_PROCESSOR.register("follow_floor_processor", () -> FollowFloorProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<FloodWithWaterProcessor>> FLOOD_WITH_WATER_PROCESSOR = STRUCTURE_PROCESSOR.register("flood_with_water_processor", () -> FloodWithWaterProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<SpawnerRandomizingProcessor>> SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("spawner_randomizing_processor", () -> SpawnerRandomizingProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> EquipArmorStandProcessor.MAP_CODEC);

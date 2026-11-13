@@ -1,5 +1,6 @@
 package com.finndog.moogs_structures.utils;
 
+import com.finndog.moogs_structures.world.processors.FollowFloorProcessor;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 //?} else {
 /*import net.minecraft.world.level.chunk.ChunkStatus;
 *///?}
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
@@ -88,9 +90,20 @@ public final class MixinUtils {
      * positions nowhere near the structure.
      */
     private static boolean isPositionNearAnyPiece(StructureStart structureStart, BlockPos pos) {
-        if (!structureStart.getBoundingBox().isInside(pos)) return false;
+        BoundingBox startBox = structureStart.getBoundingBox();
+        if (pos.getX() < startBox.minX() || pos.getX() > startBox.maxX() || pos.getZ() < startBox.minZ() || pos.getZ() > startBox.maxZ()) return false;
+        boolean insideStart = pos.getY() >= startBox.minY() && pos.getY() <= startBox.maxY();
         for (StructurePiece piece : structureStart.getPieces()) {
-            if (piece.getBoundingBox().inflatedBy(STRUCTURE_PIECE_MARGIN).isInside(pos)) {
+            BoundingBox box = piece.getBoundingBox().inflatedBy(STRUCTURE_PIECE_MARGIN);
+            if (insideStart && box.isInside(pos)) {
+                return true;
+            }
+            // A piece that follows the floor can end up above or below its own box, so it also
+            // covers that reach.
+            int reach = FollowFloorProcessor.verticalReach(piece);
+            if (reach > 0
+                    && pos.getX() >= box.minX() && pos.getX() <= box.maxX() && pos.getZ() >= box.minZ() && pos.getZ() <= box.maxZ()
+                    && pos.getY() >= box.minY() - reach && pos.getY() <= box.maxY() + reach) {
                 return true;
             }
         }
