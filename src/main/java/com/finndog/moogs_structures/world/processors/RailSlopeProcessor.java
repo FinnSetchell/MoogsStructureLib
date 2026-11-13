@@ -38,8 +38,8 @@ import org.jetbrains.annotations.Nullable;
  * end, and turns the rail into a slope towards an end that is exactly one block higher.
  * A step of two or more stays flat, which leaves a break in the track.
  * <p>
- * It works out the rail's final shape in the world and sets whichever template shape placement turns into
- * it, so the rails it handles also come out right where the game's own rail rotation is wrong.
+ * Its rails also come out pointing the right way where the game's own rail rotation is wrong (see
+ * {@link RailRotationProcessor}).
  * <p>
  * The next rail's height comes from the same heightmap rule, so this works across piece
  * joins and chunk borders without seeing the neighbouring piece, as long as every track
@@ -104,43 +104,24 @@ public class RailSlopeProcessor extends StructureProcessor {
         int atFirstEnd = levelReader.getHeight(heightmap, pos.getX() + worldFirstEnd.getStepX(), pos.getZ() + worldFirstEnd.getStepZ());
         int atSecondEnd = levelReader.getHeight(heightmap, pos.getX() - worldFirstEnd.getStepX(), pos.getZ() - worldFirstEnd.getStepZ());
 
-        RailShape worldShape;
+        RailShape shape;
         if (atFirstEnd - here == 1) {
-            worldShape = slopeTowards(worldFirstEnd);
+            shape = RailRotationProcessor.slopeTowards(firstEnd);
         }
         else if (atSecondEnd - here == 1) {
-            worldShape = slopeTowards(worldFirstEnd.getOpposite());
+            shape = RailRotationProcessor.slopeTowards(firstEnd.getOpposite());
         }
         else {
-            worldShape = worldFirstEnd.getAxis() == Direction.Axis.Z ? RailShape.NORTH_SOUTH : RailShape.EAST_WEST;
+            shape = firstEnd == Direction.NORTH ? RailShape.NORTH_SOUTH : RailShape.EAST_WEST;
         }
 
-        return new StructureTemplate.StructureBlockInfo(pos, stateThatPlacesAs(state, shapeProperty, worldShape, mirror, rotation), structureBlockInfoWorld.nbt());
-    }
-
-    /**
-     * Placement mirrors and then rotates the template's state with the rail's own methods. On some versions
-     * those turn a flat straight rail sideways when the piece is turned 180 degrees (MC-196102: regular rails
-     * up to 1.20.1, powered, activator and detector rails up to 1.21.5). So instead of trusting them, pick the
-     * template shape that those same methods turn into the shape wanted in the world.
-     */
-    private static BlockState stateThatPlacesAs(BlockState state, Property<RailShape> shapeProperty, RailShape worldShape, Mirror mirror, Rotation rotation) {
-        for (RailShape candidate : shapeProperty.getPossibleValues()) {
-            BlockState candidateState = state.setValue(shapeProperty, candidate);
-            if (candidateState.mirror(mirror).rotate(rotation).getValue(shapeProperty) == worldShape) {
-                return candidateState;
-            }
+        BlockState sloped = state.setValue(shapeProperty, shape);
+        // MSL's own structures get the rail rotation processor last, which turns every rail the right way.
+        // Anywhere else, do it here, or a flat rail in a piece turned 180 degrees can come out sideways.
+        if (!placeSettings.getProcessors().contains(RailRotationProcessor.INSTANCE)) {
+            sloped = RailRotationProcessor.placeCorrectly(sloped, shapeProperty, mirror, rotation);
         }
-        return state;
-    }
-
-    private static RailShape slopeTowards(Direction direction) {
-        return switch (direction) {
-            case NORTH -> RailShape.ASCENDING_NORTH;
-            case SOUTH -> RailShape.ASCENDING_SOUTH;
-            case EAST -> RailShape.ASCENDING_EAST;
-            default -> RailShape.ASCENDING_WEST;
-        };
+        return new StructureTemplate.StructureBlockInfo(pos, sloped, structureBlockInfoWorld.nbt());
     }
 
     //? if <26.2 {
