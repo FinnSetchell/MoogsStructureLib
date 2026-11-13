@@ -13,7 +13,6 @@ import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ServerLevelAccessor;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
@@ -35,9 +34,10 @@ import org.jetbrains.annotations.Nullable;
  * take their height from the {@code WORLD_SURFACE} heightmap, which in the Nether is the top of the
  * bedrock roof. This processor reads the blocks of each column instead, starting at the piece's
  * placement height: from inside the ground it climbs to the top of that ground, from open space it
- * drops to the first ground below. A column with no floor within {@code search_range}, or whose
- * floor is under lava or water, is left out. The search never crosses the dimension's logical
- * height, so it can never reach the top of the Nether roof.
+ * drops to the first ground below. Lava and water count as open space, so a column over a lava lake
+ * or the sea settles on the floor under it, and the piece's air blocks leave the liquid in place. A
+ * column with no floor within {@code search_range} is left out. The search never crosses the
+ * dimension's logical height, so it can never reach the top of the Nether roof.
  *
  * <p>Every block of a column moves by the same amount, and entities move with the column they stand
  * in. Block entities keep their data, as the processor only changes a block's height.
@@ -94,10 +94,15 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         if (shift == NO_FLOOR) {
             return null;
         }
+        BlockPos target = pos.offset(0, shift, 0);
+        // A piece settled under lava or water keeps the liquid around it: its air doesn't carve holes.
+        if (blockInfo.state().isAir() && !levelReader.getFluidState(target).isEmpty()) {
+            return null;
+        }
         if (shift == 0) {
             return blockInfo;
         }
-        return new StructureTemplate.StructureBlockInfo(pos.offset(0, shift, 0), blockInfo.state(), blockInfo.nbt());
+        return new StructureTemplate.StructureBlockInfo(target, blockInfo.state(), blockInfo.nbt());
     }
 
     @Nullable
@@ -177,44 +182,31 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         }
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, baseY, z);
-        Ground start = Ground.at(level, pos);
-        if (start == Ground.FLUID) {
-            return NO_FLOOR;
-        }
-        boolean climb = start == Ground.SOLID;
+        boolean climb = isSolid(level, pos);
         for (int step = 1; step <= this.searchRange; step++) {
             int y = climb ? baseY + step : baseY - step;
             if (y < minY || y > maxY) {
                 return NO_FLOOR;
             }
-            Ground ground = Ground.at(level, pos.setY(y));
+            boolean solid = isSolid(level, pos.setY(y));
             if (climb) {
-                // Inside the ground: the floor is the last solid block before open space.
-                if (ground == Ground.SOLID) continue;
-                return ground == Ground.FLUID ? NO_FLOOR : (y - 1) - baseY + this.offset;
+                // Inside the ground: the floor is the last solid block before open space or liquid.
+                if (solid) continue;
+                return (y - 1) - baseY + this.offset;
             }
-            // In open space: the floor is the first solid block below.
-            if (ground == Ground.OPEN) continue;
-            return ground == Ground.FLUID ? NO_FLOOR : y - baseY + this.offset;
+            // In open space or liquid: the floor is the first solid block below.
+            if (!solid) continue;
+            return y - baseY + this.offset;
         }
         return NO_FLOOR;
     }
 
-    private enum Ground {
-        /** Has a collision box: stone, soul sand, nylium, slabs. Waterlogged blocks count too. */
-        SOLID,
-        /** Lava, water and blocks filled with them that have no collision box (seagrass, kelp). */
-        FLUID,
-        /** Everything else: air, plants, fungi, roots, vines, fire, thin snow. */
-        OPEN;
-
-        static Ground at(LevelReader level, BlockPos pos) {
-            BlockState state = level.getBlockState(pos);
-            if (!state.getCollisionShape(level, pos).isEmpty()) {
-                return SOLID;
-            }
-            return state.getFluidState().isEmpty() ? OPEN : FLUID;
-        }
+    /**
+     * Floor is anything with a collision box: stone, soul sand, nylium, slabs, waterlogged blocks.
+     * Air, liquids, plants, fungi, roots, vines, fire and thin snow are open space.
+     */
+    private static boolean isSolid(LevelReader level, BlockPos pos) {
+        return !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
     }
 
     private static final class ColumnShifts {
