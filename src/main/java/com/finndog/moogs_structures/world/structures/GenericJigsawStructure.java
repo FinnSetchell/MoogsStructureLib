@@ -205,6 +205,56 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
         return this.enhancedTerrainAdaptation;
     }
 
+    /**
+     * Where {@code cannot_spawn_in_liquid} looks: the topmost block of the column at the middle of the
+     * chunk. Structure types that place their pieces somewhere else override this.
+     */
+    protected boolean isInLiquid(GenerationContext context, BlockPos blockPos) {
+        ChunkPos chunkPos = context.chunkPos();
+        BlockPos centerOfChunk = chunkPos.getMiddleBlockPosition(0);
+        //? if >=1.21.1 <1.21.4 {
+        ChunkGenerator chunkGenerator = context.chunkGenerator();
+        NoiseColumn columnOfBlocks = chunkGenerator.getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
+        BlockState topBlock = Blocks.AIR.defaultBlockState();
+        for (int i = chunkGenerator.getMinY() + chunkGenerator.getGenDepth(); i > chunkGenerator.getMinY(); i--) {
+            BlockState block = columnOfBlocks.getBlock(i);
+            if (!block.isAir()) {
+                topBlock = block;
+                break;
+            }
+        }
+        //?}
+        //? if <1.21.1 {
+        /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerOfChunk.getX(), centerOfChunk.getZ(), Heightmap.Types.WORLD_SURFACE_WG, context.heightAccessor(), context.randomState());
+        NoiseColumn columnOfBlocks = context.chunkGenerator().getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
+        BlockState topBlock = columnOfBlocks.getBlock(centerOfChunk.getY() + landHeight);
+        *///?}
+        //? if >=1.21.4 <1.21.5 {
+        /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerOfChunk.getX(), centerOfChunk.getZ(), Heightmap.Types.WORLD_SURFACE_WG, context.heightAccessor(), context.randomState());
+        NoiseColumn columnOfBlocks = context.chunkGenerator().getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
+        BlockState topBlock = columnOfBlocks.getBlock(centerOfChunk.getY() + landHeight);
+        *///?}
+        //? if >=1.21.5 <26.1.2 {
+        /*ChunkGenerator chunkGenerator = context.chunkGenerator();
+        NoiseColumn columnOfBlocks = chunkGenerator.getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
+        BlockState topBlock = Blocks.AIR.defaultBlockState();
+        for (int i = chunkGenerator.getMinY() + chunkGenerator.getGenDepth(); i > chunkGenerator.getMinY(); i--) {
+            BlockState block = columnOfBlocks.getBlock(i);
+            if (!block.isAir()) {
+                topBlock = block;
+                break;
+            }
+        }
+        *///?}
+        //? if >=26.1.2 {
+        /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerOfChunk.getX(), centerOfChunk.getZ(), Heightmap.Types.WORLD_SURFACE_WG, context.heightAccessor(), context.randomState());
+        NoiseColumn columnOfBlocks = context.chunkGenerator().getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
+        BlockState topBlock = columnOfBlocks.getBlock(centerOfChunk.getY() + landHeight);
+        *///?}
+
+        return !topBlock.getFluidState().isEmpty();
+    }
+
     protected boolean extraSpawningChecks(GenerationContext context, BlockPos blockPos) {
         ChunkPos chunkPos = context.chunkPos();
 
@@ -249,51 +299,8 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             }
         }
 
-        if (this.cannotSpawnInLiquid) {
-            BlockPos centerOfChunk = chunkPos.getMiddleBlockPosition(0);
-            //? if >=1.21.1 <1.21.4 {
-            ChunkGenerator chunkGenerator = context.chunkGenerator();
-            NoiseColumn columnOfBlocks = chunkGenerator.getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
-            BlockState topBlock = Blocks.AIR.defaultBlockState();
-            for (int i = chunkGenerator.getMinY() + chunkGenerator.getGenDepth(); i > chunkGenerator.getMinY(); i--) {
-                BlockState block = columnOfBlocks.getBlock(i);
-                if (!block.isAir()) {
-                    topBlock = block;
-                    break;
-                }
-            }
-            //?}
-            //? if <1.21.1 {
-            /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerOfChunk.getX(), centerOfChunk.getZ(), Heightmap.Types.WORLD_SURFACE_WG, context.heightAccessor(), context.randomState());
-            NoiseColumn columnOfBlocks = context.chunkGenerator().getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
-            BlockState topBlock = columnOfBlocks.getBlock(centerOfChunk.getY() + landHeight);
-            *///?}
-            //? if >=1.21.4 <1.21.5 {
-            /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerOfChunk.getX(), centerOfChunk.getZ(), Heightmap.Types.WORLD_SURFACE_WG, context.heightAccessor(), context.randomState());
-            NoiseColumn columnOfBlocks = context.chunkGenerator().getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
-            BlockState topBlock = columnOfBlocks.getBlock(centerOfChunk.getY() + landHeight);
-            *///?}
-            //? if >=1.21.5 <26.1.2 {
-            /*ChunkGenerator chunkGenerator = context.chunkGenerator();
-            NoiseColumn columnOfBlocks = chunkGenerator.getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
-            BlockState topBlock = Blocks.AIR.defaultBlockState();
-            for (int i = chunkGenerator.getMinY() + chunkGenerator.getGenDepth(); i > chunkGenerator.getMinY(); i--) {
-                BlockState block = columnOfBlocks.getBlock(i);
-                if (!block.isAir()) {
-                    topBlock = block;
-                    break;
-                }
-            }
-            *///?}
-            //? if >=26.1.2 {
-            /*int landHeight = context.chunkGenerator().getFirstOccupiedHeight(centerOfChunk.getX(), centerOfChunk.getZ(), Heightmap.Types.WORLD_SURFACE_WG, context.heightAccessor(), context.randomState());
-            NoiseColumn columnOfBlocks = context.chunkGenerator().getBaseColumn(centerOfChunk.getX(), centerOfChunk.getZ(), context.heightAccessor(), context.randomState());
-            BlockState topBlock = columnOfBlocks.getBlock(centerOfChunk.getY() + landHeight);
-            *///?}
-
-            if(!topBlock.getFluidState().isEmpty()) {
-                return false;
-            }
+        if (this.cannotSpawnInLiquid && this.isInLiquid(context, blockPos)) {
+            return false;
         }
 
         if (this.terrainHeightCheckRadius.isPresent() &&

@@ -23,6 +23,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.level.NoiseColumn;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.LegacyRandomSource;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.heightproviders.HeightProvider;
@@ -132,6 +134,35 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
         this.searchDirection = searchDirection;
     }
 
+    /**
+     * The top of a Nether column is the bedrock roof, so for {@code cannot_spawn_in_liquid} look where
+     * the pieces will actually go: the land {@link #postLayoutAdjustments} searches for at the start
+     * piece's column. When it finds none, the structure would drop to the lava sea, so it doesn't
+     * spawn there at all and {@code /locate} moves on to a spot it can use.
+     */
+    @Override
+    protected boolean isInLiquid(GenerationContext context, BlockPos blockPos) {
+        ChunkGenerator chunkGenerator = context.chunkGenerator();
+        if (this.searchDirection == LAND_SEARCH_DIRECTION.FIXED_HEIGHT) {
+            NoiseColumn column = chunkGenerator.getBaseColumn(blockPos.getX(), blockPos.getZ(), context.heightAccessor(), context.randomState());
+            return !column.getBlock(blockPos.getY() + this.ledgeOffsetY.orElse(0)).getFluidState().isEmpty();
+        }
+        return noLand(context, this.findLand(context, new BoundingBox(blockPos)));
+    }
+
+    /** The land the placement searches for, at the middle column of {@code around}. */
+    private BlockPos findLand(GenerationContext context, BoundingBox around) {
+        if (this.searchDirection == LAND_SEARCH_DIRECTION.HIGHEST_LAND) {
+            return GeneralUtils.getHighestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid);
+        }
+        return GeneralUtils.getLowestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid);
+    }
+
+    /** The land search found nothing usable, so placement falls back to sea level (in the Nether, on the lava sea). */
+    private static boolean noLand(GenerationContext context, BlockPos land) {
+        return land.getY() >= GeneralUtils.getMaxTerrainLimit(context.chunkGenerator()) || land.getY() <= context.chunkGenerator().getSeaLevel() + 1;
+    }
+
     @Override
     protected void postLayoutAdjustments(StructurePiecesBuilder structurePiecesBuilder, GenerationContext context, int offsetY, BlockPos blockpos, int topClipOff, int bottomClipOff, List<PoolElementStructurePiece> pieces) {
         GeneralUtils.centerAllPieces(blockpos, pieces);
@@ -149,16 +180,15 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             //?} else {
             /*random.setLargeFeatureSeed(context.seed(), context.chunkPos().x(), context.chunkPos().z());
             *///?}
-            BlockPos placementPos;
-
-            if (this.searchDirection == LAND_SEARCH_DIRECTION.HIGHEST_LAND) {
-                placementPos = GeneralUtils.getHighestLand(context.chunkGenerator(), context.randomState(), structurePiecesBuilder.getBoundingBox(), context.heightAccessor(), !this.cannotSpawnInLiquid);
+            BlockPos placementPos = this.findLand(context, structurePiecesBuilder.getBoundingBox());
+            // With cannot_spawn_in_liquid the structure only spawned because the start piece's column has
+            // land (isInLiquid). If the middle of the whole structure has none, use that land instead of
+            // dropping to the lava sea.
+            if (this.cannotSpawnInLiquid && noLand(context, placementPos)) {
+                placementPos = this.findLand(context, new BoundingBox(blockpos));
             }
-            else {
-                placementPos = GeneralUtils.getLowestLand(context.chunkGenerator(), context.randomState(), structurePiecesBuilder.getBoundingBox(), context.heightAccessor(), !this.cannotSpawnInLiquid);
-            }
 
-            if (placementPos.getY() >= GeneralUtils.getMaxTerrainLimit(context.chunkGenerator()) || placementPos.getY() <= context.chunkGenerator().getSeaLevel() + 1) {
+            if (noLand(context, placementPos)) {
                 targetBaseY = context.chunkGenerator().getSeaLevel() + this.ledgeOffsetY.orElse(0);
             }
             else {
