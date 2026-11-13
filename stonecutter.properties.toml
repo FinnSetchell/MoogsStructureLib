@@ -192,18 +192,19 @@ deps.cloth_config = "18.0.145"
 deps.cloth_config_loader = "neoforge"
 mod.forge_compile_excludes = ""
 
+# NeoForge 1.21.5 only, for the same reason as Fabric: its settings screen draws with calls 1.21.6
+# removed. NeoForge 1.21.6-1.21.8 has its own node below.
 [neoforge."1.21.5"]
 mod.mc_build = "1.21.5"
-mod.mc_compat = "[1.21.5,1.21.9)"
+mod.mc_compat = "[1.21.5,1.21.6)"
 mod.neo_icon_key = "logoFile"
 deps.neoforge = "21.5.0-beta"
 deps.neoforge_min = "21.5.0-beta"
 deps.neoforge_range = "[4,)"
 deps.cloth_config = "18.0.145"
 
-# ------------------------------------------------------------------ Fabric and Forge 1.21.6-1.21.8 (Java 21)
-# NeoForge runs its 1.21.5 jar on 1.21.6-1.21.8. Compiled against the oldest of the three so it
-# runs on all of them.
+# ------------------------------------------------------------------ 1.21.6-1.21.8 (Java 21)
+# Compiled against the oldest of the three so it runs on all of them.
 ["1.21.6"]
 mod.java = "21"
 mod.access = "classic"
@@ -217,6 +218,15 @@ deps.fabric_loader = "0.16.14"
 deps.fabric_api = "0.128.2+1.21.6"
 deps.cloth_config = "19.0.147"
 deps.modmenu = "15.0.0"
+
+[neoforge."1.21.6"]
+mod.mc_build = "1.21.6"
+mod.mc_compat = "[1.21.6,1.21.9)"
+mod.neo_icon_key = "logoFile"
+deps.neoforge = "21.6.0-beta"
+deps.neoforge_min = "21.6.0-beta"
+deps.neoforge_range = "[4,)"
+deps.cloth_config = "19.0.147"
 
 # Forge 56-58 have the BusGroup event bus but not NewRegistryEvent.BUS (added in Forge 59), so this
 # node registers through getBus instead.
