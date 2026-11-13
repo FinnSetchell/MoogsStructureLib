@@ -8,6 +8,7 @@ import com.finndog.moogs_structures.world.processors.CloseOffFluidSourcesProcess
 import com.finndog.moogs_structures.world.processors.EquipArmorStandProcessor;
 import com.finndog.moogs_structures.world.processors.FloodWithWaterProcessor;
 import com.finndog.moogs_structures.world.processors.PillarProcessor;
+import com.finndog.moogs_structures.world.processors.RailSlopeProcessor;
 import com.finndog.moogs_structures.world.processors.RandomReplaceWithPropertiesProcessor;
 import com.finndog.moogs_structures.world.processors.RemoveFloatingBlocksProcessor;
 import com.finndog.moogs_structures.world.processors.SpawnerRandomizingProcessor;
@@ -49,6 +50,7 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<StructureProcessorType<SpawnerRandomizingProcessor>> SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("spawner_randomizing_processor", () -> () -> SpawnerRandomizingProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> () -> EquipArmorStandProcessor.CODEC);
     public static final RegistryEntry<StructureProcessorType<HangingEntityAnchorProcessor>> HANGING_ENTITY_ANCHOR_PROCESSOR = STRUCTURE_PROCESSOR.register("hanging_entity_anchor_processor", () -> () -> HangingEntityAnchorProcessor.CODEC);
+    public static final RegistryEntry<StructureProcessorType<RailSlopeProcessor>> RAIL_SLOPE_PROCESSOR = STRUCTURE_PROCESSOR.register("rail_slope_processor", () -> () -> RailSlopeProcessor.CODEC);
     //?}
     //? if >=1.21.1 <26.2 {
     public static final RegistryEntry<StructureProcessorType<TrialSpawnerRandomizingProcessor>> TRIAL_SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("trial_spawner_randomizing_processor", () -> () -> TrialSpawnerRandomizingProcessor.CODEC);
@@ -69,6 +71,7 @@ public final class MoogsStructuresProcessors {
     public static final RegistryEntry<MapCodec<SpawnerRandomizingProcessor>> SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("spawner_randomizing_processor", () -> SpawnerRandomizingProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<EquipArmorStandProcessor>> EQUIP_ARMOR_STAND_PROCESSOR = STRUCTURE_PROCESSOR.register("equip_armor_stand_processor", () -> EquipArmorStandProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<HangingEntityAnchorProcessor>> HANGING_ENTITY_ANCHOR_PROCESSOR = STRUCTURE_PROCESSOR.register("hanging_entity_anchor_processor", () -> HangingEntityAnchorProcessor.MAP_CODEC);
+    public static final RegistryEntry<MapCodec<RailSlopeProcessor>> RAIL_SLOPE_PROCESSOR = STRUCTURE_PROCESSOR.register("rail_slope_processor", () -> RailSlopeProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<TrialSpawnerRandomizingProcessor>> TRIAL_SPAWNER_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("trial_spawner_randomizing_processor", () -> TrialSpawnerRandomizingProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<VaultRandomizingProcessor>> VAULT_RANDOMIZING_PROCESSOR = STRUCTURE_PROCESSOR.register("vault_randomizing_processor", () -> VaultRandomizingProcessor.MAP_CODEC);
     public static final RegistryEntry<MapCodec<VanillaLootSwapProcessor>> VANILLA_LOOT_SWAP_PROCESSOR = STRUCTURE_PROCESSOR.register("vanilla_loot_swap_processor", () -> VanillaLootSwapProcessor.MAP_CODEC);
