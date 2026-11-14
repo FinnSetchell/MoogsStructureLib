@@ -1,6 +1,8 @@
 package com.finndog.moogs_structures.world.structures.terrainadaptation;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 //? if <1.21.11 {
 import net.minecraft.Util;
@@ -27,7 +29,7 @@ public class EnhancedTerrainAdaptation {
     public static final EnhancedTerrainAdaptation NONE =
             new EnhancedTerrainAdaptation(0, 0, TerrainAction.NONE, TerrainAction.NONE, 0.0, Padding.ZERO, Optional.empty());
 
-    public static final Codec<EnhancedTerrainAdaptation> CODEC = RecordCodecBuilder.create(builder -> builder
+    private static final Codec<EnhancedTerrainAdaptation> SETTINGS_CODEC = RecordCodecBuilder.create(builder -> builder
             .group(
                     ExtraCodecs.NON_NEGATIVE_INT.fieldOf("kernel_size").forGetter(EnhancedTerrainAdaptation::getKernelSize),
                     ExtraCodecs.NON_NEGATIVE_INT.fieldOf("kernel_distance").forGetter(EnhancedTerrainAdaptation::getKernelDistance),
@@ -37,6 +39,28 @@ public class EnhancedTerrainAdaptation {
                     Padding.CODEC.optionalFieldOf("padding", Padding.ZERO).forGetter(EnhancedTerrainAdaptation::getPadding),
                     Band.CODEC.optionalFieldOf("band").forGetter(EnhancedTerrainAdaptation::getBand))
             .apply(builder, EnhancedTerrainAdaptation::new));
+
+    /**
+     * The settings object, or the string {@code "none"}, so a piece can turn off the adaptation it
+     * would otherwise take from its structure. Settings that can't change the terrain (kernel radius 0,
+     * or nothing to do above or below) read as {@link #NONE} too, so they are skipped the same way.
+     */
+    public static final Codec<EnhancedTerrainAdaptation> CODEC = Codec.either(
+            Codec.STRING.comapFlatMap(
+                    name -> name.equals("none")
+                            ? DataResult.success(NONE)
+                            : DataResult.error(() -> "enhanced_terrain_adaptation is \"none\" or a settings object, got \"" + name + "\""),
+                    adaptation -> "none"),
+            SETTINGS_CODEC
+    ).xmap(
+            either -> either.map(none -> none, EnhancedTerrainAdaptation::orNone),
+            adaptation -> adaptation == NONE ? Either.left(NONE) : Either.right(adaptation));
+
+    private static EnhancedTerrainAdaptation orNone(EnhancedTerrainAdaptation adaptation) {
+        boolean changesNothing = adaptation.getKernelRadius() == 0
+                || (adaptation.topAction == TerrainAction.NONE && adaptation.bottomAction == TerrainAction.NONE);
+        return changesNothing ? NONE : adaptation;
+    }
 
     private final TerrainAction topAction;
     private final TerrainAction bottomAction;
