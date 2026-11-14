@@ -438,10 +438,10 @@ public final class GeneralUtils {
     ///////////////////////////////////////////
 
     private static final ConcurrentHashMap<HeightKey, Integer> CACHED_HEIGHT = new ConcurrentHashMap<>(2048);
-    private record HeightKey(ChunkGenerator chunkGenerator, int x, int z) {}
+    private record HeightKey(ChunkGenerator chunkGenerator, int x, int z, Heightmap.Types types) {}
 
     public static int getCachedFreeHeight(ChunkGenerator chunkGenerator, int x, int z, Heightmap.Types types, LevelHeightAccessor levelHeightAccessor, RandomState randomState) {
-        HeightKey key = new HeightKey(chunkGenerator, x, z);
+        HeightKey key = new HeightKey(chunkGenerator, x, z, types);
         Integer y = CACHED_HEIGHT.get(key);
 
         if (y == null) {
