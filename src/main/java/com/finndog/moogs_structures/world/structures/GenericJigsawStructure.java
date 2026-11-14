@@ -493,8 +493,8 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
 
             Heightmap.Types heightMapToUse = this.projectStartToHeightmap.orElse(Heightmap.Types.WORLD_SURFACE_WG);
             List<Integer> landHeights = new ArrayList<>();
-            for(int xOffset = -radius; xOffset <= radius; xOffset += (radius/2)) {
-                for(int zOffset = -radius; zOffset <= radius; zOffset += (radius/2)) {
+            for(int xOffset = -radius; xOffset <= radius; xOffset += Math.max(1, radius / 2)) {
+                for(int zOffset = -radius; zOffset <= radius; zOffset += Math.max(1, radius / 2)) {
                     //? if >=1.21.1 <1.21.4 {
                     int landHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), centerPos.getX() + xOffset, centerPos.getZ() + zOffset, heightMapToUse, context.heightAccessor(), context.randomState()) - 1;
                     //?}
