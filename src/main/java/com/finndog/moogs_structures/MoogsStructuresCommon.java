@@ -40,6 +40,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 //?}
+import com.finndog.moogs_structures.world.structures.terrainadaptation.AdaptationArea;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -75,6 +76,11 @@ public class MoogsStructuresCommon {
     private static void serverAboutToStart(final ServerGoingToStartEvent event) {
         ReplaceVanillaManager.reloadConfig();
         stampOwningSetIds(event.getServer());
+        //? if <26.3 {
+        AdaptationArea.setServerTemplates(event.getServer().getStructureManager());
+        //?} else {
+        /*AdaptationArea.setServerTemplates(event.getServer().getStructureTemplateManager());
+        *///?}
         AsyncLocator.handleServerAboutToStartEvent();
     }
 

@@ -6,15 +6,14 @@ import com.finndog.moogs_structures.utils.DebugFlags;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionEntry;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionNumber;
+import com.finndog.moogs_structures.world.processors.FollowFloorProcessor;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.AdaptationArea;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.PoolElementAdaptationOverride;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-//? if >=1.20.6 {
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
-//?} else {
-/*import com.mojang.serialization.Codec;
-*///?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
@@ -46,11 +45,10 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
             Codec.unboundedMap(Codec.STRING, ResourceLocation.CODEC)
                     .flatXmap(VersionResolver::parseVersionMap, VersionResolver::encodeVersionEntries);
 
-    //? if >=1.20.6 {
-    public static final MapCodec<VersionAwareSinglePoolElement> CODEC = RecordCodecBuilder.mapCodec(instance ->
-    //?} else {
-    /*public static final Codec<VersionAwareSinglePoolElement> CODEC = RecordCodecBuilder.create(instance ->
-    *///?}
+    // A map codec on every version, also once adaptation_area is checked: from 1.20 to 1.20.4 the pool
+    // element dispatch only reads the fields beside "element_type" through a map codec, and any other
+    // codec makes every versioned element fail to load.
+    private static final MapCodec<VersionAwareSinglePoolElement> MAP_CODEC = RecordCodecBuilder.<VersionAwareSinglePoolElement>mapCodec(instance ->
             instance.group(
                     ResourceLocation.CODEC.optionalFieldOf("location").forGetter(VersionAwareSinglePoolElement::singleLocation),
                     VERSION_ENTRIES_CODEC.optionalFieldOf("locations").forGetter(VersionAwareSinglePoolElement::versionEntriesOptional),
@@ -60,11 +58,13 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
                     overrideLiquidSettingsCodec(),
                     //?}
                     EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation")
-                            .forGetter(VersionAwareSinglePoolElement::moogs_structures_getAdaptationOverride)
+                            .forGetter(VersionAwareSinglePoolElement::moogs_structures_getAdaptationOverride),
+                    AdaptationArea.CODEC.optionalFieldOf("adaptation_area")
+                            .forGetter(VersionAwareSinglePoolElement::moogs_structures_getAdaptationArea)
             //? if >=1.21.1 {
-            ).apply(instance, (singleLocation, versionEntries, processors, projection, overrideLiquidSettings, adaptationOverride) ->
+            ).apply(instance, (singleLocation, versionEntries, processors, projection, overrideLiquidSettings, adaptationOverride, adaptationArea) ->
             //?} else {
-            /*).apply(instance, (singleLocation, versionEntries, processors, projection, adaptationOverride) ->
+            /*).apply(instance, (singleLocation, versionEntries, processors, projection, adaptationOverride, adaptationArea) ->
             *///?}
                     new VersionAwareSinglePoolElement(
                             singleLocation.orElse(null),
@@ -74,8 +74,15 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
                             //? if >=1.21.1 {
                             overrideLiquidSettings.orElse(null),
                             //?}
-                            adaptationOverride
-                    )));
+                            adaptationOverride,
+                            adaptationArea
+                    ))).flatXmap(VersionAwareSinglePoolElement::checkArea, VersionAwareSinglePoolElement::checkArea);
+
+    //? if >=1.20.6 {
+    public static final MapCodec<VersionAwareSinglePoolElement> CODEC = MAP_CODEC;
+    //?} else {
+    /*public static final Codec<VersionAwareSinglePoolElement> CODEC = MAP_CODEC.codec();
+    *///?}
 
     @Nullable
     private final ResourceLocation singleLocation;
@@ -83,6 +90,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
     private final ResourceLocation defaultLocation;
     private final String versionEntriesDescription;
     private final Optional<EnhancedTerrainAdaptation> adaptationOverride;
+    private final Optional<AdaptationArea> adaptationArea;
 
     private VersionAwareSinglePoolElement(@Nullable ResourceLocation singleLocation,
                                           List<VersionEntry> versionEntries,
@@ -91,7 +99,8 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
                                           //? if >=1.21.1 {
                                           @Nullable LiquidSettings overrideLiquidSettings,
                                           //?}
-                                          Optional<EnhancedTerrainAdaptation> adaptationOverride) {
+                                          Optional<EnhancedTerrainAdaptation> adaptationOverride,
+                                          Optional<AdaptationArea> adaptationArea) {
         super(Either.left(resolveTargetLocation(singleLocation, versionEntries)),
                 processors,
                 //? if >=1.21.1 {
@@ -109,7 +118,16 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
         this.defaultLocation = fallback;
         this.versionEntriesDescription = describeVersionEntries(this.versionEntries);
         this.adaptationOverride = adaptationOverride;
+        this.adaptationArea = adaptationArea;
         logFallbackIfNeeded();
+    }
+
+    // Only rigid pieces get a beard, and terrain_matching's own gravity would undo the following columns.
+    private static DataResult<VersionAwareSinglePoolElement> checkArea(VersionAwareSinglePoolElement element) {
+        if (element.adaptationArea.isPresent() && element.getProjection() != StructureTemplatePool.Projection.RIGID) {
+            return DataResult.error(() -> "adaptation_area needs \"projection\": \"rigid\" (" + element + ")");
+        }
+        return DataResult.success(element);
     }
 
     @Nullable
@@ -188,6 +206,11 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
         return this.adaptationOverride;
     }
 
+    @Override
+    public Optional<AdaptationArea> moogs_structures_getAdaptationArea() {
+        return this.adaptationArea;
+    }
+
     // Block-attached entities need their anchor rewritten at placement time; attaching the
     // processor here means structures get the fix without touching their datapacks.
     @Override
@@ -199,6 +222,14 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
         StructurePlaceSettings settings = super.getSettings(rotation, boundingBox, replaceJigsaw);
     *///?}
         settings.addProcessor(HangingEntityAnchorProcessor.INSTANCE);
+        // Columns outside the adaptation area follow the ground. First in the list, as the follow
+        // floor processor asks, so the element's own processors see each block where it ends up.
+        if (this.adaptationArea.isPresent() && this.adaptationArea.get().outsideFollowsGround()) {
+            List<AdaptationArea.ColumnRect> columns = this.adaptationArea.get().localColumns(this, null);
+            if (columns != null) {
+                settings.getProcessors().add(0, FollowFloorProcessor.outside(columns));
+            }
+        }
         return settings;
     }
 

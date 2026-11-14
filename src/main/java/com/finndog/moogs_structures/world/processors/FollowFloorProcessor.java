@@ -1,6 +1,9 @@
 package com.finndog.moogs_structures.world.processors;
 
 import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
+import com.finndog.moogs_structures.world.structures.pieces.VersionAwareSinglePoolElement;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.AdaptationArea;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.AdaptationArea.ColumnRect;
 //? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //?}
@@ -60,8 +63,14 @@ import java.util.function.IntPredicate;
  * so every chunk the piece covers comes to the same answer whatever order they generate in. It is
  * only judged for pieces no more than two chunks across, as wider ones reach chunks that aren't
  * carved yet.
+ *
+ * <p>A pool element's {@code adaptation_area} with {@code outside_follows_ground} uses this processor
+ * for the columns outside its area: the area's own columns stay exactly where the piece put them,
+ * and when most of the following columns would have no floor, only those are left out.
  */
 public class FollowFloorProcessor extends StructureEntityProcessor {
+
+    private static final int DEFAULT_SEARCH_RANGE = 16;
 
     //? if >=1.20.6 <26.2 {
     public static final MapCodec<FollowFloorProcessor> CODEC = RecordCodecBuilder.mapCodec(
@@ -73,7 +82,7 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
     /*public static final MapCodec<FollowFloorProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec(
     *///?}
             (instance) -> instance.group(
-                    Codec.intRange(1, 64).fieldOf("search_range").orElse(16).forGetter((p) -> p.searchRange),
+                    Codec.intRange(1, 64).fieldOf("search_range").orElse(DEFAULT_SEARCH_RANGE).forGetter((p) -> p.searchRange),
                     Codec.INT.fieldOf("offset").orElse(0).forGetter((p) -> p.offset)
             ).apply(instance, FollowFloorProcessor::new));
 
@@ -90,10 +99,22 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
 
     private final int searchRange;
     private final int offset;
+    /** Template columns left where the piece put them, or empty when every column follows. */
+    private final List<ColumnRect> keptColumns;
 
     public FollowFloorProcessor(int searchRange, int offset) {
+        this(searchRange, offset, List.of());
+    }
+
+    private FollowFloorProcessor(int searchRange, int offset, List<ColumnRect> keptColumns) {
         this.searchRange = searchRange;
         this.offset = offset;
+        this.keptColumns = keptColumns;
+    }
+
+    /** Every column of the piece follows the floor except those in {@code area} (template columns). */
+    public static FollowFloorProcessor outside(List<ColumnRect> area) {
+        return new FollowFloorProcessor(DEFAULT_SEARCH_RANGE, 0, List.copyOf(area));
     }
 
     @Nullable
@@ -103,6 +124,14 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
     //?} else {
     /*public StructureTemplate.StructureBlockInfo processBlock(LevelReader levelReader, BlockPos piecePos, BlockPos pivot, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo blockInfo, StructurePlaceSettings settings) {
     *///?}
+        //? if <26.2 {
+        BlockPos templatePos = localBlockInfo.pos();
+        //?} else {
+        /*BlockPos templatePos = templateRelativePos;
+        *///?}
+        if (this.keeps(templatePos)) {
+            return blockInfo;
+        }
         BlockPos pos = blockInfo.pos();
         ColumnShifts shifts = this.shiftsFor(settings, piecePos);
         if (!blockInfo.state().isAir()) {
@@ -136,6 +165,9 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
                                                                StructureTemplate.StructureEntityInfo localEntityInfo,
                                                                StructureTemplate.StructureEntityInfo globalEntityInfo,
                                                                StructurePlaceSettings structurePlaceSettings) {
+        if (this.keeps(localEntityInfo.blockPos)) {
+            return globalEntityInfo;
+        }
         BlockPos blockPos = globalEntityInfo.blockPos;
         ColumnShifts shifts = this.shiftsFor(structurePlaceSettings, structurePiecePos);
         if (shifts.hollow) {
@@ -171,10 +203,29 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
                 shifts.hollow = this.isMostlyHollow(level, settings, piecePos.getY(), shifts.footprint);
             }
             if (shifts.hollow) {
-                return new ArrayList<>();
+                return this.keptColumns.isEmpty() ? new ArrayList<>() : this.keptOnly(originalBlockInfos, processedBlockInfos);
             }
         }
         return processedBlockInfos;
+    }
+
+    /**
+     * The blocks of an adaptation area's own columns, which stay whatever the columns around them do.
+     * This processor runs first, so the two lists still pair up block for block; if another processor
+     * has changed that, nothing is taken out.
+     */
+    private List<StructureTemplate.StructureBlockInfo> keptOnly(List<StructureTemplate.StructureBlockInfo> originalBlockInfos,
+                                                                List<StructureTemplate.StructureBlockInfo> processedBlockInfos) {
+        if (originalBlockInfos.size() != processedBlockInfos.size()) {
+            return processedBlockInfos;
+        }
+        List<StructureTemplate.StructureBlockInfo> kept = new ArrayList<>();
+        for (int i = 0; i < processedBlockInfos.size(); i++) {
+            if (this.keeps(originalBlockInfos.get(i).pos())) {
+                kept.add(processedBlockInfos.get(i));
+            }
+        }
+        return kept;
     }
 
     //? if >=26.2 {
@@ -195,12 +246,20 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
             return 0;
         }
         int reach = 0;
+        if (element instanceof VersionAwareSinglePoolElement versioned
+                && versioned.moogs_structures_getAdaptationArea().map(AdaptationArea::outsideFollowsGround).orElse(false)) {
+            reach = DEFAULT_SEARCH_RANGE;
+        }
         for (StructureProcessor processor : ((SinglePoolElementAccessor) element).moogs_structures_getProcessors().value().list()) {
             if (processor instanceof FollowFloorProcessor follow) {
                 reach = Math.max(reach, follow.searchRange + Math.abs(follow.offset));
             }
         }
         return reach;
+    }
+
+    private boolean keeps(BlockPos templatePos) {
+        return !this.keptColumns.isEmpty() && ColumnRect.anyContains(this.keptColumns, templatePos.getX(), templatePos.getZ());
     }
 
     private static boolean isInChunk(StructurePlaceSettings settings, BlockPos pos) {
