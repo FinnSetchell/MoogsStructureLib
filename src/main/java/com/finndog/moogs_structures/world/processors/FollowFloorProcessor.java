@@ -10,9 +10,16 @@ import com.mojang.serialization.MapCodec;
 //?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
@@ -24,6 +31,10 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 //?}
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntPredicate;
 
 /**
  * Moves each column of a piece onto the floor found near the piece's own placement height, so the
@@ -41,6 +52,14 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Every block of a column moves by the same amount, and entities move with the column they stand
  * in. Block entities keep their data, as the processor only changes a block's height.
+ *
+ * <p>A piece is left out whole when most of it would have no floor: MSL's land searches read one
+ * column of the terrain before caves are carved, so they can pick a lone ledge over open space, or
+ * one a cave later cuts away, which would leave a few stray columns standing. That is judged from
+ * the terrain before carving and the carvers' own record of what they cut, never from the blocks,
+ * so every chunk the piece covers comes to the same answer whatever order they generate in. It is
+ * only judged for pieces no more than two chunks across, as wider ones reach chunks that aren't
+ * carved yet.
  */
 public class FollowFloorProcessor extends StructureEntityProcessor {
 
@@ -85,12 +104,16 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
     /*public StructureTemplate.StructureBlockInfo processBlock(LevelReader levelReader, BlockPos piecePos, BlockPos pivot, BlockPos templateRelativePos, StructureTemplate.StructureBlockInfo blockInfo, StructurePlaceSettings settings) {
     *///?}
         BlockPos pos = blockInfo.pos();
+        ColumnShifts shifts = this.shiftsFor(settings, piecePos);
+        if (!blockInfo.state().isAir()) {
+            shifts.footprint.add(column(pos.getX(), pos.getZ()));
+        }
         // Blocks outside the chunk being placed are thrown away after processing, and their columns
         // may not be generated yet, so leave them alone. Their own chunk's pass moves them.
         if (!isInChunk(settings, pos)) {
             return blockInfo;
         }
-        int shift = this.columnShift(levelReader, settings, piecePos, pos.getX(), pos.getZ());
+        int shift = this.columnShift(levelReader, shifts, piecePos, pos.getX(), pos.getZ());
         if (shift == NO_FLOOR) {
             return null;
         }
@@ -114,10 +137,14 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
                                                                StructureTemplate.StructureEntityInfo globalEntityInfo,
                                                                StructurePlaceSettings structurePlaceSettings) {
         BlockPos blockPos = globalEntityInfo.blockPos;
+        ColumnShifts shifts = this.shiftsFor(structurePlaceSettings, structurePiecePos);
+        if (shifts.hollow) {
+            return null;
+        }
         if (!isInChunk(structurePlaceSettings, blockPos)) {
             return globalEntityInfo;
         }
-        int shift = this.columnShift(serverLevelAccessor, structurePlaceSettings, structurePiecePos, blockPos.getX(), blockPos.getZ());
+        int shift = this.columnShift(serverLevelAccessor, shifts, structurePiecePos, blockPos.getX(), blockPos.getZ());
         if (shift == NO_FLOOR) {
             return null;
         }
@@ -126,6 +153,37 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         }
         return new StructureTemplate.StructureEntityInfo(globalEntityInfo.pos.add(0, shift, 0), blockPos.offset(0, shift, 0), globalEntityInfo.nbt);
     }
+
+    /**
+     * Leaves the whole piece out when most of it would have no floor. Runs once every
+     * block of the piece has been through {@link #processBlock}, so the whole footprint is known.
+     */
+    @Override
+    public List<StructureTemplate.StructureBlockInfo> finalizeProcessing(ServerLevelAccessor level, BlockPos piecePos, BlockPos pivot,
+                                                                         List<StructureTemplate.StructureBlockInfo> originalBlockInfos,
+                                                                         List<StructureTemplate.StructureBlockInfo> processedBlockInfos,
+                                                                         StructurePlaceSettings settings) {
+        ColumnShifts shifts = COLUMN_SHIFTS.get();
+        if (shifts != null && shifts.isFor(this, settings, piecePos)) {
+            // Vanilla runs the processors a second time over the piece's data markers: judge once.
+            if (!shifts.judged) {
+                shifts.judged = true;
+                shifts.hollow = this.isMostlyHollow(level, settings, piecePos.getY(), shifts.footprint);
+            }
+            if (shifts.hollow) {
+                return new ArrayList<>();
+            }
+        }
+        return processedBlockInfos;
+    }
+
+    //? if >=26.2 {
+    /*@Override
+    public boolean evaluatesEntirePieceState() {
+        // The whole footprint is needed to judge whether most of it would have no floor.
+        return true;
+    }
+    *///?}
 
     /**
      * How far a piece's blocks can end up above or below its bounding box because it follows the
@@ -150,13 +208,21 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         return box == null || (pos.getX() >= box.minX() && pos.getX() <= box.maxX() && pos.getZ() >= box.minZ() && pos.getZ() <= box.maxZ());
     }
 
-    private int columnShift(LevelReader level, StructurePlaceSettings settings, BlockPos piecePos, int x, int z) {
+    private ColumnShifts shiftsFor(StructurePlaceSettings settings, BlockPos piecePos) {
         ColumnShifts shifts = COLUMN_SHIFTS.get();
         if (shifts == null || !shifts.isFor(this, settings, piecePos)) {
             shifts = new ColumnShifts(this, settings, piecePos.immutable());
             COLUMN_SHIFTS.set(shifts);
         }
-        long column = ((long) x << 32) | (z & 0xFFFFFFFFL);
+        return shifts;
+    }
+
+    private static long column(int x, int z) {
+        return ((long) x << 32) | (z & 0xFFFFFFFFL);
+    }
+
+    private int columnShift(LevelReader level, ColumnShifts shifts, BlockPos piecePos, int x, int z) {
+        long column = column(x, z);
         int shift = shifts.byColumn.get(column);
         if (shift == NOT_MEASURED) {
             shift = this.findShift(level, piecePos.getY(), x, z);
@@ -170,6 +236,12 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
      * {@code offset}), measured from the piece's placement height {@code baseY}.
      */
     private int findShift(LevelReader level, int baseY, int x, int z) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, baseY, z);
+        return this.findShift(level, baseY, y -> isSolid(level, pos.setY(y)));
+    }
+
+    /** {@link #findShift(LevelReader, int, int, int)} for any reading of which heights are solid. */
+    private int findShift(LevelReader level, int baseY, IntPredicate solidAt) {
         //? if <1.21.2 {
         int minY = level.getMinBuildHeight();
         //?} else {
@@ -181,14 +253,13 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
             return 0;
         }
 
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, baseY, z);
-        boolean climb = isSolid(level, pos);
+        boolean climb = solidAt.test(baseY);
         for (int step = 1; step <= this.searchRange; step++) {
             int y = climb ? baseY + step : baseY - step;
             if (y < minY || y > maxY) {
                 return NO_FLOOR;
             }
-            boolean solid = isSolid(level, pos.setY(y));
+            boolean solid = solidAt.test(y);
             if (climb) {
                 // Inside the ground: the floor is the last solid block before open space or liquid.
                 if (solid) continue;
@@ -199,6 +270,74 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
             return y - baseY + this.offset;
         }
         return NO_FLOOR;
+    }
+
+    /**
+     * Whether more than half of the piece's visible columns would have no floor within reach: read
+     * from the terrain before carving with the carved blocks taken out, so features and structures
+     * placed since can't sway it. Only judged when the chunk being placed holds part of the piece and
+     * the piece is no more than two chunks across, so every chunk it covers can read every other one.
+     */
+    private boolean isMostlyHollow(ServerLevelAccessor level, StructurePlaceSettings settings, int baseY, LongOpenHashSet footprint) {
+        BoundingBox chunkBox = settings.getBoundingBox();
+        if (footprint.isEmpty() || chunkBox == null) {
+            return false;
+        }
+        int minChunkX = Integer.MAX_VALUE, maxChunkX = Integer.MIN_VALUE, minChunkZ = Integer.MAX_VALUE, maxChunkZ = Integer.MIN_VALUE;
+        for (LongIterator it = footprint.iterator(); it.hasNext(); ) {
+            long column = it.nextLong();
+            int chunkX = ((int) (column >> 32)) >> 4;
+            int chunkZ = ((int) column) >> 4;
+            minChunkX = Math.min(minChunkX, chunkX);
+            maxChunkX = Math.max(maxChunkX, chunkX);
+            minChunkZ = Math.min(minChunkZ, chunkZ);
+            maxChunkZ = Math.max(maxChunkZ, chunkZ);
+        }
+        int placingX = chunkBox.minX() >> 4;
+        int placingZ = chunkBox.minZ() >> 4;
+        if (maxChunkX - minChunkX > 1 || maxChunkZ - minChunkZ > 1
+                || placingX < minChunkX || placingX > maxChunkX || placingZ < minChunkZ || placingZ > maxChunkZ) {
+            return false;
+        }
+
+        ChunkGenerator generator = level.getLevel().getChunkSource().getGenerator();
+        RandomState randomState = level.getLevel().getChunkSource().randomState();
+        Long2ObjectOpenHashMap<CarvedTerrain.Mask> masks = new Long2ObjectOpenHashMap<>();
+        int hollow = 0;
+        int left = footprint.size();
+        for (LongIterator it = footprint.iterator(); it.hasNext(); ) {
+            long column = it.nextLong();
+            int x = (int) (column >> 32);
+            int z = (int) column;
+            long chunkKey = column(x >> 4, z >> 4);
+            CarvedTerrain.Mask mask = masks.get(chunkKey);
+            if (mask == null) {
+                mask = CarvedTerrain.of(level, level.getChunk(x >> 4, z >> 4));
+                if (mask == null) {
+                    return false;
+                }
+                masks.put(chunkKey, mask);
+            }
+            CarvedTerrain.Mask carved = mask;
+            NoiseColumn terrain = generator.getBaseColumn(x, z, level, randomState);
+            IntPredicate rock = y -> isRock(terrain.getBlock(y));
+            if (this.findShift(level, baseY, y -> rock.test(y) && !carved.isCarved(x, y, z)) == NO_FLOOR) {
+                hollow++;
+            }
+            left--;
+            if (hollow * 2 > footprint.size()) {
+                return true;
+            }
+            if ((hollow + left) * 2 <= footprint.size()) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /** Terrain before carving holds only the dimension's stone, its fluids and air. */
+    private static boolean isRock(BlockState state) {
+        return !state.isAir() && state.getFluidState().isEmpty();
     }
 
     /**
@@ -214,6 +353,11 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         private final StructurePlaceSettings settings;
         private final BlockPos piecePos;
         private final Long2IntOpenHashMap byColumn = new Long2IntOpenHashMap();
+        /** Every column the piece has a visible (non-air) block in, inside the chunk being placed or not. */
+        private final LongOpenHashSet footprint = new LongOpenHashSet();
+        private boolean judged;
+        /** Set once the piece is found to be mostly over a hollow: nothing of it is placed. */
+        private boolean hollow;
 
         private ColumnShifts(FollowFloorProcessor processor, StructurePlaceSettings settings, BlockPos piecePos) {
             this.processor = processor;
