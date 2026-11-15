@@ -244,8 +244,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             pieces.forEach(piece -> piece.move(0, yDiff, 0));
             // Every jigsaw child must hang clear too: a spire tip below the start piece mustn't end in the
             // lava sea or the cave floor.
+            int startBottom = pieces.get(0).getBoundingBox().minY();
             for (int i = 1; i < pieces.size(); i++) {
-                if (!GeneralUtils.hangsClear(context.chunkGenerator(), context.randomState(), context.heightAccessor(), pieces.get(i).getBoundingBox(), this.cannotSpawnInLiquid)) {
+                if (!GeneralUtils.hangsClear(context.chunkGenerator(), context.randomState(), context.heightAccessor(), pieces.get(i).getBoundingBox(), startBottom, this.cannotSpawnInLiquid)) {
                     structurePiecesBuilder.clear();
                     return;
                 }

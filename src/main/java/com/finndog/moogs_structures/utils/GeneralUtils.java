@@ -315,17 +315,19 @@ public final class GeneralUtils {
 
     /**
      * Whether a jigsaw child of a hanging structure, already at its final place, hangs clear: at its middle and
-     * four corners, the rows under any rock it is set into are all air, never lava, water or the floor. With
-     * {@code overGround}, the air under it must also end on rock. Read from the terrain before caves are carved,
-     * like {@link #getCeilingTop}.
+     * four corners, the rows under any rock it is set into are all air, never lava, water or the floor. Only the
+     * ceiling can hold it, so rock counts as ceiling no lower than {@code lowestCeilingRow} (the start piece's
+     * bottom row): anything a child meets below that has to be air. A column that is rock all the way down is
+     * buried, not hanging. With {@code overGround}, the air under it must also end on rock. Read from the terrain
+     * before caves are carved, like {@link #getCeilingTop}.
      */
     public static boolean hangsClear(ChunkGenerator chunkGenerator, RandomState randomState, LevelHeightAccessor heightLimitView,
-                                     BoundingBox box, boolean overGround) {
+                                     BoundingBox box, int lowestCeilingRow, boolean overGround) {
         for (NoiseColumn column : middleAndCorners(chunkGenerator, randomState, heightLimitView, box)) {
             boolean inRock = true;
             for (int y = box.maxY(); y >= box.minY(); y--) {
                 BlockState state = column.getBlock(y);
-                if (inRock && isRock(state)) {
+                if (inRock && y >= lowestCeilingRow && isRock(state)) {
                     continue;
                 }
                 inRock = false;
@@ -333,7 +335,10 @@ public final class GeneralUtils {
                     return false;
                 }
             }
-            if (overGround && !inRock && !endsOnRock(column, box.minY() - 1, chunkGenerator.getMinY())) {
+            if (inRock) {
+                return false;
+            }
+            if (overGround && !endsOnRock(column, box.minY() - 1, chunkGenerator.getMinY())) {
                 return false;
             }
         }
