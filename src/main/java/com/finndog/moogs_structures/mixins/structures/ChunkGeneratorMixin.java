@@ -98,20 +98,9 @@ public class ChunkGeneratorMixin {
             ResourceLocation id = registry.getKey(structure);
             if (id == null) continue;
 
-            ReplaceVanillaManager.Replacement replacement = aliases.forReplacement(id)
-                    .filter(r -> r.options().inheritSpawnOverrides())
-                    .orElse(null);
-            if (replacement == null) continue;
-
-            //? if <1.21.2 {
-            Structure vanilla = registry.get(replacement.vanillaStructure());
-            //?} else {
-            /*Structure vanilla = registry.getValue(replacement.vanillaStructure());
-            *///?}
-            if (vanilla == null) continue;
-            StructureSpawnOverride vanillaOverride = vanilla.spawnOverrides().get(mobCategory);
+            StructureSpawnOverride vanillaOverride = moogs_structures_inheritedOverride(
+                    registry, aliases, id, structureManager, structure, entry.getValue(), blockPos, mobCategory);
             if (vanillaOverride == null) continue;
-            if (!moogs_structures_insideStart(structureManager, structure, entry.getValue(), blockPos, vanillaOverride.boundingBox())) continue;
 
             StructureSpawnOverride ownOverride = structure.spawnOverrides().get(mobCategory);
             boolean ownApplies = ownOverride != null
@@ -166,31 +155,31 @@ public class ChunkGeneratorMixin {
         boolean swapped = false;
 
         for (Holder<Structure> holder : holderSet) {
-            Holder<Structure> target = holder;
             //? if <1.21.11 {
             ResourceLocation id = holder.unwrapKey().map(ResourceKey::location).orElse(null);
             //?} else {
             /*ResourceLocation id = holder.unwrapKey().map(ResourceKey::identifier).orElse(null);
             *///?}
+            // Every active replacement is searched in the vanilla structure's place, so the nearest one wins.
+            List<Holder<Structure>> targets = new ArrayList<>();
             if (id != null) {
-                ReplaceVanillaManager.Replacement replacement = aliases.forVanilla(id)
-                        .filter(r -> r.options().redirectLocate())
-                        .orElse(null);
-                if (replacement != null) {
-                    Holder<Structure> replacementHolder = registry
+                for (ReplaceVanillaManager.Replacement replacement : aliases.forVanilla(id)) {
+                    if (!replacement.options().redirectLocate()) continue;
+                    registry
                             //? if <1.21.2 {
                             .getHolder(ResourceKey.create(Registries.STRUCTURE, replacement.replacementStructure()))
                             //?} else {
                             /*.get(ResourceKey.create(Registries.STRUCTURE, replacement.replacementStructure()))
                             *///?}
-                            .orElse(null);
-                    if (replacementHolder != null) {
-                        target = replacementHolder;
-                        swapped = true;
-                    }
+                            .ifPresent(targets::add);
                 }
             }
-            redirected.add(target);
+            if (targets.isEmpty()) {
+                redirected.add(holder);
+            } else {
+                redirected.addAll(targets);
+                swapped = true;
+            }
         }
 
         if (!swapped) return;
@@ -198,6 +187,29 @@ public class ChunkGeneratorMixin {
         // Safe to re-enter: the replacement ids have no alias of their own, so the second call runs vanilla.
         ChunkGenerator self = (ChunkGenerator) (Object) this;
         cir.setReturnValue(self.findNearestMapStructure(serverLevel, HolderSet.direct(List.copyOf(redirected)), blockPos, searchRadius, skipKnownStructures));
+    }
+
+    /**
+     * The spawn override of the first vanilla structure this replacement stands in for that covers the
+     * position, or null. A replacement can stand in for more than one vanilla structure.
+     */
+    private static StructureSpawnOverride moogs_structures_inheritedOverride(Registry<Structure> registry, ReplacementAliases.Snapshot aliases,
+                                                                             ResourceLocation id, StructureManager structureManager, Structure structure,
+                                                                             LongSet references, BlockPos blockPos, MobCategory mobCategory) {
+        for (ReplaceVanillaManager.Replacement replacement : aliases.forReplacement(id)) {
+            if (!replacement.options().inheritSpawnOverrides()) continue;
+            //? if <1.21.2 {
+            Structure vanilla = registry.get(replacement.vanillaStructure());
+            //?} else {
+            /*Structure vanilla = registry.getValue(replacement.vanillaStructure());
+            *///?}
+            if (vanilla == null) continue;
+            StructureSpawnOverride override = vanilla.spawnOverrides().get(mobCategory);
+            if (override != null && moogs_structures_insideStart(structureManager, structure, references, blockPos, override.boundingBox())) {
+                return override;
+            }
+        }
+        return null;
     }
 
     private static boolean moogs_structures_insideStart(StructureManager structureManager, Structure structure, LongSet references, BlockPos blockPos,

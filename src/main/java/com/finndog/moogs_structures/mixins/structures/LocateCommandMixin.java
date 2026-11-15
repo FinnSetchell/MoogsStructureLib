@@ -3,6 +3,7 @@ package com.finndog.moogs_structures.mixins.structures;
 import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresTags;
+import com.finndog.moogs_structures.replacement.ReplacementAliases;
 import com.google.common.base.Stopwatch;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
@@ -37,6 +38,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 @Mixin(LocateCommand.class)
 public class LocateCommandMixin {
 
@@ -70,16 +75,21 @@ public class LocateCommandMixin {
                 cir.setReturnValue(1);
                 return;
             }
-            ReplaceVanillaManager.getActiveReplacement(id).ifPresent(replacement -> {
-                ResourceLocation replacementId = replacement.replacementStructure();
-                // The generator redirects the search to the replacement, so vanilla finds something.
-                if (replacementId != null && replacement.options().redirectLocate()) return;
-                String replacementText = replacementId != null ? replacementId.toString() : "a Moogs structure";
-                source.sendSuccess(() -> Component.literal(
-                        id + " has been replaced with " + replacementText +
-                        ". You can change this in the Moogs Structures config (config/moogs_structures.json)."), false);
-                cir.setReturnValue(1);
-            });
+            List<ReplaceVanillaManager.Replacement> active = ReplaceVanillaManager.getActiveReplacements(id);
+            if (active.isEmpty()) return;
+            // The generator redirects the search to the replacement, so vanilla finds something.
+            if (ReplacementAliases.forVanilla(id).stream().anyMatch(r -> r.options().redirectLocate())) return;
+            String replacementText = active.stream()
+                    .map(ReplaceVanillaManager.Replacement::replacementStructure)
+                    .filter(Objects::nonNull)
+                    .map(ResourceLocation::toString)
+                    .distinct()
+                    .collect(Collectors.joining(" and "));
+            String shown = replacementText.isEmpty() ? "a Moogs structure" : replacementText;
+            source.sendSuccess(() -> Component.literal(
+                    id + " has been replaced with " + shown +
+                    ". You can change this in the Moogs Structures config (config/moogs_structures.json)."), false);
+            cir.setReturnValue(1);
         });
     }
 
