@@ -7,6 +7,7 @@ import com.finndog.moogs_structures.world.structures.terrainadaptation.Adaptatio
 //? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //?}
+import com.finndog.moogs_structures.utils.StrictOptionalField;
 import com.mojang.serialization.Codec;
 //? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
@@ -82,8 +83,8 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
     /*public static final MapCodec<FollowFloorProcessor> MAP_CODEC = RecordCodecBuilder.mapCodec(
     *///?}
             (instance) -> instance.group(
-                    Codec.intRange(1, 64).fieldOf("search_range").orElse(DEFAULT_SEARCH_RANGE).forGetter((p) -> p.searchRange),
-                    Codec.INT.fieldOf("offset").orElse(0).forGetter((p) -> p.offset)
+                    StrictOptionalField.of(Codec.intRange(1, 64), "search_range", DEFAULT_SEARCH_RANGE).forGetter((p) -> p.searchRange),
+                    StrictOptionalField.of(Codec.INT, "offset", 0).forGetter((p) -> p.offset)
             ).apply(instance, FollowFloorProcessor::new));
 
     /** Shift returned for a column that has no usable floor: its blocks and entities are left out. */
