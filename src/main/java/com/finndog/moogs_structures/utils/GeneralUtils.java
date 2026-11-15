@@ -256,8 +256,8 @@ public final class GeneralUtils {
      * the seed. Scans down the piece's middle column from just under the roof for rock with air under it, and
      * looks at the piece's four corners too: the piece hangs from the highest of those five ceilings, so no
      * corner of its top hangs in the air, and its top is set into the rock where the ceiling is lower. A ceiling
-     * only counts when, in all five columns, every row of the piece under the rock is air: never lava, water or
-     * the floor. Otherwise the scan carries on down to the next ceiling.
+     * only counts when, in all five columns, every row of the piece under the rock is air (never lava, water or
+     * the floor) and every row set into the rock is rock. Otherwise the scan carries on down to the next ceiling.
      *
      * @param box             the piece's bounding box at its final x and z (its y doesn't matter)
      * @param sinkIntoRock    how many rows the piece's top goes up into the rock (0 = just under it)
@@ -297,9 +297,13 @@ public final class GeneralUtils {
                 continue;
             }
             for (int i = 0; i < columns.length && fits; i++) {
+                // The rows set into the rock must really be rock, not a thin shelf with a cave above it.
+                for (int y = ceilings[i]; y <= top && fits; y++) {
+                    fits = isRock(columns[i].getBlock(y));
+                }
                 int firstOpenRow = Math.min(top, ceilings[i] - 1);
                 // A column wholly inside the rock means the piece is buried there, not hanging.
-                fits = firstOpenRow >= bottom;
+                fits = fits && firstOpenRow >= bottom;
                 for (int y = firstOpenRow; y >= bottom && fits; y--) {
                     fits = columns[i].getBlock(y).isAir();
                 }

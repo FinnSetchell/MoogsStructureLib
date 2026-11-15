@@ -202,9 +202,16 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                 structurePiecesBuilder.clear();
                 return;
             }
-            // Never slid to fit y_allowance like below: that would pull it off the ceiling. The spot was
-            // checked against it instead.
+            // Never slid to fit y_allowance like below: that would pull it off the ceiling. The start piece
+            // was checked against it; a jigsaw child reaching into the bedrock roof or out of y_allowance
+            // means the structure isn't placed here at all.
             int yDiff = top - startPieceBox.maxY();
+            BoundingBox whole = structurePiecesBuilder.getBoundingBox();
+            int highestTop = Math.min(GeneralUtils.getMaxTerrainLimit(context.chunkGenerator()) - GeneralUtils.CEILING_ROOF_MARGIN, topClipOff);
+            if (whole.maxY() + yDiff > highestTop || whole.minY() + yDiff < bottomClipOff) {
+                structurePiecesBuilder.clear();
+                return;
+            }
             pieces.forEach(piece -> piece.move(0, yDiff, 0));
             return;
         }

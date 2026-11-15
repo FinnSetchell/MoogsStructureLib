@@ -179,6 +179,11 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         ArrayDeque<PlacingTemplate> placing = PLACING.get();
         if (!placing.isEmpty() && placing.peekLast().settings == settings) {
             placing.removeLast();
+            // The terrain view holds the world being generated: don't keep it on this thread once the piece is done.
+            ColumnShifts shifts = COLUMN_SHIFTS.get();
+            if (shifts != null && shifts.settings == settings) {
+                shifts.terrain = null;
+            }
         }
     }
 
@@ -444,8 +449,11 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         *///?}
         // Never into the top layers, which in the Nether are the bedrock roof.
         int highestTop = minY + level.dimensionType().logicalHeight() - GeneralUtils.CEILING_ROOF_MARGIN;
-        if (topY < minY || topY > highestTop) {
-            // Placed outside the searchable height: leave it as placed.
+        if (topY > highestTop) {
+            // Placed in or above the roof layers: never placed as it is, as its air could open the roof.
+            return NO_FLOOR;
+        }
+        if (topY < minY) {
             return 0;
         }
 
@@ -536,7 +544,7 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
             NoiseColumn terrain = generator.getBaseColumn(x, z, level, randomState);
             IntPredicate rock = y -> isRock(terrain.getBlock(y)) && !carved.isCarved(x, y, z);
             int shift = this.ceiling
-                    ? this.findCeilingShift(level, anchorY, rock, y -> isLiquid(terrain.getBlock(y)) && !carved.isCarved(x, y, z))
+                    ? this.findCeilingShift(level, anchorY, rock, y -> isLiquid(terrain.getBlock(y)) || (carved.isCarved(x, y, z) && carvesToLava(generator, y)))
                     : this.findShift(level, anchorY, rock);
             if (shift == NO_FLOOR) {
                 hollow++;
@@ -559,6 +567,15 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
 
     private static boolean isLiquid(BlockState state) {
         return !state.getFluidState().isEmpty();
+    }
+
+    /**
+     * Whether a cave carved at this height holds lava rather than air: the Nether's carvers fill what
+     * they cut in the bottom 32 layers with lava. (Carvers never turn lava or water into air either:
+     * they skip blocks they can't replace, so a liquid stays a liquid.)
+     */
+    private static boolean carvesToLava(ChunkGenerator generator, int y) {
+        return y <= generator.getMinY() + 31;
     }
 
     /**
@@ -586,9 +603,12 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         private final CarvedTerrain.Mask carved;
         private final Long2ObjectOpenHashMap<NoiseColumn> columns = new Long2ObjectOpenHashMap<>();
         private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        /** The chunk this view was made for, so a placement reused for another chunk gets its own. */
+        private final long chunk;
 
         private Terrain(LevelReader level, @Nullable BoundingBox chunkBox) {
             this.level = level;
+            this.chunk = chunkOf(chunkBox);
             CarvedTerrain.Mask mask = null;
             if (chunkBox != null && level instanceof ServerLevelAccessor serverLevel) {
                 ChunkAccess chunk = level.getChunk(chunkBox.minX() >> 4, chunkBox.minZ() >> 4);
@@ -619,7 +639,16 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
             if (this.carved == null) {
                 return !this.level.getFluidState(this.pos.set(x, y, z)).isEmpty();
             }
-            return FollowFloorProcessor.isLiquid(this.column(x, z).getBlock(y)) && !this.carved.isCarved(x, y, z);
+            return FollowFloorProcessor.isLiquid(this.column(x, z).getBlock(y))
+                    || (this.carved.isCarved(x, y, z) && carvesToLava(this.generator, y));
+        }
+
+        private boolean isFor(@Nullable BoundingBox chunkBox) {
+            return this.chunk == chunkOf(chunkBox);
+        }
+
+        private static long chunkOf(@Nullable BoundingBox chunkBox) {
+            return chunkBox == null ? Long.MIN_VALUE : FollowFloorProcessor.column(chunkBox.minX() >> 4, chunkBox.minZ() >> 4);
         }
 
         private NoiseColumn column(int x, int z) {
@@ -661,8 +690,9 @@ public class FollowFloorProcessor extends StructureEntityProcessor {
         }
 
         private Terrain terrain(LevelReader level) {
-            if (this.terrain == null) {
-                this.terrain = new Terrain(level, this.settings.getBoundingBox());
+            BoundingBox chunkBox = this.settings.getBoundingBox();
+            if (this.terrain == null || !this.terrain.isFor(chunkBox)) {
+                this.terrain = new Terrain(level, chunkBox);
             }
             return this.terrain;
         }
