@@ -4,6 +4,7 @@ import com.finndog.moogs_structures.MoogsStructuresCommon;
 import com.finndog.moogs_structures.mixins.structures.PoolElementStructurePieceAccessor;
 import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
 import com.finndog.moogs_structures.mixins.structures.TemplateAccessor;
+import com.finndog.moogs_structures.utils.StrictOptionalField;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -41,9 +42,9 @@ import java.util.Optional;
  */
 public final class AdaptationArea {
     public static final Codec<AdaptationArea> CODEC = RecordCodecBuilder.<AdaptationArea>create(instance -> instance.group(
-            ColumnRect.CODEC.listOf().optionalFieldOf("columns").forGetter(a -> a.columns),
-            Footprint.CODEC.optionalFieldOf("footprint").forGetter(a -> a.footprint),
-            Codec.BOOL.optionalFieldOf("outside_follows_ground", false).forGetter(a -> a.outsideFollowsGround)
+            StrictOptionalField.of(ColumnRect.CODEC.listOf(), "columns").forGetter(a -> a.columns),
+            StrictOptionalField.of(Footprint.CODEC, "footprint").forGetter(a -> a.footprint),
+            StrictOptionalField.of(Codec.BOOL, "outside_follows_ground", false).forGetter(a -> a.outsideFollowsGround)
     ).apply(instance, AdaptationArea::new)).flatXmap(AdaptationArea::check, AdaptationArea::check);
 
     private static DataResult<AdaptationArea> check(AdaptationArea area) {
@@ -168,9 +169,9 @@ public final class AdaptationArea {
      */
     public record Footprint(int layers, Optional<TagKey<Block>> blocks, int margin) {
         public static final Codec<Footprint> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Codec.intRange(1, 64).optionalFieldOf("layers", 1).forGetter(Footprint::layers),
-                TagKey.hashedCodec(Registries.BLOCK).optionalFieldOf("blocks").forGetter(Footprint::blocks),
-                Codec.intRange(0, 16).optionalFieldOf("margin", 0).forGetter(Footprint::margin)
+                StrictOptionalField.of(Codec.intRange(1, 64), "layers", 1).forGetter(Footprint::layers),
+                StrictOptionalField.of(TagKey.hashedCodec(Registries.BLOCK), "blocks").forGetter(Footprint::blocks),
+                StrictOptionalField.of(Codec.intRange(0, 16), "margin", 0).forGetter(Footprint::margin)
         ).apply(instance, Footprint::new));
 
         Optional<ColumnRect> find(StructureTemplate template) {

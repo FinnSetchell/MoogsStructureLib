@@ -3,6 +3,7 @@ package com.finndog.moogs_structures.world.structures.pieces;
 import com.finndog.moogs_structures.MoogsStructuresCommon;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePieces;
 import com.finndog.moogs_structures.utils.DebugFlags;
+import com.finndog.moogs_structures.utils.StrictOptionalField;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionEntry;
 import com.finndog.moogs_structures.utils.VersionResolver.VersionNumber;
@@ -59,7 +60,7 @@ public class VersionAwareSinglePoolElement extends SinglePoolElement implements 
                     //?}
                     EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation")
                             .forGetter(VersionAwareSinglePoolElement::moogs_structures_getAdaptationOverride),
-                    AdaptationArea.CODEC.optionalFieldOf("adaptation_area")
+                    StrictOptionalField.of(AdaptationArea.CODEC, "adaptation_area")
                             .forGetter(VersionAwareSinglePoolElement::moogs_structures_getAdaptationArea)
             //? if >=1.21.1 {
             ).apply(instance, (singleLocation, versionEntries, processors, projection, overrideLiquidSettings, adaptationOverride, adaptationArea) ->
