@@ -419,8 +419,8 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                 blockpos,
                 this.useBoundingBoxHack,
                 this.projectStartToHeightmap,
-                topClipOff,
-                bottomClipOff,
+                this.clipsPiecesWhileAssembling() ? topClipOff : Integer.MAX_VALUE,
+                this.clipsPiecesWhileAssembling() ? bottomClipOff : Integer.MIN_VALUE,
                 this.poolsThatIgnoreBoundaries,
                 this.maxDistanceFromCenter,
                 this.buryingType,
@@ -437,6 +437,14 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
      * Structure types that need room for the piece override this.
      */
     protected boolean startPieceFits(GenerationContext context, int offsetY, BlockPos blockpos, int topClipOff, int bottomClipOff, BoundingBox startPieceBox) {
+        return true;
+    }
+
+    /**
+     * Whether jigsaw children outside the y allowance are dropped while the structure is laid out. Structure
+     * types that only move the structure to its real height afterwards, and check the allowance there, say no.
+     */
+    protected boolean clipsPiecesWhileAssembling() {
         return true;
     }
 

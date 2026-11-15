@@ -9,6 +9,7 @@ import com.finndog.moogs_structures.world.structures.codecs.YRangeAllowance;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 //?}
 import com.google.common.collect.Maps;
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 //? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
@@ -183,6 +184,34 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
         return this.ceilingTop(context, placed, offsetY, topClipOff, bottomClipOff) != GeneralUtils.NO_CEILING;
     }
 
+    /**
+     * A hanging structure is laid out as soon as its spot is picked, because whether every piece hangs clear
+     * (checked in {@link #postLayoutAdjustments}) decides whether the spot is used at all, and {@code /locate}
+     * has to get the same answer. The laid-out pieces are kept, so they are not laid out twice. Everything
+     * it reads is the terrain before caves are carved, so the answer only depends on the seed.
+     */
+    @Override
+    public Optional<GenerationStub> findGenerationPoint(GenerationContext context) {
+        Optional<GenerationStub> stub = super.findGenerationPoint(context);
+        if (this.searchDirection != LAND_SEARCH_DIRECTION.CEILING || stub.isEmpty()) {
+            return stub;
+        }
+        StructurePiecesBuilder pieces = stub.get().getPiecesBuilder();
+        if (pieces.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new GenerationStub(stub.get().position(), Either.right(pieces)));
+    }
+
+    /**
+     * Jigsaw children aren't held to y_allowance while a hanging structure is laid out at its starting height:
+     * it only reaches its real height when it is hung from the ceiling, where the whole structure is checked.
+     */
+    @Override
+    protected boolean clipsPiecesWhileAssembling() {
+        return this.searchDirection != LAND_SEARCH_DIRECTION.CEILING;
+    }
+
     /** The top row for the start piece in {@code startPieceBox} (at its final x and z) hanging from a ceiling. */
     private int ceilingTop(GenerationContext context, BoundingBox startPieceBox, int offsetY, int topClipOff, int bottomClipOff) {
         // ledge_offset_y and start_height move the structure up, as for the land searches: here, into the rock.
@@ -213,6 +242,14 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                 return;
             }
             pieces.forEach(piece -> piece.move(0, yDiff, 0));
+            // Every jigsaw child must hang clear too: a spire tip below the start piece mustn't end in the
+            // lava sea or the cave floor.
+            for (int i = 1; i < pieces.size(); i++) {
+                if (!GeneralUtils.hangsClear(context.chunkGenerator(), context.randomState(), context.heightAccessor(), pieces.get(i).getBoundingBox(), this.cannotSpawnInLiquid)) {
+                    structurePiecesBuilder.clear();
+                    return;
+                }
+            }
             return;
         }
 

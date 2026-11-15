@@ -270,12 +270,7 @@ public final class GeneralUtils {
         int height = box.getYSpan();
         int highestTop = Math.min(getMaxTerrainLimit(chunkGenerator) - CEILING_ROOF_MARGIN, highestAllowedY);
         int lowestBottom = Math.max(chunkGenerator.getMinY() + 1, lowestAllowedY);
-        BlockPos center = box.getCenter();
-        int[][] spots = {{center.getX(), center.getZ()}, {box.minX(), box.minZ()}, {box.minX(), box.maxZ()}, {box.maxX(), box.minZ()}, {box.maxX(), box.maxZ()}};
-        NoiseColumn[] columns = new NoiseColumn[spots.length];
-        for (int i = 0; i < spots.length; i++) {
-            columns[i] = chunkGenerator.getBaseColumn(spots[i][0], spots[i][1], heightLimitView, randomState);
-        }
+        NoiseColumn[] columns = middleAndCorners(chunkGenerator, randomState, heightLimitView, box);
         NoiseColumn middle = columns[0];
         int[] ceilings = new int[columns.length];
 
@@ -316,6 +311,44 @@ public final class GeneralUtils {
             }
         }
         return NO_CEILING;
+    }
+
+    /**
+     * Whether a jigsaw child of a hanging structure, already at its final place, hangs clear: at its middle and
+     * four corners, the rows under any rock it is set into are all air, never lava, water or the floor. With
+     * {@code overGround}, the air under it must also end on rock. Read from the terrain before caves are carved,
+     * like {@link #getCeilingTop}.
+     */
+    public static boolean hangsClear(ChunkGenerator chunkGenerator, RandomState randomState, LevelHeightAccessor heightLimitView,
+                                     BoundingBox box, boolean overGround) {
+        for (NoiseColumn column : middleAndCorners(chunkGenerator, randomState, heightLimitView, box)) {
+            boolean inRock = true;
+            for (int y = box.maxY(); y >= box.minY(); y--) {
+                BlockState state = column.getBlock(y);
+                if (inRock && isRock(state)) {
+                    continue;
+                }
+                inRock = false;
+                if (!state.isAir()) {
+                    return false;
+                }
+            }
+            if (overGround && !inRock && !endsOnRock(column, box.minY() - 1, chunkGenerator.getMinY())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** The terrain columns at the middle and four corners of {@code box}, middle first. */
+    private static NoiseColumn[] middleAndCorners(ChunkGenerator chunkGenerator, RandomState randomState, LevelHeightAccessor heightLimitView, BoundingBox box) {
+        BlockPos center = box.getCenter();
+        int[][] spots = {{center.getX(), center.getZ()}, {box.minX(), box.minZ()}, {box.minX(), box.maxZ()}, {box.maxX(), box.minZ()}, {box.maxX(), box.maxZ()}};
+        NoiseColumn[] columns = new NoiseColumn[spots.length];
+        for (int i = 0; i < spots.length; i++) {
+            columns[i] = chunkGenerator.getBaseColumn(spots[i][0], spots[i][1], heightLimitView, randomState);
+        }
+        return columns;
     }
 
     /**
