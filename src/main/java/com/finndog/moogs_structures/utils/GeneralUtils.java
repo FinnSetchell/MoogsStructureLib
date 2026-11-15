@@ -247,7 +247,7 @@ public final class GeneralUtils {
      * How far under the top of the terrain a hanging structure stays. The Nether's bedrock roof fills its top five
      * layers, so nothing hanging ever reaches into it or opens a way through.
      */
-    private static final int CEILING_ROOF_MARGIN = 6;
+    public static final int CEILING_ROOF_MARGIN = 6;
 
     /**
      * The world Y for the top row of a piece hanging from a ceiling, or {@link #NO_CEILING}.

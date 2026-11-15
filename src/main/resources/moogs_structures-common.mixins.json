@@ -24,6 +24,7 @@
         "structures.StructurePoolAccessor",
         "structures.StructureProcessorAccessor",
         "structures.StructureStartMixin",
+        "structures.StructureTemplatePlacingMixin",
         "structures.StructureTemplateRailRotationMixin",
         "structures.StructureTemplateManagerAccessor",
         "structures.TemplateAccessor",
