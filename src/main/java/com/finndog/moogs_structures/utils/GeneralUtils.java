@@ -240,6 +240,123 @@ public final class GeneralUtils {
         return mutable.set(mutable.getX(), chunkGenerator.getSeaLevel(), mutable.getZ());
     }
 
+    /** {@link #getCeilingTop} found no ceiling the piece can hang from. */
+    public static final int NO_CEILING = Integer.MIN_VALUE;
+
+    /**
+     * How far under the top of the terrain a hanging structure stays. The Nether's bedrock roof fills its top five
+     * layers, so nothing hanging ever reaches into it or opens a way through.
+     */
+    private static final int CEILING_ROOF_MARGIN = 6;
+
+    /**
+     * The world Y for the top row of a piece hanging from a ceiling, or {@link #NO_CEILING}.
+     *
+     * <p>Reads the terrain before caves are carved, like the land searches above, so the answer only depends on
+     * the seed. Scans down the piece's middle column from just under the roof for rock with air under it, and
+     * looks at the piece's four corners too: the piece hangs from the highest of those five ceilings, so no
+     * corner of its top hangs in the air, and its top is set into the rock where the ceiling is lower. A ceiling
+     * only counts when, in all five columns, every row of the piece under the rock is air: never lava, water or
+     * the floor. Otherwise the scan carries on down to the next ceiling.
+     *
+     * @param box             the piece's bounding box at its final x and z (its y doesn't matter)
+     * @param sinkIntoRock    how many rows the piece's top goes up into the rock (0 = just under it)
+     * @param lowestAllowedY  the lowest Y the piece's bottom may reach
+     * @param highestAllowedY the highest Y the piece's top may reach
+     * @param overGround      only hang where the air under the piece ends on rock, not on lava or water
+     */
+    public static int getCeilingTop(ChunkGenerator chunkGenerator, RandomState randomState, LevelHeightAccessor heightLimitView,
+                                    BoundingBox box, int sinkIntoRock, int lowestAllowedY, int highestAllowedY, boolean overGround) {
+        int height = box.getYSpan();
+        int highestTop = Math.min(getMaxTerrainLimit(chunkGenerator) - CEILING_ROOF_MARGIN, highestAllowedY);
+        int lowestBottom = Math.max(chunkGenerator.getMinY() + 1, lowestAllowedY);
+        BlockPos center = box.getCenter();
+        int[][] spots = {{center.getX(), center.getZ()}, {box.minX(), box.minZ()}, {box.minX(), box.maxZ()}, {box.maxX(), box.minZ()}, {box.maxX(), box.maxZ()}};
+        NoiseColumn[] columns = new NoiseColumn[spots.length];
+        for (int i = 0; i < spots.length; i++) {
+            columns[i] = chunkGenerator.getBaseColumn(spots[i][0], spots[i][1], heightLimitView, randomState);
+        }
+        NoiseColumn middle = columns[0];
+        int[] ceilings = new int[columns.length];
+
+        // The ceiling block, from the highest the piece's top may reach down to the lowest its bottom may reach.
+        for (int ceiling = highestTop + 1 - sinkIntoRock; ceiling + sinkIntoRock - height >= lowestBottom; ceiling--) {
+            if (!isRock(middle.getBlock(ceiling)) || !middle.getBlock(ceiling - 1).isAir()) {
+                continue;
+            }
+            int anchor = ceiling;
+            boolean fits = true;
+            for (int i = 0; i < columns.length && fits; i++) {
+                ceilings[i] = ceilingAt(columns[i], ceiling - 1, height);
+                fits = ceilings[i] != NO_CEILING;
+                anchor = Math.max(anchor, ceilings[i]);
+            }
+            int top = anchor - 1 + sinkIntoRock;
+            int bottom = top - height + 1;
+            if (!fits || top > highestTop || bottom < lowestBottom) {
+                continue;
+            }
+            for (int i = 0; i < columns.length && fits; i++) {
+                int firstOpenRow = Math.min(top, ceilings[i] - 1);
+                // A column wholly inside the rock means the piece is buried there, not hanging.
+                fits = firstOpenRow >= bottom;
+                for (int y = firstOpenRow; y >= bottom && fits; y--) {
+                    fits = columns[i].getBlock(y).isAir();
+                }
+                if (fits && overGround) {
+                    fits = endsOnRock(columns[i], bottom - 1, chunkGenerator.getMinY());
+                }
+            }
+            if (fits) {
+                return top;
+            }
+        }
+        return NO_CEILING;
+    }
+
+    /**
+     * The ceiling over the open space at {@code row}: the first rock above it when {@code row} is air, or the
+     * bottom of the rock {@code row} is in. Gives up after {@code reach} blocks, or at liquid.
+     */
+    private static int ceilingAt(NoiseColumn column, int row, int reach) {
+        BlockState state = column.getBlock(row);
+        if (state.isAir()) {
+            for (int y = row + 1; y <= row + reach; y++) {
+                state = column.getBlock(y);
+                if (!state.isAir()) {
+                    return isRock(state) ? y : NO_CEILING;
+                }
+            }
+            return NO_CEILING;
+        }
+        if (!isRock(state)) {
+            return NO_CEILING;
+        }
+        for (int y = row - 1; y > row - reach; y--) {
+            state = column.getBlock(y);
+            if (!isRock(state)) {
+                return state.isAir() ? y + 1 : NO_CEILING;
+            }
+        }
+        return NO_CEILING;
+    }
+
+    /** Whether the air going down from {@code y} ends on rock rather than liquid or the bottom of the world. */
+    private static boolean endsOnRock(NoiseColumn column, int y, int minY) {
+        for (; y >= minY; y--) {
+            BlockState state = column.getBlock(y);
+            if (!state.isAir()) {
+                return isRock(state);
+            }
+        }
+        return false;
+    }
+
+    /** The terrain before carving holds only the dimension's stone, its fluids and air. */
+    private static boolean isRock(BlockState state) {
+        return !state.isAir() && state.getFluidState().isEmpty();
+    }
+
     //////////////////////////////////////////////
 
     public static int getFirstLandYFromPos(LevelReader worldView, BlockPos pos) {

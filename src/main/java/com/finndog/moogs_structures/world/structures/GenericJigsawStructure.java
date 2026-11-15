@@ -427,7 +427,17 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                 //? if >=1.21.1 {
                 this.liquidSettings,
                 //?}
+                startPieceBox -> startPieceFits(context, offsetY, blockpos, finalTopClipOff, finalBottomClipOff, startPieceBox),
                 (structurePiecesBuilder, pieces) -> postLayoutAdjustments(structurePiecesBuilder, context, offsetY, blockpos, finalTopClipOff, finalBottomClipOff, pieces));
+    }
+
+    /**
+     * Whether the start piece MSL picked can be placed here, asked before the spot is offered (so before
+     * {@code /locate} sees it). The box is where the piece was made, not yet centred on {@code blockpos}.
+     * Structure types that need room for the piece override this.
+     */
+    protected boolean startPieceFits(GenerationContext context, int offsetY, BlockPos blockpos, int topClipOff, int bottomClipOff, BoundingBox startPieceBox) {
+        return true;
     }
 
     protected void postLayoutAdjustments(StructurePiecesBuilder structurePiecesBuilder, GenerationContext context, int offsetY, BlockPos blockpos, int topClipOff, int bottomClipOff, List<PoolElementStructurePiece> pieces) {

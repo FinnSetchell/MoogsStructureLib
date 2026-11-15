@@ -62,6 +62,7 @@ import java.util.Set;
 /*import java.util.*;
 *///?}
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 /**
  * Some changes were done to make it more usable by multiple structures.
@@ -88,6 +89,7 @@ public class PieceLimitedJigsawManager {
             //? if >=1.21.1 {
             LiquidSettings liquidSettings,
             //?}
+            Predicate<BoundingBox> startPieceFits,
             BiConsumer<StructurePiecesBuilder, List<PoolElementStructurePiece>> structureBoundsAdjuster
     ) {
         // Get jigsaw pool registry
@@ -157,6 +159,10 @@ public class PieceLimitedJigsawManager {
 
         // Store center position of starting piece's bounding box
         BoundingBox pieceBoundingBox = startPiece.getBoundingBox();
+        // Asked here, before the spot is offered, so /locate never points at a structure that then can't place.
+        if (!startPieceFits.test(pieceBoundingBox)) {
+            return Optional.empty();
+        }
         int pieceCenterX = (pieceBoundingBox.maxX() + pieceBoundingBox.minX()) / 2;
         int pieceCenterZ = (pieceBoundingBox.maxZ() + pieceBoundingBox.minZ()) / 2;
         int pieceCenterY = heightmapType
@@ -427,8 +433,8 @@ public class PieceLimitedJigsawManager {
                     components.forEach(structurePiecesBuilder::addPiece);
                     structureBoundsAdjuster.accept(structurePiecesBuilder, components);
 
-                    // Do not generate if out of bounds
-                    if (structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxY()) {
+                    // Do not generate if out of bounds (the adjuster may already have emptied it)
+                    if (!structurePiecesBuilder.isEmpty() && structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxY()) {
                         structurePiecesBuilder.clear();
                     *///?}
                     }
@@ -441,13 +447,13 @@ public class PieceLimitedJigsawManager {
             components.forEach(structurePiecesBuilder::addPiece);
             structureBoundsAdjuster.accept(structurePiecesBuilder, components);
 
-            // Do not generate if out of bounds
+            // Do not generate if out of bounds (the adjuster may already have emptied it)
                 //?}
             //? if <1.21.2 {
-            if(structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxBuildHeight()) {
+            if(!structurePiecesBuilder.isEmpty() && structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxBuildHeight()) {
             //?}
             //? if >=1.21.2 <1.21.5 {
-            /*if(structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxY()) {
+            /*if(!structurePiecesBuilder.isEmpty() && structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxY()) {
             *///?}
                 //? if <1.21.5 {
                 structurePiecesBuilder.clear();

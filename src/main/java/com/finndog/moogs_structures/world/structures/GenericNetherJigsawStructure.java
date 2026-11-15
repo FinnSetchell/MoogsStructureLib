@@ -142,6 +142,10 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
      */
     @Override
     protected boolean isInLiquid(GenerationContext context, BlockPos blockPos) {
+        if (this.searchDirection == LAND_SEARCH_DIRECTION.CEILING) {
+            // Decided with the start piece in hand, see startPieceFits.
+            return false;
+        }
         ChunkGenerator chunkGenerator = context.chunkGenerator();
         if (this.searchDirection == LAND_SEARCH_DIRECTION.FIXED_HEIGHT) {
             NoiseColumn column = chunkGenerator.getBaseColumn(blockPos.getX(), blockPos.getZ(), context.heightAccessor(), context.randomState());
@@ -163,9 +167,47 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
         return land.getY() >= GeneralUtils.getMaxTerrainLimit(context.chunkGenerator()) || land.getY() <= context.chunkGenerator().getSeaLevel() + 1;
     }
 
+    /**
+     * A structure hanging from a ceiling only spawns where its start piece fits under one, with nothing but air
+     * below the rock for the whole piece. There is no fallback height: anywhere else it would float or sit in
+     * the lava sea.
+     */
+    @Override
+    protected boolean startPieceFits(GenerationContext context, int offsetY, BlockPos blockpos, int topClipOff, int bottomClipOff, BoundingBox startPieceBox) {
+        if (this.searchDirection != LAND_SEARCH_DIRECTION.CEILING) {
+            return true;
+        }
+        // Where postLayoutAdjustments will put it: centred on blockpos, as centerAllPieces does.
+        BlockPos center = startPieceBox.getCenter();
+        BoundingBox placed = startPieceBox.moved(blockpos.getX() - center.getX(), 0, blockpos.getZ() - center.getZ());
+        return this.ceilingTop(context, placed, offsetY, topClipOff, bottomClipOff) != GeneralUtils.NO_CEILING;
+    }
+
+    /** The top row for the start piece in {@code startPieceBox} (at its final x and z) hanging from a ceiling. */
+    private int ceilingTop(GenerationContext context, BoundingBox startPieceBox, int offsetY, int topClipOff, int bottomClipOff) {
+        // ledge_offset_y and start_height move the structure up, as for the land searches: here, into the rock.
+        return GeneralUtils.getCeilingTop(context.chunkGenerator(), context.randomState(), context.heightAccessor(), startPieceBox,
+                this.ledgeOffsetY.orElse(0) + offsetY, bottomClipOff, topClipOff, this.cannotSpawnInLiquid);
+    }
+
     @Override
     protected void postLayoutAdjustments(StructurePiecesBuilder structurePiecesBuilder, GenerationContext context, int offsetY, BlockPos blockpos, int topClipOff, int bottomClipOff, List<PoolElementStructurePiece> pieces) {
         GeneralUtils.centerAllPieces(blockpos, pieces);
+
+        if (this.searchDirection == LAND_SEARCH_DIRECTION.CEILING) {
+            BoundingBox startPieceBox = pieces.get(0).getBoundingBox();
+            int top = this.ceilingTop(context, startPieceBox, offsetY, topClipOff, bottomClipOff);
+            if (top == GeneralUtils.NO_CEILING) {
+                // Only when a structure with required pieces swapped its start piece for one that doesn't fit.
+                structurePiecesBuilder.clear();
+                return;
+            }
+            // Never slid to fit y_allowance like below: that would pull it off the ceiling. The spot was
+            // checked against it instead.
+            int yDiff = top - startPieceBox.maxY();
+            pieces.forEach(piece -> piece.move(0, yDiff, 0));
+            return;
+        }
 
         // Decide the target base (Y of the lowest point of the start piece).
         int targetBaseY;
@@ -230,7 +272,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
     public enum LAND_SEARCH_DIRECTION implements StringRepresentable {
         HIGHEST_LAND("HIGHEST_LAND"),
         LOWEST_LAND("LOWEST_LAND"),
-        FIXED_HEIGHT("FIXED_HEIGHT");
+        FIXED_HEIGHT("FIXED_HEIGHT"),
+        /** Hangs the structure from the highest ceiling it fits under, top first. */
+        CEILING("CEILING");
 
         private final String name;
 
