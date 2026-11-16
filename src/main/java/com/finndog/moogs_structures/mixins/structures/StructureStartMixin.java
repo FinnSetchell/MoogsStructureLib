@@ -1,7 +1,7 @@
 //? if <1.21.6 {
 package com.finndog.moogs_structures.mixins.structures;
 
-import com.finndog.moogs_structures.world.processors.RailRotationProcessor;
+import com.finndog.moogs_structures.world.structures.PlacingStructure;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,8 +11,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Notes whether the structure placing its pieces is one of MSL's own, so {@link RailRotationProcessor}
- * only ever touches MSL structures. Only on versions where the game turns some rails the wrong way.
+ * Notes which structure is placing its pieces ({@link PlacingStructure}), so MSL's placement fixes only ever
+ * touch MSL structures. Only on versions that need one: rails the game turns the wrong way, and liquid
+ * settings before 1.21.
  */
 @Mixin(StructureStart.class)
 public abstract class StructureStartMixin {
@@ -22,12 +23,12 @@ public abstract class StructureStartMixin {
 
     @Inject(method = "placeInChunk", at = @At("HEAD"))
     private void moogs_structures$startPlacing(CallbackInfo ci) {
-        RailRotationProcessor.startPlacing(this.getStructure());
+        PlacingStructure.start(this.getStructure());
     }
 
     @Inject(method = "placeInChunk", at = @At("RETURN"))
     private void moogs_structures$stopPlacing(CallbackInfo ci) {
-        RailRotationProcessor.stopPlacing();
+        PlacingStructure.stop();
     }
 }
 //?}
