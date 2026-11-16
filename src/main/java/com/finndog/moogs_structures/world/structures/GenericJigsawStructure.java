@@ -12,6 +12,9 @@ import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedT
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
+//? if <1.21.1 {
+/*import com.finndog.moogs_structures.world.structures.terrainadaptation.EncapsulateBackport;
+*///?}
 import com.mojang.serialization.Codec;
 //? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
@@ -101,7 +104,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             ResourceLocation.CODEC.listOf().fieldOf("pools_that_ignore_boundaries").orElse(new ArrayList<>()).xmap(HashSet::new, ArrayList::new).forGetter(structure -> structure.poolsThatIgnoreBoundaries),
             Codec.intRange(1, 128).optionalFieldOf("max_distance_from_center").forGetter(structure -> structure.maxDistanceFromCenter),
             StringRepresentable.fromEnum(BURYING_TYPE::values).optionalFieldOf("burying_type").forGetter(structure -> structure.buryingType),
-            // DFU groups cap at 16 slots, so these two share one; the JSON stays flat.
+            // DFU groups cap at 16 slots, so before 1.21.1 the last fields share one; the JSON stays flat.
             //? if >=1.21.1 {
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
@@ -112,11 +115,13 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             //?} else {
             /*Codec.mapPair(Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false),
                     Codec.mapPair(StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING),
-                            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE)))
-                    .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, Pair.of(structure.liquidSettings, structure.enhancedTerrainAdaptation)))
-    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackLiquidAndAdaptation) -> new GenericJigsawStructure(
+                            Codec.mapPair(EncapsulateBackport.FIELD,
+                                    EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE))))
+                    .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, Pair.of(structure.liquidSettings, Pair.of(structure.encapsulateBackport, structure.enhancedTerrainAdaptation))))
+    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackLiquidEncapsulateAndAdaptation) -> new GenericJigsawStructure(
             config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid.getFirst(), liquid.getSecond(), terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
-            hackLiquidAndAdaptation.getFirst(), hackLiquidAndAdaptation.getSecond().getFirst(), hackLiquidAndAdaptation.getSecond().getSecond())));
+            hackLiquidEncapsulateAndAdaptation.getFirst(), hackLiquidEncapsulateAndAdaptation.getSecond().getFirst(),
+            hackLiquidEncapsulateAndAdaptation.getSecond().getSecond().getFirst(), hackLiquidEncapsulateAndAdaptation.getSecond().getSecond().getSecond())));
             *///?}
 
     public final Holder<StructureTemplatePool> startPool;
@@ -140,6 +145,10 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
     public final Optional<BURYING_TYPE> buryingType;
     public final boolean useBoundingBoxHack;
     public final LiquidSettings liquidSettings;
+    //? if <1.21.1 {
+    /*/^* 1.20 to 1.20.4: terrain_adaptation is "encapsulate", which the game reads as "none" there (EncapsulateBackport). ^/
+    public final boolean encapsulateBackport;
+    *///?}
     public final EnhancedTerrainAdaptation enhancedTerrainAdaptation;
 
 
@@ -165,6 +174,9 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                                   Optional<BURYING_TYPE> buryingType,
                                   boolean useBoundingBoxHack,
                                   LiquidSettings liquidSettings,
+                                  //? if <1.21.1 {
+                                  /*boolean encapsulateBackport,
+                                  *///?}
                                   EnhancedTerrainAdaptation enhancedTerrainAdaptation)
     {
         super(config);
@@ -190,6 +202,9 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
         this.buryingType = buryingType;
         this.useBoundingBoxHack = useBoundingBoxHack;
         this.liquidSettings = liquidSettings;
+        //? if <1.21.1 {
+        /*this.encapsulateBackport = encapsulateBackport;
+        *///?}
 
 
         //? if >=1.21.1 {

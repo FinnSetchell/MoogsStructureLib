@@ -52,6 +52,11 @@ import java.util.Optional;
 /*import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 
 *///?}
+//? if <1.21.1 {
+/*import com.finndog.moogs_structures.world.structures.terrainadaptation.EncapsulateBackport;
+import com.mojang.datafixers.util.Pair;
+
+*///?}
 public class GenericNetherJigsawStructure extends GenericJigsawStructure {
 
     //? if >=1.20.6 {
@@ -77,13 +82,20 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Codec.intRange(0, 100).optionalFieldOf("ledge_offset_y").forGetter(structure -> structure.ledgeOffsetY),
             StringRepresentable.fromEnum(LAND_SEARCH_DIRECTION::values).fieldOf("land_search_direction").forGetter(structure -> structure.searchDirection),
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
+            // DFU groups cap at 16 slots, so before 1.21.1 the last fields share one; the JSON stays flat.
             //? if >=1.21.1 {
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
-            //?} else {
-            /*StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING).forGetter(structure -> structure.liquidSettings),
-            *///?}
             EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
     ).apply(instance, GenericNetherJigsawStructure::new));
+            //?} else {
+            /*Codec.mapPair(StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING),
+                    Codec.mapPair(EncapsulateBackport.FIELD,
+                            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE)))
+                    .forGetter(structure -> Pair.of(structure.liquidSettings, Pair.of(structure.encapsulateBackport, structure.enhancedTerrainAdaptation)))
+    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, searchDirection, useBoundingBoxHack, liquidEncapsulateAndAdaptation) -> new GenericNetherJigsawStructure(
+            config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, searchDirection, useBoundingBoxHack,
+            liquidEncapsulateAndAdaptation.getFirst(), liquidEncapsulateAndAdaptation.getSecond().getFirst(), liquidEncapsulateAndAdaptation.getSecond().getSecond())));
+            *///?}
 
     public final Optional<Integer> ledgeOffsetY;
     public final LAND_SEARCH_DIRECTION searchDirection;
@@ -107,6 +119,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                                         LAND_SEARCH_DIRECTION searchDirection,
                                         boolean useBoundingBoxHack,
                                         LiquidSettings liquidSettings,
+                                        //? if <1.21.1 {
+                                        /*boolean encapsulateBackport,
+                                        *///?}
                                         EnhancedTerrainAdaptation enhancedTerrainAdaptation) {
         super(config,
             startPool,
@@ -130,6 +145,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Optional.empty(),
             useBoundingBoxHack,
             liquidSettings,
+            //? if <1.21.1 {
+            /*encapsulateBackport,
+            *///?}
             enhancedTerrainAdaptation);
 
         this.ledgeOffsetY = ledgeOffsetY;

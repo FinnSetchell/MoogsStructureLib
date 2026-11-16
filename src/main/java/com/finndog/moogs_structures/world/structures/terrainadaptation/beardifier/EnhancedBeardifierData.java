@@ -5,6 +5,11 @@ import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 //?} else {
 /*import it.unimi.dsi.fastutil.objects.ObjectList;
 *///?}
+//? if <1.20.6 {
+/*import it.unimi.dsi.fastutil.objects.ObjectList;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
+*///?}
 
 /**
  * Duck-typing interface added to vanilla's Beardifier via mixin, carrying the enhanced
@@ -25,5 +30,13 @@ public interface EnhancedBeardifierData {
     //?} else {
     /*ObjectList<EnhancedJigsawJunction> moogs_structures_getEnhancedJunctions();
     void moogs_structures_setEnhancedJunctions(ObjectList<EnhancedJigsawJunction> junctions);
+    *///?}
+
+    // 1.20 to 1.20.4: pieces and junctions of MSL structures that ask for encapsulate (EncapsulateBackport).
+    // Kept as lists and walked with local cursors, so no shared iterator is advanced across threads.
+    //? if <1.20.6 {
+    /*ObjectList<BoundingBox> moogs_structures_getEncapsulatedPieces();
+    ObjectList<JigsawJunction> moogs_structures_getEncapsulatedJunctions();
+    void moogs_structures_setEncapsulated(ObjectList<BoundingBox> pieces, ObjectList<JigsawJunction> junctions);
     *///?}
 }
