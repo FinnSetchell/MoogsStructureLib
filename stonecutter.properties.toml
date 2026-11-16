@@ -228,7 +228,7 @@ deps.neoforge_min = "21.6.0-beta"
 deps.neoforge_range = "[4,)"
 deps.cloth_config = "19.0.147"
 
-# Forge 56-58 have the BusGroup event bus but not NewRegistryEvent.BUS (added in Forge 59), so this
+# Forge 56-58 have the BusGroup event bus but not NewRegistryEvent.BUS (added in Forge 59.0.2), so this
 # node registers through getBus instead.
 
 [forge."1.21.6"]
@@ -241,36 +241,42 @@ deps.cloth_config_loader = "neoforge"
 # Forge has no config screen here, so the config screen widgets are left out.
 mod.forge_compile_excludes = "**/client/SupportButton.java,**/client/SupportLinks.java"
 
-# ------------------------------------------------------------------ 1.21.10 (Java 21)
+# ------------------------------------------------------------------ 1.21.9-1.21.10 (Java 21)
+# Compiled against 1.21.9, the older of the two, so it runs on both. 1.21.9 already has 1.21.10's
+# reload listener and entity loading, so the code takes the 1.21.10 paths on both.
 ["1.21.10"]
 mod.java = "21"
 mod.access = "classic"
 
 [fabric."1.21.10"]
-mod.mc_build = "1.21.10"
-mod.mc_compat = ">=1.21.10 <1.21.11"
+mod.mc_build = "1.21.9"
+mod.mc_compat = ">=1.21.9 <1.21.11"
 mod.fabric_loader_dep = "*"
 mod.fabric_aw_entry = "false"
 deps.fabric_loader = "0.19.3"
-deps.fabric_api = "0.138.4+1.21.10"
+deps.fabric_api = "0.134.1+1.21.9"
 deps.cloth_config = "20.0.149"
 deps.modmenu = "16.0.1"
 
+# Built against the first Forge for 1.21.9. NewRegistryEvent only got its own BUS in Forge 59.0.2, so this
+# node registers through getBus, which works on every Forge 59 and 60.
 [forge."1.21.10"]
-mod.mc_build = "1.21.10"
-mod.mc_compat = "[1.21.10,1.21.11)"
-deps.forge = "60.0.0"
-deps.forge_range = "[56,)"
+mod.mc_build = "1.21.9"
+mod.mc_compat = "[1.21.9,1.21.11)"
+deps.forge = "59.0.0"
+deps.forge_range = "[59,)"
 deps.cloth_config = "20.0.149"
 deps.cloth_config_loader = "neoforge"
 mod.forge_compile_excludes = ""
 
+# NeoForge 21.9.14-beta is the first with FML's JarContents (FML 10.0.14), which the config code reads
+# mod files through; older 1.21.9 betas have neither that nor the findResource the older nodes use.
 [neoforge."1.21.10"]
-mod.mc_build = "1.21.10"
-mod.mc_compat = "[1.21.10,1.21.11)"
+mod.mc_build = "1.21.9"
+mod.mc_compat = "[1.21.9,1.21.11)"
 mod.neo_icon_key = "logoFile"
-deps.neoforge = "21.10.64"
-deps.neoforge_min = "21.10.0"
+deps.neoforge = "21.9.14-beta"
+deps.neoforge_min = "21.9.14-beta"
 deps.neoforge_range = "[4,)"
 deps.cloth_config = "20.0.149"
 

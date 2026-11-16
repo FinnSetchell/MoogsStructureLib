@@ -73,11 +73,12 @@ public class MoogsStructuresForge {
     /*public MoogsStructuresForge(FMLJavaModLoadingContext context) {
         BusGroup modBusGroup = context.getModBusGroup();
     *///?}
-        // NewRegistryEvent is a mod bus event up to Forge 58; Forge 59 (1.21.9) gave it its own BUS.
-        //? if >=1.21.6 <1.21.9 {
+        // NewRegistryEvent is a mod bus event up to Forge 59.0.1. Forge 59.0.2 gave it its own BUS, and from
+        // then on getBus(group) returns that BUS, so getBus lets the 1.21.9-1.21.10 jar run on every Forge 59 and 60.
+        //? if >=1.21.6 <1.21.11 {
         /*NewRegistryEvent.getBus(modBusGroup).addListener(ResourcefulRegistriesImpl::onRegisterForgeRegistries);
         *///?}
-        //? if >=1.21.9 {
+        //? if >=1.21.11 {
         /*NewRegistryEvent.BUS.addListener(ResourcefulRegistriesImpl::onRegisterForgeRegistries);
         *///?}
 
