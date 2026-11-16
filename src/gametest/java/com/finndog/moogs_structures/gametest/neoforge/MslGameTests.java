@@ -1,6 +1,7 @@
 //? if >=1.21.1 {
 package com.finndog.moogs_structures.gametest.neoforge;
 
+import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.world.processors.RailRotationProcessor;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
@@ -12,7 +13,10 @@ import com.mojang.serialization.JsonOps;
 //? if >=1.21.5 {
 /*import com.mojang.serialization.MapCodec;
 *///?}
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +26,7 @@ import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
 //? if <1.21.5 {
 import net.minecraft.gametest.framework.GameTest;
 //?}
@@ -33,9 +38,20 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 *///?}
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+//? if >=1.21.2 {
+/*import net.minecraft.world.entity.EntitySpawnReason;
+*///?}
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.world.level.biome.FixedBiomeSource;
 import net.minecraft.world.level.block.BaseRailBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -43,6 +59,10 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.RailShape;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;
@@ -126,6 +146,8 @@ public class MslGameTests {
         tests.put("follow_floor_onto_a_step", MslGameTests::followFloorOntoAStep);
         tests.put("pillar_down_to_ground", MslGameTests::pillarDownToGround);
         tests.put("rail_slope_towards_higher_ground", MslGameTests::railSlopeTowardsHigherGround);
+        tests.put("cached_height_matches_the_generator", MslGameTests::cachedHeightMatchesTheGenerator);
+        tests.put("height_cache_lets_go_of_a_closed_world", MslGameTests::heightCacheLetsGoOfAClosedWorld);
         return tests;
     }
 
@@ -403,6 +425,181 @@ public class MslGameTests {
             }
         }
         finish(helper, wrong);
+    }
+
+    // ------------------------------------------------------------------ spawners
+
+    //? if <1.21.5 {
+    /**
+     * A trial spawner config's mob keeps the drop chances its JSON gives. Below 1.21.5 the game reads them
+     * only as float lists, and JSON's 0.02 arrives as a double, so it fell back to its 8.5% default.
+     */
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    public static void trialSpawnerDropChances(GameTestHelper helper) {
+        StructureProcessor trial = processor(helper, "{\"processor_type\":\"moogs_structures:trial_spawner_randomizing_processor\","
+                + "\"normal_config\":\"moogs_structures:gametest_drop_chances\"}");
+        CompoundTag placed = processed(helper, trial, Blocks.TRIAL_SPAWNER.defaultBlockState());
+        CompoundTag mob = placed == null ? null : placed.getCompound("normal_config").getList("spawn_potentials", Tag.TAG_COMPOUND)
+                .getCompound(0).getCompound("data").getCompound("entity");
+        finish(helper, dropChancesWrong(helper, mob));
+    }
+
+    /** The same mob, as a spawner_randomizing_processor's nbt, keeps its drop chances too. */
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    public static void spawnerDropChances(GameTestHelper helper) {
+        StructureProcessor spawner = processor(helper, "{\"processor_type\":\"moogs_structures:spawner_randomizing_processor\","
+                + "\"weighted_entities\":[{\"entity\":\"minecraft:wither_skeleton\",\"weight\":1,\"nbt\":{"
+                + "\"ArmorDropChances\":[0.02,0.02,0.02,0.02],\"HandDropChances\":[0.05,0.0],"
+                + "\"Passengers\":[{\"id\":\"minecraft:zombie\",\"ArmorDropChances\":[1.0,1.0,0.0,0.0],\"HandDropChances\":[0.5,0.25]}]}}]}");
+        CompoundTag placed = processed(helper, spawner, Blocks.SPAWNER.defaultBlockState());
+        CompoundTag mob = placed == null ? null : placed.getCompound("SpawnData").getCompound("entity");
+        finish(helper, dropChancesWrong(helper, mob));
+    }
+
+    /** The block entity NBT a processor gives a block of this state. */
+    private static CompoundTag processed(GameTestHelper helper, StructureProcessor processor, BlockState state) {
+        BlockPos at = helper.absolutePos(new BlockPos(1, 2, 1));
+        List<StructureTemplate.StructureBlockInfo> out = StructureTemplate.processBlockInfos(helper.getLevel(), at, at,
+                new StructurePlaceSettings().addProcessor(processor), List.of(new StructureTemplate.StructureBlockInfo(BlockPos.ZERO, state, null)));
+        return out.isEmpty() ? null : out.get(0).nbt();
+    }
+
+    /**
+     * Loads the mob the way its spawner does, saves it and its passenger, and compares the drop chances
+     * they saved with the JSON's: armour [0.02 x4] (doubles in NBT), hand [0.05, 0.0] (a double and a byte),
+     * and the passenger's armour [1, 1, 0, 0] (a byte array) and hand [0.5, 0.25] (floats, always read).
+     */
+    private static List<String> dropChancesWrong(GameTestHelper helper, CompoundTag mobNbt) {
+        List<String> wrong = new ArrayList<>();
+        if (mobNbt == null || mobNbt.isEmpty()) {
+            wrong.add("the processor gave the spawner no mob");
+            return wrong;
+        }
+        //? if <1.21.2 {
+        Entity mob = EntityType.loadEntityRecursive(mobNbt.copy(), helper.getLevel(), entity -> entity);
+        //?} else {
+        /*Entity mob = EntityType.loadEntityRecursive(mobNbt.copy(), helper.getLevel(), EntitySpawnReason.SPAWNER, entity -> entity);
+        *///?}
+        if (mob == null || mob.getPassengers().isEmpty()) {
+            wrong.add("the mob or its passenger didn't load from " + mobNbt);
+            return wrong;
+        }
+        savedDropChances(mob, "the wither skeleton's", new float[]{0.02f, 0.02f, 0.02f, 0.02f}, new float[]{0.05f, 0f}, wrong);
+        savedDropChances(mob.getPassengers().get(0), "its zombie passenger's", new float[]{1f, 1f, 0f, 0f}, new float[]{0.5f, 0.25f}, wrong);
+        return wrong;
+    }
+
+    private static void savedDropChances(Entity mob, String whose, float[] armour, float[] hand, List<String> wrong) {
+        CompoundTag saved = mob.saveWithoutId(new CompoundTag());
+        compareFloats(whose + " armour", saved.getList("ArmorDropChances", Tag.TAG_FLOAT), armour, wrong);
+        compareFloats(whose + " hand", saved.getList("HandDropChances", Tag.TAG_FLOAT), hand, wrong);
+    }
+
+    private static void compareFloats(String what, ListTag saved, float[] want, List<String> wrong) {
+        float[] got = new float[saved.size()];
+        for (int i = 0; i < got.length; i++) {
+            got[i] = saved.getFloat(i);
+        }
+        if (!Arrays.equals(got, want)) {
+            wrong.add(what + " drop chances saved as " + Arrays.toString(got) + ", not " + Arrays.toString(want));
+        }
+    }
+    //?}
+
+    // ------------------------------------------------------------------ heights
+
+    /**
+     * MSL's cached height is the generator's own on real overworld terrain: for every heightmap, it equals
+     * the first free height and the base height and is one above the first occupied height, the same again
+     * when read from the cache, and kept apart per seed, so a second seed on the same generator gets its
+     * own terrain's heights rather than the first's.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void cachedHeightMatchesTheGenerator(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        ServerLevel level = helper.getLevel();
+        NoiseBasedChunkGenerator generator = overworldGenerator(level);
+        Map<String, Integer> firstSeed = new HashMap<>();
+        int differentAcrossSeeds = 0;
+        for (long seed : new long[]{1L, 2L}) {
+            RandomState random = randomState(level, seed);
+            for (int i = 0; i < 64; i++) {
+                int x = (i % 8 - 4) * 1031 + 7;
+                int z = (i / 8 - 4) * 977;
+                for (Heightmap.Types type : Heightmap.Types.values()) {
+                    int base = generator.getBaseHeight(x, z, type, level, random);
+                    int cached = GeneralUtils.getCachedFreeHeight(generator, x, z, type, level, random);
+                    int again = GeneralUtils.getCachedFreeHeight(generator, x, z, type, level, random);
+                    int free = generator.getFirstFreeHeight(x, z, type, level, random);
+                    int occupied = generator.getFirstOccupiedHeight(x, z, type, level, random);
+                    if (cached != base || again != base || free != base || occupied != base - 1) {
+                        wrong.add("seed " + seed + " " + type + " at " + x + ", " + z + ": base " + base + ", cached " + cached + " then " + again
+                                + ", first free " + free + ", first occupied " + occupied);
+                    }
+                    String spot = type + " " + x + " " + z;
+                    if (seed == 1L) {
+                        firstSeed.put(spot, base);
+                    } else if (firstSeed.get(spot) != base) {
+                        differentAcrossSeeds++;
+                    }
+                }
+            }
+        }
+        if (differentAcrossSeeds == 0) {
+            wrong.add("the two seeds gave the same terrain everywhere, so the per-seed check proved nothing");
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * The height cache doesn't keep a world it read heights from once nothing else does (GitHub issue #30:
+     * it kept every closed world's generator, and that world's registries, for the rest of the game).
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void heightCacheLetsGoOfAClosedWorld(GameTestHelper helper) {
+        List<WeakReference<Object>> closedWorld = readHeightsOfAThrowawayWorld(helper.getLevel());
+        for (int i = 0; i < 20 && closedWorld.stream().anyMatch(ref -> ref.get() != null); i++) {
+            System.gc();
+        }
+        List<String> wrong = new ArrayList<>();
+        if (closedWorld.get(0).get() != null) {
+            wrong.add("the height cache still holds a generator nothing else uses");
+        }
+        if (closedWorld.get(1).get() != null) {
+            wrong.add("the height cache still holds a random state nothing else uses");
+        }
+        finish(helper, wrong);
+    }
+
+    /** Reads heights through the cache from a generator and random state made here, and hands back only weak references to them. */
+    private static List<WeakReference<Object>> readHeightsOfAThrowawayWorld(ServerLevel level) {
+        NoiseBasedChunkGenerator generator = overworldGenerator(level);
+        RandomState random = randomState(level, 3L);
+        for (int i = 0; i < 16; i++) {
+            GeneralUtils.getCachedFreeHeight(generator, i * 64, 0, Heightmap.Types.WORLD_SURFACE_WG, level, random);
+        }
+        return List.of(new WeakReference<>(generator), new WeakReference<>(random));
+    }
+
+    /** A fresh overworld noise generator (plains everywhere: heights come from the noise, not the biomes). */
+    private static NoiseBasedChunkGenerator overworldGenerator(ServerLevel level) {
+        var access = level.registryAccess();
+        return new NoiseBasedChunkGenerator(new FixedBiomeSource(access.lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.PLAINS)),
+                access.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(NoiseGeneratorSettings.OVERWORLD));
+    }
+
+    private static RandomState randomState(ServerLevel level, long seed) {
+        var access = level.registryAccess();
+        NoiseGeneratorSettings settings = access.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(NoiseGeneratorSettings.OVERWORLD).value();
+        //? if <26.3 {
+        return RandomState.create(settings, access.lookupOrThrow(Registries.NOISE), seed);
+        //?} else {
+        /*return RandomState.create(access.lookupOrThrow(Registries.NOISE), seed, settings);
+        *///?}
     }
 
     // ------------------------------------------------------------------ helpers
