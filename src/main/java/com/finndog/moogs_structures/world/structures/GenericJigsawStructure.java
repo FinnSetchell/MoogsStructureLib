@@ -60,7 +60,9 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 //? if >=1.21.1 {
 import net.minecraft.world.level.levelgen.structure.structures.JigsawStructure;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
-//?}
+//?} else {
+/*import com.finndog.moogs_structures.world.structures.codecs.LiquidSettings;
+*///?}
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -109,11 +111,12 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             useBoundingBoxHack, liquidSettings, enhancedTerrainAdaptation)));
             //?} else {
             /*Codec.mapPair(Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false),
-                    EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE))
-                    .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, structure.enhancedTerrainAdaptation))
-    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackAndAdaptation) -> new GenericJigsawStructure(
+                    Codec.mapPair(StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING),
+                            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE)))
+                    .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, Pair.of(structure.liquidSettings, structure.enhancedTerrainAdaptation)))
+    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackLiquidAndAdaptation) -> new GenericJigsawStructure(
             config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid.getFirst(), liquid.getSecond(), terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
-            hackAndAdaptation.getFirst(), hackAndAdaptation.getSecond())));
+            hackLiquidAndAdaptation.getFirst(), hackLiquidAndAdaptation.getSecond().getFirst(), hackLiquidAndAdaptation.getSecond().getSecond())));
             *///?}
 
     public final Holder<StructureTemplatePool> startPool;
@@ -136,9 +139,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
     public final Optional<Integer> maxDistanceFromCenter;
     public final Optional<BURYING_TYPE> buryingType;
     public final boolean useBoundingBoxHack;
-    //? if >=1.21.1 {
     public final LiquidSettings liquidSettings;
-    //?}
     public final EnhancedTerrainAdaptation enhancedTerrainAdaptation;
 
 
@@ -163,9 +164,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                                   Optional<Integer> maxDistanceFromCenter,
                                   Optional<BURYING_TYPE> buryingType,
                                   boolean useBoundingBoxHack,
-                                  //? if >=1.21.1 {
                                   LiquidSettings liquidSettings,
-                                  //?}
                                   EnhancedTerrainAdaptation enhancedTerrainAdaptation)
     {
         super(config);
@@ -190,9 +189,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
         this.maxDistanceFromCenter = maxDistanceFromCenter;
         this.buryingType = buryingType;
         this.useBoundingBoxHack = useBoundingBoxHack;
-        //? if >=1.21.1 {
         this.liquidSettings = liquidSettings;
-        //?}
 
 
         //? if >=1.21.1 {
