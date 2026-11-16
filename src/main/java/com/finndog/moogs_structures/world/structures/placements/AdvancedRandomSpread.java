@@ -175,6 +175,12 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         return structureIdRL != null ? structureIdRL : this.owningSetIdRL;
     }
 
+    /** Whether this set is turned off in the config, so it starts no structure anywhere. Generation and structure searches both ask it. */
+    public boolean isDisabled() {
+        ResourceLocation disableId = effectiveDisableId();
+        return disableId != null && MslConfig.get().isStructureDisabled(disableId);
+    }
+
     @Override
     public int spacing() {
         return memo().spacing();
@@ -200,8 +206,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
     @Override
     public boolean isStructureChunk(ChunkGeneratorStructureState chunkGeneratorStructureState, int i, int j) {
-        ResourceLocation disableId = effectiveDisableId();
-        if (disableId != null && MslConfig.get().isStructureDisabled(disableId)) {
+        // Before 1.20.6 the game has no applyAdditionalChunkRestrictions to ask, so the gate is here too.
+        if (isDisabled()) {
             return false;
         }
         if (!super.isStructureChunk(chunkGeneratorStructureState, i, j)) {
@@ -211,6 +217,20 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             return this.superExclusionZone.isEmpty() || !this.superExclusionZone.get().isPlacementForbidden(chunkGeneratorStructureState, i, j);
         }
     }
+
+    //? if >=1.20.6 {
+    /**
+     * The game asks this before it tries a chunk for a structure search (/locate, explorer maps, dolphins, eyes of
+     * ender, other mods' searches), after looking for a start already there and before the structure lays itself
+     * out or the chunk is loaded. A disabled set says no here, so a search for its structures costs nothing per
+     * chunk instead of a layout and a chunk load that can only find nothing. A start made before the set was
+     * turned off is still found. Generation asks it too, through isStructureChunk.
+     */
+    @Override
+    public boolean applyAdditionalChunkRestrictions(int x, int z, long seed) {
+        return !isDisabled() && super.applyAdditionalChunkRestrictions(x, z, seed);
+    }
+    //?}
 
     @Override
     public ChunkPos getPotentialStructureChunk(long seed, int x, int z) {

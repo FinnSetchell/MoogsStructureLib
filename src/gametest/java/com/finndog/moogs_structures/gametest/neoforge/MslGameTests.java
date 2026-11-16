@@ -1,9 +1,12 @@
 //? if >=1.21.1 {
 package com.finndog.moogs_structures.gametest.neoforge;
 
+import com.finndog.moogs_structures.config.MslConfig;
+import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.world.processors.RailRotationProcessor;
 import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
+import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -57,6 +60,7 @@ import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureCheckResult;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -143,6 +147,7 @@ public class MslGameTests {
         tests.put("placement_field_values", MslGameTests::placementFieldValues);
         tests.put("liquid_check_at_start_piece_centre", MslGameTests::liquidCheckAtStartPieceCentre);
         tests.put("footprint_in_liquid_share", MslGameTests::footprintInLiquidShare);
+        tests.put("disabled_set_skipped_by_searches", MslGameTests::disabledSetSkippedBySearches);
         return tests;
     }
 
@@ -545,6 +550,65 @@ public class MslGameTests {
         finish(helper, wrong);
     }
 
+    /**
+     * A set turned off in the config tells a structure search there is no start in its chunks before the structure is
+     * asked or the chunk loaded (vanilla's StructureCheck, as /locate, maps, dolphins and eyes use it), and isn't
+     * generated there; turned back on, both find the chunk again. The answer isn't cached.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void disabledSetSkippedBySearches(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        testPiece(helper);
+        ServerLevel level = helper.getLevel();
+        String off = "moogs_structures:msl_test_off";
+        AdvancedRandomSpread spread = (AdvancedRandomSpread) StructurePlacement.CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, level.registryAccess()),
+                JsonParser.parseString("{\"type\":\"moogs_structures:advanced_random_spread\",\"salt\":7,\"spacing\":6,\"separation\":2,\"structure_id\":\"" + off + "\"}"))
+                .getOrThrow();
+        Structure structure = decode(helper, generic(""));
+        var state = level.getChunkSource().getGeneratorState();
+        // A chunk this set tries, far from anything generated.
+        ChunkPos chunk = spread.getPotentialStructureChunk(state.getLevelSeed(), 3000, 3000);
+        int[] xz = xz(chunk);
+        try {
+            setDisabled(off, true);
+            expectSearch(level, spread, structure, chunk, state, false, "turned off", wrong);
+            setDisabled(off, false);
+            expectSearch(level, spread, structure, chunk, state, true, "turned on", wrong);
+            setDisabled(off, true);
+            expectSearch(level, spread, structure, chunk, state, false, "turned off again", wrong);
+        } finally {
+            setDisabled(off, false);
+        }
+        if (wrong.isEmpty() && !spread.applyAdditionalChunkRestrictions(xz[0], xz[1], state.getLevelSeed())) {
+            wrong.add("turned back on, the set still refuses its chunk");
+        }
+        finish(helper, wrong);
+    }
+
+    private static void expectSearch(ServerLevel level, AdvancedRandomSpread spread, Structure structure, ChunkPos chunk,
+                                     net.minecraft.world.level.chunk.ChunkGeneratorStructureState state, boolean on, String when, List<String> wrong) {
+        int[] xz = xz(chunk);
+        if (spread.isDisabled() == on) {
+            wrong.add(when + ": the set reads as " + (on ? "off" : "on"));
+        }
+        if (spread.isStructureChunk(state, xz[0], xz[1]) != on) {
+            wrong.add(when + ": generation " + (on ? "skips" : "still tries") + " the set's chunk");
+        }
+        StructureCheckResult result = level.structureManager().checkStructurePresence(chunk, structure, spread, false);
+        StructureCheckResult want = on ? StructureCheckResult.CHUNK_LOAD_NEEDED : StructureCheckResult.START_NOT_PRESENT;
+        if (result != want) {
+            wrong.add(when + ": a search got " + result + ", not " + want);
+        }
+    }
+
+    private static void setDisabled(String id, boolean disabled) {
+        MslConfig.get().setStructureDisabledAndSave(id, disabled);
+        // As /reload does: the worldgen side reads the config's snapshot, rebuilt on load.
+        ReplaceVanillaManager.reloadConfig();
+    }
+
     /** A generic jigsaw structure whose start pool is msl_test_piece alone, in every overworld biome, with these fields. */
     private static String generic(String fields) {
         return structureJson("moogs_structures:moogs_structures_generic_jigsaw_structure", "", fields);
@@ -599,6 +663,15 @@ public class MslGameTests {
         //?} else {
         /*return new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(), random.sampler(), random, templates(helper),
                 level.getSeed(), chunk, level, biome -> true);
+        *///?}
+    }
+
+    /** A chunk's x and z: fields before 26.1.2, record components from it. */
+    private static int[] xz(ChunkPos chunk) {
+        //? if <26.1.2 {
+        return new int[]{chunk.x, chunk.z};
+        //?} else {
+        /*return new int[]{chunk.x(), chunk.z()};
         *///?}
     }
 

@@ -23,6 +23,7 @@
         "structures.StructurePieceAccessor",
         "structures.StructurePoolAccessor",
         "structures.StructureProcessorAccessor",
+        "structures.StructureSearchMixin",
         "structures.StructureStartMixin",
         "structures.StructureTemplateLiquidSettingsMixin",
         "structures.StructureTemplateRailRotationMixin",
