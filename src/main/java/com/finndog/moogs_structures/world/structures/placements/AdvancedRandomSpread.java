@@ -88,6 +88,11 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     // (mc_versions), so the set acts as turned off and doesn't push its neighbours away either.
     private volatile boolean noStructureOnThisVersion;
 
+    //? if <1.20.6 {
+    /*/^* Before 1.20.6: set while a structure search checks a chunk of a turned-off set (StructureSearchMixin). ^/
+    public static final ThreadLocal<Boolean> SEARCHING_TURNED_OFF_SET = new ThreadLocal<>();
+    *///?}
+
     // Memoized against MslConfig's generation counter in one immutable holder behind a single volatile
     // field, so concurrent structure-starts (C2ME) snapshot a consistent triple rather than ever
     // observing a torn or spacing<=separation state.
