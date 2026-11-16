@@ -41,18 +41,19 @@ public final class AliasedStructurePredicate implements Predicate<Holder<Structu
         *///?}
         if (id == null) return false;
 
-        ReplaceVanillaManager.Replacement replacement = ReplacementAliases.forReplacement(id)
-                .filter(r -> r.options().aliasLookups())
-                .orElse(null);
-        if (replacement == null) return false;
-
-        //? if <1.21.2 {
-        return this.registry.getHolder(ResourceKey.create(Registries.STRUCTURE, replacement.vanillaStructure()))
-        //?} else {
-        /*return this.registry.get(ResourceKey.create(Registries.STRUCTURE, replacement.vanillaStructure()))
-        *///?}
-                .map(vanillaHolder -> this.original.test(vanillaHolder))
-                .orElse(false);
+        // A replacement can stand in for more than one vanilla structure.
+        for (ReplaceVanillaManager.Replacement replacement : ReplacementAliases.forReplacement(id)) {
+            if (!replacement.options().aliasLookups()) continue;
+            //? if <1.21.2 {
+            boolean matches = this.registry.getHolder(ResourceKey.create(Registries.STRUCTURE, replacement.vanillaStructure()))
+            //?} else {
+            /*boolean matches = this.registry.get(ResourceKey.create(Registries.STRUCTURE, replacement.vanillaStructure()))
+            *///?}
+                    .map(vanillaHolder -> this.original.test(vanillaHolder))
+                    .orElse(false);
+            if (matches) return true;
+        }
+        return false;
     }
 }
 

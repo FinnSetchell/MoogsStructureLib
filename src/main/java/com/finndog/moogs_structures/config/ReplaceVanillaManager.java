@@ -9,11 +9,10 @@ import com.google.gson.JsonParser;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 
 /**
@@ -41,8 +40,15 @@ public final class ReplaceVanillaManager {
     private static final List<PresetInfo> PRESETS = new ArrayList<>();
     // "modid/vanilla_key" -> owning presetId, so the loot processor can resolve enablement.
     private static final Map<String, Replacement> BY_VANILLA_KEY = new HashMap<>();
-    // vanilla structure id -> replacement, for the disable mixin and locate command.
-    private static final Map<ResourceLocation, Replacement> BY_VANILLA_STRUCTURE = new HashMap<>();
+    // vanilla structure id -> every replacement aimed at it, for the disable mixin and locate command.
+    // Two mods can replace the same vanilla structure (MNS and MFR both replace the fortress).
+    private static final Map<ResourceLocation, List<Replacement>> BY_VANILLA_STRUCTURE = new HashMap<>();
+    // Mod list order differs between loaders and installs, so anything that has to pick between
+    // replacements uses this order instead.
+    private static final Comparator<Replacement> ORDER = Comparator.comparing(Replacement::modid)
+            .thenComparing(Replacement::presetId)
+            .thenComparing(r -> r.vanillaStructure().toString())
+            .thenComparing(r -> String.valueOf(r.replacementStructure()));
 
     /** Scans mod manifests once at mod init, then does an initial config read. */
     public static void init() {
@@ -106,7 +112,9 @@ public final class ReplaceVanillaManager {
                 ReplacementOptions options = ReplacementOptions.parse(optionsObj, modid, presetId);
                 Replacement r = new Replacement(modid, presetId, defaultEnabled, vanillaStructure, replacementStructure, options);
                 BY_VANILLA_KEY.put(modid + "/" + vanillaKey, r);
-                BY_VANILLA_STRUCTURE.put(vanillaStructure, r);
+                List<Replacement> forVanilla = BY_VANILLA_STRUCTURE.computeIfAbsent(vanillaStructure, k -> new ArrayList<>());
+                forVanilla.add(r);
+                forVanilla.sort(ORDER);
             }
         }
     }
@@ -116,24 +124,29 @@ public final class ReplaceVanillaManager {
         return r != null && MslConfig.get().presetEnabled(r.modid(), r.presetId(), r.defaultEnabled());
     }
 
-    /** True when a replacement targeting this vanilla structure is currently enabled. */
+    /** True when any replacement targeting this vanilla structure is currently enabled. */
     public static boolean shouldCancelVanilla(ResourceLocation vanillaStructure) {
-        return getActiveReplacement(vanillaStructure).isPresent();
+        List<Replacement> replacements = BY_VANILLA_STRUCTURE.get(vanillaStructure);
+        if (replacements == null) return false;
+        for (Replacement r : replacements) {
+            if (isActive(r)) return true;
+        }
+        return false;
     }
 
-    /** The replacement for this vanilla structure, only if its preset is currently enabled. */
-    public static Optional<Replacement> getActiveReplacement(ResourceLocation vanillaStructure) {
-        Replacement r = BY_VANILLA_STRUCTURE.get(vanillaStructure);
-        return r != null && isActive(r) ? Optional.of(r) : Optional.empty();
+    /** The replacements for this vanilla structure whose presets are currently enabled, in a fixed order. */
+    public static List<Replacement> getActiveReplacements(ResourceLocation vanillaStructure) {
+        List<Replacement> replacements = BY_VANILLA_STRUCTURE.get(vanillaStructure);
+        return replacements == null ? List.of() : replacements.stream().filter(ReplaceVanillaManager::isActive).toList();
     }
 
     public static boolean isActive(Replacement replacement) {
         return MslConfig.get().presetEnabled(replacement.modid(), replacement.presetId(), replacement.defaultEnabled());
     }
 
-    /** Every parsed replacement, enabled or not, for the alias table to filter. */
-    public static Collection<Replacement> getReplacements() {
-        return List.copyOf(BY_VANILLA_STRUCTURE.values());
+    /** Every parsed replacement, enabled or not, in a fixed order, for the alias table to filter. */
+    public static List<Replacement> getReplacements() {
+        return BY_VANILLA_STRUCTURE.values().stream().flatMap(List::stream).sorted(ORDER).toList();
     }
 
     /** True when any replacement binding exists, letting the mixin skip work entirely when unused. */

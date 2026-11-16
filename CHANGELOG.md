@@ -2,11 +2,27 @@
 
 ---
 
-## [3.4.3] - 2026-11-10
+## [4.0.0] - 2026-11-16
+
+### Added
+- Structures can now follow uneven ground in the Nether, in caves, and under lava instead of flattening it
+  - Ones that would be mostly missing their floor, over a cave, a cliff, or open air, are left out
+- Structures can now shape the ground around just their main part, such as a house or a tree's trunk, so the ground under gardens, paths, and treetops stays natural, and loose parts around a building can follow the slope
+- Rails in structures can now slope up and down with the ground
+- Sea structures can now be kept fully underwater, so they never stick out
 
 ### Fixed
 - The Forge version now loads on Minecraft 1.21.5 to 1.21.8 and 26.1
 - Servers on NeoForge 1.20.5 no longer crash on startup
+- Armour stands, item frames, and minecart chests in structures now come out right with Fabric on Minecraft 1.21.6 to 1.21.8
+- Opening this mod's settings screen no longer crashes the game on Minecraft 1.21.6 to 1.21.8, with Fabric or NeoForge
+- Nether structures set to stay out of liquid no longer generate out on the lava lake, so there are fewer of them in big lava areas.
+- Flat rails in structures using this library no longer lie across the track when the structure spawns turned around (Minecraft 1.21.5 and older)
+- Ships and other structures in the sea no longer sometimes fail to generate or get swapped for a different one (Minecraft 1.21 to 1.21.3 and 1.21.5 to 1.21.11)
+- The world no longer freezes while generating some small structures
+- When two mods replace the same vanilla structure, /locate, eyes of ender, explorer maps, advancements, and mob spawns now lead to a replacement that actually generates, whatever order the mods load in
+- Structures that are meant to stay dry no longer fill with waterlogged stairs, slabs, and walls where they meet water on Minecraft 1.20 to 1.20.6, such as the stronghold from Moog's Temples Reimagined
+- Basalt deltas and basalt columns next to Nether structures that keep them out no longer eat into the structure's edges with lava, magma, or basalt
 
 ---
 
@@ -58,9 +74,9 @@
 
 ### Added
 - **Replacement fidelity**: a replaced vanilla structure's stand-in now counts as that structure wherever the game or other mods look for it, so a player loses nothing by turning a preset on. Each replacement in `replace_vanilla.json` can carry an optional `options` block; every option defaults to on.
-  - `alias_lookups` - structure lookups for the vanilla id also match the replacement. Vanilla advancements (such as "A Terrible Fortress"), the nether-brick fortress spawn rule and any mod asking "is this position inside a fortress?" keep working inside the replacement.
+  - `alias_lookups` - structure lookups for the vanilla id also match the replacement. Vanilla advancements (such as "A Terrible Fortress"), the nether-brick fortress spawn rule, and any mod asking "is this position inside a fortress?" keep working inside the replacement.
   - `inherit_spawn_overrides` - mobs that other mods add to the vanilla structure's spawn list also spawn in the replacement.
-  - `redirect_locate` - `/locate`, explorer maps, dolphins, eyes of ender and mod compasses searching for the vanilla structure find the replacement.
+  - `redirect_locate` - `/locate`, explorer maps, dolphins, eyes of ender, and mod compasses searching for the vanilla structure find the replacement.
   - `mirror_tags` - structure tags that list the vanilla structure also include the replacement. Applies on the next `/reload` or world load after a preset changes.
 - `advanced_random_spread` accepts an optional `when_replacing` block (`modid`, `vanilla_key`, `spacing`, `separation`) so a structure set can match the vanilla structure's density while its preset is on. Rarity multipliers still apply on top.
 
@@ -84,7 +100,7 @@
 ### Fixed
 - Fixed a possible crash during world generation or `/reload` when a structure with piece-count limits was being placed on several threads at once.
 - Armour stands and other structure entity processors now generate correctly on every loader, not only Fabric.
-- Structures containing item frames, glow item frames, paintings or leash knots no
+- Structures containing item frames, glow item frames, paintings, or leash knots no
   longer spam "invalid position" errors into the log.
   - Applied automatically to any piece placed through one of MSL's pool element types
     (`versioned_single_pool_element`, `mirroring_single_pool_element`,
@@ -118,7 +134,7 @@
   - **Spacing multipliers** - a universal rarity slider plus per-mod and per-structure sliders that scale a structure's spacing/separation (effective = universal x per_mod x per_structure), applied by `advanced_random_spread` and read once per world load. The owning structure_set id is stamped onto each placement at world load, so a set needs no `spacing_key`/`structure_id` in its JSON for the slider and disable toggle to work.
   - **Disable** - a per-structure toggle that stops a structure from generating, enforced both by structure id at `tryGenerateStructure` and at the placement, so a disabled structure also stops reporting placement positions (no longer influencing neighbours' exclusion zones or computing concentric rings). `/locate` on a disabled structure reports it instead of searching.
   - **Preview** - a per-structure button opening the online structure preview via the vanilla confirm-link screen. The URL is built from an optional per-mod `mod_slug` and the running game version, so the link tracks whatever Minecraft version the pack is played on. A mod that sets no `mod_slug` shows the button disabled with a note.
-- **Config auto-derivation**: a mod exposes its structures to these controls by declaring a single `mod_slug` line in its `structures` block (or nothing at all, for spacing and disable without previews) rather than hand-listing every structure. Display names, spacing keys and preview paths are derived from each structure_set; an explicit `entries` array still overrides the derived rows.
+- **Config auto-derivation**: a mod exposes its structures to these controls by declaring a single `mod_slug` line in its `structures` block (or nothing at all, for spacing and disable without previews) rather than hand-listing every structure. Display names, spacing keys, and preview paths are derived from each structure_set; an explicit `entries` array still overrides the derived rows.
 - Config changes now also re-read on `/reload`, not only on world load (they still affect newly generated chunks only).
 - **Config screen support links**: Discord and Ko-fi icon buttons in the top-right of the config screen, each with a close (×) that hides it for good.
 
