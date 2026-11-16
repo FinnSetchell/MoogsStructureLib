@@ -4,15 +4,17 @@ import com.finndog.moogs_structures.MoogsStructuresCommon;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.resources.ResourceLocation;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.HashSet;
@@ -89,7 +91,11 @@ public final class MslConfig {
         this.hiddenButtons = stored.hiddenButtons;
         this.disabledSnapshot = buildSnapshot(stored.disabledStructures);
         this.generation++;
-        writeFile();
+        // A file that couldn't be read is left as it is, for its owner to fix (a copy is kept beside it too);
+        // it is only written over when a setting is changed on the config screen.
+        if (stored.readable) {
+            writeFile();
+        }
     }
 
     private static Set<ResourceLocation> buildSnapshot(Set<String> ids) {
@@ -209,7 +215,7 @@ public final class MslConfig {
 
     private record Stored(Map<String, Map<String, Boolean>> presets, double universalFrequency,
                           Map<String, Double> perModFrequency, Map<String, Double> perStructureFrequency,
-                          Set<String> disabledStructures, Set<String> hiddenButtons) {}
+                          Set<String> disabledStructures, Set<String> hiddenButtons, boolean readable) {}
 
     private static Stored readStored(Path file) {
         Map<String, Map<String, Boolean>> presets = new HashMap<>();
@@ -218,9 +224,12 @@ public final class MslConfig {
         Map<String, Double> perStructure = new TreeMap<>();
         Set<String> disabled = new TreeSet<>();
         Set<String> hiddenButtons = new TreeSet<>();
+        boolean readable = true;
         if (Files.exists(file)) {
             try (Reader r = Files.newBufferedReader(file)) {
-                JsonObject root = JsonParser.parseReader(r).getAsJsonObject();
+                JsonElement parsed = JsonParser.parseReader(r);
+                // An empty file (an older version could leave one cut short) holds no settings: it gets the defaults.
+                JsonObject root = parsed.isJsonNull() ? new JsonObject() : parsed.getAsJsonObject();
                 if (root.has("disabled_structures") && root.get("disabled_structures").isJsonArray()) {
                     JsonArray arr = root.getAsJsonArray("disabled_structures");
                     for (int i = 0; i < arr.size(); i++) {
@@ -262,11 +271,30 @@ public final class MslConfig {
                     MoogsStructuresCommon.LOGGER.info("Moogs Structures: converted spacing multipliers in {} to frequency multipliers", file);
                 }
             } catch (IOException | RuntimeException e) {
-                MoogsStructuresCommon.LOGGER.warn("Moogs Structures: failed to read {} - defaults will be used ({}: {})",
-                        file, e.getClass().getSimpleName(), e.getMessage());
+                readable = false;
+                Path copy = keepCopy(file);
+                MoogsStructuresCommon.LOGGER.warn("Moogs Structures: couldn't read {} ({}: {}). Using the default settings until it is fixed; "
+                                + "the file is left as it is{}.", file, e.getClass().getSimpleName(), e.getMessage(),
+                        copy != null ? ", and a copy of it is kept at " + copy : "");
             }
         }
-        return new Stored(presets, universal, perMod, perStructure, disabled, hiddenButtons);
+        return new Stored(presets, universal, perMod, perStructure, disabled, hiddenButtons, readable);
+    }
+
+    /**
+     * Copies a file that couldn't be read to {@code <name>.broken} beside it, so the settings in it outlive a
+     * later save from the config screen. Null if it couldn't be copied.
+     */
+    private static Path keepCopy(Path file) {
+        Path copy = file.resolveSibling(file.getFileName() + ".broken");
+        try {
+            Files.copy(file, copy, StandardCopyOption.REPLACE_EXISTING);
+            return copy;
+        } catch (IOException | RuntimeException e) {
+            MoogsStructuresCommon.LOGGER.warn("Moogs Structures: couldn't copy {} to {} ({}: {})",
+                    file, copy, e.getClass().getSimpleName(), e.getMessage());
+            return null;
+        }
     }
 
     private static double readMultiplier(JsonObject parent, String key, boolean legacySpacing, double fallback) {
@@ -302,6 +330,7 @@ public final class MslConfig {
     }
 
     private synchronized void writeFile() {
+        Path temp = file.resolveSibling(file.getFileName() + ".tmp");
         try {
             Files.createDirectories(file.getParent());
             JsonObject root = new JsonObject();
@@ -335,12 +364,35 @@ public final class MslConfig {
             hiddenButtons.forEach(hidden::add);
             root.add("hidden_buttons", hidden);
 
-            try (Writer w = Files.newBufferedWriter(file)) {
-                GSON.toJson(root, w);
+            String json = GSON.toJson(root);
+            if (holds(file, json)) {
+                return;
+            }
+            // Written beside the file and then moved over it in one step, so a crash or a full disk part way
+            // through leaves the old file whole rather than cut short.
+            Files.writeString(temp, json);
+            try {
+                Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException | RuntimeException e) {
-            MoogsStructuresCommon.LOGGER.warn("Moogs Structures: failed to write {} ({}: {})",
+            MoogsStructuresCommon.LOGGER.warn("Moogs Structures: failed to write {} ({}: {}); the file is left as it was",
                     file, e.getClass().getSimpleName(), e.getMessage());
+            try {
+                Files.deleteIfExists(temp);
+            } catch (IOException ignored) {
+                // Left beside the file; the next write replaces it.
+            }
+        }
+    }
+
+    /** Whether the file already holds exactly this text, so writing it again would change nothing. */
+    private static boolean holds(Path file, String text) {
+        try {
+            return Files.isRegularFile(file) && text.equals(Files.readString(file));
+        } catch (IOException | RuntimeException e) {
+            return false;
         }
     }
 }
