@@ -6,6 +6,7 @@ import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.world.processors.RailRotationProcessor;
 import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
+import com.finndog.moogs_structures.world.structures.GenericNetherJigsawStructure;
 import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.google.gson.JsonElement;
@@ -28,6 +29,7 @@ import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
 //? if <1.21.5 {
 import net.minecraft.gametest.framework.GameTest;
 //?}
@@ -61,6 +63,7 @@ import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureCheckResult;
+import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -145,6 +148,8 @@ public class MslGameTests {
         tests.put("pillar_down_to_ground", MslGameTests::pillarDownToGround);
         tests.put("rail_slope_towards_higher_ground", MslGameTests::railSlopeTowardsHigherGround);
         tests.put("placement_field_values", MslGameTests::placementFieldValues);
+        tests.put("mc_versions_gate_biomes", MslGameTests::mcVersionsGateBiomes);
+        tests.put("version_gated_set_turned_off", MslGameTests::versionGatedSetTurnedOff);
         tests.put("liquid_check_at_start_piece_centre", MslGameTests::liquidCheckAtStartPieceCentre);
         tests.put("footprint_in_liquid_share", MslGameTests::footprintInLiquidShare);
         tests.put("disabled_set_skipped_by_searches", MslGameTests::disabledSetSkippedBySearches);
@@ -430,8 +435,9 @@ public class MslGameTests {
     // ------------------------------------------------------------------ placement checks
 
     /**
-     * max_footprint_in_liquid is a number from 0 to 1; anything else is refused. It shares a codec slot with the other
-     * liquid fields, and still writes as a plain top-level key.
+     * max_footprint_in_liquid is a number from 0 to 1, and mc_versions one version range, on both structure types
+     * that read them; anything else is refused. Both share a codec slot with older fields, and still write as plain
+     * top-level keys.
      */
     //? if <1.21.5 {
     @GameTest(templateNamespace = "moogs_structures", template = ARENA)
@@ -447,13 +453,108 @@ public class MslGameTests {
         accepted(helper, Structure.DIRECT_CODEC, generic("\"cannot_spawn_in_liquid\":true,\"fully_submerged\":true,\"max_footprint_in_liquid\":0.5"), wrong);
         refused(helper, Structure.DIRECT_CODEC, generic("\"fully_submerged\":\"yes\""), "", wrong);
 
-        // Written back, it is a top-level key beside the fields it shares a slot with.
-        Structure both = decode(helper, generic("\"max_footprint_in_liquid\":0.25"));
+        for (String good : List.of("1.21.4-26.3", "1.21.1", "1.0-99")) {
+            accepted(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":\"" + good + "\""), wrong);
+            accepted(helper, Structure.DIRECT_CODEC, nether("\"mc_versions\":\"" + good + "\""), wrong);
+        }
+        refused(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":\"1.21.4-\""), "must specify both", wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":\"1.21.4-1.21\""), "minimum greater than its maximum", wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":\"latest\""), "non-numeric", wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":1.21"), "", wrong);
+        refused(helper, Structure.DIRECT_CODEC, nether("\"mc_versions\":\"1.21.4-\""), "must specify both", wrong);
+
+        // Written back, both are top-level keys beside the fields they share a slot with.
+        Structure both = decode(helper, generic("\"max_footprint_in_liquid\":0.25,\"mc_versions\":\"1.21-99\""));
         JsonElement written = Structure.DIRECT_CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, helper.getLevel().registryAccess()), both)
                 .result().orElse(null);
         if (written == null || !written.isJsonObject()
-                || !written.getAsJsonObject().has("max_footprint_in_liquid") || !written.getAsJsonObject().has("cannot_spawn_in_liquid")) {
-            wrong.add("written back as " + written + ", not with max_footprint_in_liquid and cannot_spawn_in_liquid at the top");
+                || !written.getAsJsonObject().has("max_footprint_in_liquid") || !written.getAsJsonObject().has("mc_versions")
+                || !written.getAsJsonObject().has("start_pool") || !written.getAsJsonObject().has("cannot_spawn_in_liquid")) {
+            wrong.add("written back as " + written + ", not with max_footprint_in_liquid, mc_versions, start_pool and cannot_spawn_in_liquid at the top");
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * Outside mc_versions a structure has no biome, so the game gives it no placement, and it turns down every spot;
+     * inside, or without the field, it has its biomes as usual. On both structure types.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void mcVersionsGateBiomes(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        testPiece(helper);
+        String current = VersionResolver.getCurrentVersionString();
+        Set<?> everyVersion = Set.copyOf(decode(helper, generic("")).biomes().stream().toList());
+        if (everyVersion.isEmpty()) {
+            wrong.add("the test structure has no biomes without mc_versions");
+        }
+        Map<String, Boolean> ranges = new LinkedHashMap<>();
+        ranges.put("1.0-1.20.6", false);
+        ranges.put("100-200", false);
+        ranges.put(current, true);
+        ranges.put("1.21-99", true);
+        for (Map.Entry<String, Boolean> range : ranges.entrySet()) {
+            for (String json : List.of(generic("\"mc_versions\":\"" + range.getKey() + "\""), nether("\"mc_versions\":\"" + range.getKey() + "\""))) {
+                GenericJigsawStructure structure = (GenericJigsawStructure) decode(helper, json);
+                Set<?> biomes = Set.copyOf(structure.biomes().stream().toList());
+                String type = structure instanceof GenericNetherJigsawStructure ? "nether" : "generic";
+                if (structure.generatesOnThisVersion() != range.getValue()) {
+                    wrong.add(type + " mc_versions " + range.getKey() + " on " + current + ": generates " + structure.generatesOnThisVersion());
+                }
+                if (range.getValue() ? !biomes.equals(everyVersion) : !biomes.isEmpty()) {
+                    wrong.add(type + " mc_versions " + range.getKey() + " on " + current + ": " + biomes.size() + " biomes, not " + (range.getValue() ? everyVersion.size() : 0));
+                }
+            }
+        }
+        // Even handed every biome, a structure outside its range turns the spot down before reading any terrain.
+        ChunkPos chunk = new ChunkPos(100, 100);
+        ChunkGenerator dry = puddles(helper, (x, z) -> false);
+        if (decode(helper, generic("\"mc_versions\":\"1.0-1.20.6\"")).findValidGenerationPoint(context(helper, dry, chunk)).isPresent()) {
+            wrong.add("a structure outside its mc_versions still found a spot");
+        }
+        if (decode(helper, generic("\"mc_versions\":\"1.21-99\"")).findValidGenerationPoint(context(helper, dry, chunk)).isEmpty()) {
+            wrong.add("a structure inside its mc_versions found no spot on dry ground");
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * The test pack's msl_test_gated set holds one structure outside its mc_versions, so at world load MSL marks the
+     * set as starting nothing, and it stops pushing other sets away; msl_test_shared also holds a structure that
+     * generates, so it stays on.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void versionGatedSetTurnedOff(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        //? if <1.21.2 {
+        var sets = helper.getLevel().registryAccess().registryOrThrow(Registries.STRUCTURE_SET);
+        var structures = helper.getLevel().registryAccess().registryOrThrow(Registries.STRUCTURE);
+        StructureSet gated = sets.get(id("msl_test_gated"));
+        StructureSet shared = sets.get(id("msl_test_shared"));
+        Structure gatedStructure = structures.get(id("msl_test_gated"));
+        //?} else {
+        /*var sets = helper.getLevel().registryAccess().lookupOrThrow(Registries.STRUCTURE_SET);
+        var structures = helper.getLevel().registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        StructureSet gated = sets.getValue(id("msl_test_gated"));
+        StructureSet shared = sets.getValue(id("msl_test_shared"));
+        Structure gatedStructure = structures.getValue(id("msl_test_gated"));
+        *///?}
+        if (gated == null || shared == null || !(gatedStructure instanceof GenericJigsawStructure gatedJigsaw)) {
+            wrong.add("the test pack's gated sets or structure did not load");
+        } else {
+            if (gatedJigsaw.generatesOnThisVersion() || gatedJigsaw.biomes().size() != 0) {
+                wrong.add("msl_test_gated generates here, or has " + gatedJigsaw.biomes().size() + " biomes");
+            }
+            if (!(gated.placement() instanceof AdvancedRandomSpread gatedSpread) || !gatedSpread.isDisabled()) {
+                wrong.add("the set holding only a structure outside its mc_versions is still on");
+            }
+            if (!(shared.placement() instanceof AdvancedRandomSpread sharedSpread) || sharedSpread.isDisabled()) {
+                wrong.add("the set that also holds a structure that generates was turned off");
+            }
         }
         finish(helper, wrong);
     }
@@ -612,6 +713,10 @@ public class MslGameTests {
     /** A generic jigsaw structure whose start pool is msl_test_piece alone, in every overworld biome, with these fields. */
     private static String generic(String fields) {
         return structureJson("moogs_structures:moogs_structures_generic_jigsaw_structure", "", fields);
+    }
+
+    private static String nether(String fields) {
+        return structureJson("moogs_structures:moogs_structures_generic_nether_jigsaw_structure", "\"land_search_direction\":\"HIGHEST_LAND\",", fields);
     }
 
     private static String structureJson(String type, String extra, String fields) {

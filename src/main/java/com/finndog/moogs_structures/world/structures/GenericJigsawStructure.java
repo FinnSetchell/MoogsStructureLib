@@ -3,6 +3,7 @@ package com.finndog.moogs_structures.world.structures;
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.utils.StrictOptionalField;
+import com.finndog.moogs_structures.utils.VersionResolver;
 //? if >=1.21.1 {
 import com.finndog.moogs_structures.world.structures.codecs.YRangeAllowance;
 //?}
@@ -16,9 +17,7 @@ import com.mojang.datafixers.util.Pair;
 /*import com.finndog.moogs_structures.world.structures.terrainadaptation.EncapsulateBackport;
 *///?}
 import com.mojang.serialization.Codec;
-//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
-//?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 //? if <1.21.11 {
 import net.minecraft.Util;
@@ -27,6 +26,7 @@ import net.minecraft.Util;
 *///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -77,6 +77,17 @@ import java.util.OptionalDouble;
 
 public class GenericJigsawStructure extends Structure implements EnhancedTerrainAdaptationStructure {
 
+    // Declared before CODEC, which reads it while it is built.
+    /**
+     * {@code mc_versions}: the Minecraft versions the structure generates on, as one range ("1.21.4-26.3") or one
+     * version, both ends included; absent means every version. A range that doesn't parse is an error on every
+     * version. Method references, so the running version is only read once a structure gives the field.
+     */
+    public static final MapCodec<Optional<VersionResolver.VersionRange>> MC_VERSIONS = StrictOptionalField.of(
+            Codec.STRING.comapFlatMap(VersionResolver::parseRange, VersionResolver.VersionRange::toString), "mc_versions");
+
+    private static final HolderSet<Biome> NO_BIOMES = HolderSet.direct(List.of());
+
     /** How many columns along each side of the start piece {@code max_footprint_in_liquid} reads, corners included. */
     public static final int FOOTPRINT_SAMPLES_PER_SIDE = 5;
 
@@ -86,7 +97,9 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
     /*public static final Codec<GenericJigsawStructure> CODEC = RecordCodecBuilder.create(instance -> instance.group(
     *///?}
             GenericJigsawStructure.settingsCodec(instance),
-            StructureTemplatePool.CODEC.fieldOf("start_pool").forGetter(structure -> structure.startPool),
+            // Shares a slot with mc_versions (DFU groups cap at 16 slots); the JSON stays flat.
+            Codec.mapPair(StructureTemplatePool.CODEC.fieldOf("start_pool"), MC_VERSIONS)
+                    .forGetter(structure -> Pair.of(structure.startPool, structure.mcVersions)),
             Codec.intRange(0, 128).fieldOf("size").forGetter(structure -> structure.size),
             //? if >=1.21.1 {
             YRangeAllowance.CODEC.optionalFieldOf("y_allowance").forGetter(structure -> structure.yAllowance),
@@ -113,21 +126,22 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
             EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
-    ).apply(instance, (config, startPool, size, yAllowance, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, useBoundingBoxHack, liquidSettings, enhancedTerrainAdaptation) -> new GenericJigsawStructure(
-            config, startPool, size, yAllowance, startHeight, projectStartToHeightmap, liquid.getFirst(), liquid.getSecond().getFirst(), liquid.getSecond().getSecond(),
+    ).apply(instance, (config, startPoolAndVersions, size, yAllowance, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, useBoundingBoxHack, liquidSettings, enhancedTerrainAdaptation) -> new GenericJigsawStructure(
+            config, startPoolAndVersions.getFirst(), size, yAllowance, startHeight, projectStartToHeightmap, liquid.getFirst(), liquid.getSecond().getFirst(), liquid.getSecond().getSecond(),
             terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
-            useBoundingBoxHack, liquidSettings, enhancedTerrainAdaptation)));
+            useBoundingBoxHack, liquidSettings, enhancedTerrainAdaptation, startPoolAndVersions.getSecond())));
             //?} else {
             /*Codec.mapPair(Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false),
                     Codec.mapPair(StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING),
                             Codec.mapPair(EncapsulateBackport.FIELD,
                                     EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE))))
                     .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, Pair.of(structure.liquidSettings, Pair.of(structure.encapsulateBackport, structure.enhancedTerrainAdaptation))))
-    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackLiquidEncapsulateAndAdaptation) -> new GenericJigsawStructure(
-            config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid.getFirst(), liquid.getSecond().getFirst(), liquid.getSecond().getSecond(),
+    ).apply(instance, (config, startPoolAndVersions, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackLiquidEncapsulateAndAdaptation) -> new GenericJigsawStructure(
+            config, startPoolAndVersions.getFirst(), size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid.getFirst(), liquid.getSecond().getFirst(), liquid.getSecond().getSecond(),
             terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
             hackLiquidEncapsulateAndAdaptation.getFirst(), hackLiquidEncapsulateAndAdaptation.getSecond().getFirst(),
-            hackLiquidEncapsulateAndAdaptation.getSecond().getSecond().getFirst(), hackLiquidEncapsulateAndAdaptation.getSecond().getSecond().getSecond())));
+            hackLiquidEncapsulateAndAdaptation.getSecond().getSecond().getFirst(), hackLiquidEncapsulateAndAdaptation.getSecond().getSecond().getSecond(),
+            startPoolAndVersions.getSecond())));
             *///?}
 
     public final Holder<StructureTemplatePool> startPool;
@@ -157,6 +171,8 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
     public final boolean encapsulateBackport;
     *///?}
     public final EnhancedTerrainAdaptation enhancedTerrainAdaptation;
+    public final Optional<VersionResolver.VersionRange> mcVersions;
+    private final boolean generatesOnThisVersion;
 
 
     public GenericJigsawStructure(StructureSettings config,
@@ -185,10 +201,13 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                                   //? if <1.21.1 {
                                   /*boolean encapsulateBackport,
                                   *///?}
-                                  EnhancedTerrainAdaptation enhancedTerrainAdaptation)
+                                  EnhancedTerrainAdaptation enhancedTerrainAdaptation,
+                                  Optional<VersionResolver.VersionRange> mcVersions)
     {
         super(config);
         this.enhancedTerrainAdaptation = enhancedTerrainAdaptation;
+        this.mcVersions = mcVersions;
+        this.generatesOnThisVersion = mcVersions.isEmpty() || mcVersions.get().contains(VersionResolver.getCurrentVersion());
         this.startPool = startPool;
         this.size = size;
         //? if >=1.21.1 {
@@ -232,6 +251,21 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
     @Override
     public EnhancedTerrainAdaptation getEnhancedTerrainAdaptation() {
         return this.enhancedTerrainAdaptation;
+    }
+
+    /** False on a Minecraft version outside the structure's {@code mc_versions}. */
+    public boolean generatesOnThisVersion() {
+        return this.generatesOnThisVersion;
+    }
+
+    /**
+     * Outside {@code mc_versions}, no biome. The game then gives the structure no placement at all: it never
+     * generates, a search for it (/locate, maps) ends at once, a structure set holding only it is skipped, and the
+     * others in a shared set still generate. Its id stays registered, so structure sets and tags naming it still load.
+     */
+    @Override
+    public HolderSet<Biome> biomes() {
+        return this.generatesOnThisVersion ? super.biomes() : NO_BIOMES;
     }
 
     /**
@@ -431,6 +465,12 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
 
     @Override
     public Optional<GenerationStub> findGenerationPoint(GenerationContext context) {
+        // No biome passes outside mc_versions anyway; a set shared with structures that do generate still picks
+        // this one, so turn it down before any terrain is read.
+        if (!this.generatesOnThisVersion) {
+            return Optional.empty();
+        }
+
         int offsetY = this.startHeight.sample(context.random(), new WorldGenerationContext(context.chunkGenerator(), context.heightAccessor()));
         BlockPos blockpos = new BlockPos(context.chunkPos().getMinBlockX(), offsetY, context.chunkPos().getMinBlockZ());
 

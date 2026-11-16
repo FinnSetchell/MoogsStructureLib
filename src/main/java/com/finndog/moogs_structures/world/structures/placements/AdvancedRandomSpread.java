@@ -84,6 +84,9 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     // then resolves both from the set it belongs to. Volatile: published before any worldgen read.
     private volatile String owningSetId;
     private volatile ResourceLocation owningSetIdRL;
+    // Stamped with the set id: true when none of the set's structures generates on this Minecraft version
+    // (mc_versions), so the set acts as turned off and doesn't push its neighbours away either.
+    private volatile boolean noStructureOnThisVersion;
 
     // Memoized against MslConfig's generation counter in one immutable holder behind a single volatile
     // field, so concurrent structure-starts (C2ME) snapshot a consistent triple rather than ever
@@ -171,12 +174,23 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         this.memo = null;
     }
 
+    /** Stamped at world load: whether none of this set's structures generates on this Minecraft version. */
+    public void setNoStructureOnThisVersion(boolean noStructureOnThisVersion) {
+        this.noStructureOnThisVersion = noStructureOnThisVersion;
+    }
+
     private ResourceLocation effectiveDisableId() {
         return structureIdRL != null ? structureIdRL : this.owningSetIdRL;
     }
 
-    /** Whether this set is turned off in the config, so it starts no structure anywhere. Generation and structure searches both ask it. */
+    /**
+     * Whether this set starts no structure anywhere: turned off in the config, or none of its structures generates
+     * on this Minecraft version. Generation and structure searches both ask it.
+     */
     public boolean isDisabled() {
+        if (this.noStructureOnThisVersion) {
+            return true;
+        }
         ResourceLocation disableId = effectiveDisableId();
         return disableId != null && MslConfig.get().isStructureDisabled(disableId);
     }
