@@ -36,7 +36,10 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 //? if >=1.21.1 {
 import net.minecraft.world.level.levelgen.structure.structures.JigsawStructure;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
-//?}
+//?} else {
+/*import com.finndog.moogs_structures.utils.StrictOptionalField;
+import com.finndog.moogs_structures.world.structures.codecs.LiquidSettings;
+*///?}
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -76,7 +79,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
             //? if >=1.21.1 {
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
-            //?}
+            //?} else {
+            /*StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING).forGetter(structure -> structure.liquidSettings),
+            *///?}
             EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
     ).apply(instance, GenericNetherJigsawStructure::new));
 
@@ -101,9 +106,7 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                                         Optional<Integer> ledgeOffsetY,
                                         LAND_SEARCH_DIRECTION searchDirection,
                                         boolean useBoundingBoxHack,
-                                        //? if >=1.21.1 {
                                         LiquidSettings liquidSettings,
-                                        //?}
                                         EnhancedTerrainAdaptation enhancedTerrainAdaptation) {
         super(config,
             startPool,
@@ -118,6 +121,7 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             startHeight,
             Optional.empty(),
             cannotSpawnInLiquid,
+            false,
             Optional.empty(),
             Optional.empty(),
             biomeRadius,
@@ -125,9 +129,7 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             maxDistanceFromCenter,
             Optional.empty(),
             useBoundingBoxHack,
-            //? if >=1.21.1 {
             liquidSettings,
-            //?}
             enhancedTerrainAdaptation);
 
         this.ledgeOffsetY = ledgeOffsetY;

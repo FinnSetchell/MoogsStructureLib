@@ -2,13 +2,13 @@ package com.finndog.moogs_structures.utils;
 
 import com.finndog.moogs_structures.world.processors.FollowFloorProcessor;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -43,40 +43,53 @@ public final class MixinUtils {
     private static final int STRUCTURE_PIECE_MARGIN = 4;
 
     /**
-     * Checks if the provided position is inside a structure that is tagged with the provided tag.
+     * Checks if any block of the area is near a piece of a structure that is tagged with the
+     * provided tag. A feature passes in every block it could write, so one that would reach into
+     * the structure is caught however far its own origin is from it.
      */
-    public static boolean isPositionInTaggedStructure(WorldGenRegion worldGenRegion, BlockPos pos, TagKey<Structure> structureTagKey) {
+    public static boolean isAreaNearTaggedStructure(WorldGenRegion worldGenRegion, BoundingBox area, TagKey<Structure> structureTagKey) {
         //? if <1.21.2 {
         Registry<Structure> structureRegistry = worldGenRegion.registryAccess().registryOrThrow(Registries.STRUCTURE);
         //?} else {
         /*Registry<Structure> structureRegistry = worldGenRegion.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         *///?}
-        SectionPos sectionPos = SectionPos.of(pos);
+        BoundingBox grown = area.inflatedBy(STRUCTURE_PIECE_MARGIN);
 
-        // Ensure chunk has generated structure references
-        ChunkAccess chunkAccess = worldGenRegion.getChunk(sectionPos.x(), sectionPos.z(), ChunkStatus.STRUCTURE_REFERENCES);
-        if (!chunkAccess.getHighestGeneratedStatus().isOrAfter(ChunkStatus.STRUCTURE_REFERENCES)) return false;
+        // A start is referenced by every chunk its box overlaps, so the chunks under the grown area
+        // name every start with a piece near the area. Features only write within one chunk of the
+        // chunk being decorated, and only those chunks have their structure references settled.
+        ChunkPos center = worldGenRegion.getCenter();
+        int centerX = SectionPos.blockToSectionCoord(center.getMinBlockX());
+        int centerZ = SectionPos.blockToSectionCoord(center.getMinBlockZ());
+        int minChunkX = Math.max(centerX - 1, SectionPos.blockToSectionCoord(grown.minX()));
+        int maxChunkX = Math.min(centerX + 1, SectionPos.blockToSectionCoord(grown.maxX()));
+        int minChunkZ = Math.max(centerZ - 1, SectionPos.blockToSectionCoord(grown.minZ()));
+        int maxChunkZ = Math.min(centerZ + 1, SectionPos.blockToSectionCoord(grown.maxZ()));
 
-        // Check all structures referenced by this chunk, and return true if any match the provided tag
-        Map<Structure, LongSet> allReferencesInChunk = chunkAccess.getAllReferences();
-        for (Map.Entry<Structure, LongSet> entry : allReferencesInChunk.entrySet()) {
-            Structure structure = entry.getKey();
-            LongSet references = entry.getValue();
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                ChunkAccess chunkAccess = worldGenRegion.getChunk(chunkX, chunkZ, ChunkStatus.STRUCTURE_REFERENCES);
+                if (!chunkAccess.getHighestGeneratedStatus().isOrAfter(ChunkStatus.STRUCTURE_REFERENCES)) continue;
 
-            Optional<ResourceKey<Structure>> structureKey = structureRegistry.getResourceKey(structure);
-            //? if <1.21.2 {
-            boolean isTaggedStructure = structureKey.isPresent() && structureRegistry.getHolderOrThrow(structureKey.get()).is(structureTagKey);
-            //?} else {
-            /*boolean isTaggedStructure = structureKey.isPresent() && structureRegistry.getOrThrow(structureKey.get()).is(structureTagKey);
-            *///?}
+                // Check all structures referenced by this chunk, and return true if any match the provided tag
+                for (Map.Entry<Structure, LongSet> entry : chunkAccess.getAllReferences().entrySet()) {
+                    Structure structure = entry.getKey();
+                    LongSet references = entry.getValue();
 
-            if (isTaggedStructure) {
-                // Only suppress the feature where an actual piece is (its bounding box + a small
-                // margin), NOT across the structure's whole bounding box. The overall box can be
-                // huge and mostly empty, and suppressing it entirely leaves unnatural feature-free
-                // voids. The cheap overall-box check short-circuits positions far outside.
-                if (isAnyReferenceValidStartForStructure(worldGenRegion, structure, references, structureStart -> isPositionNearAnyPiece(structureStart, pos))) {
-                    return true;
+                    Optional<ResourceKey<Structure>> structureKey = structureRegistry.getResourceKey(structure);
+                    //? if <1.21.2 {
+                    boolean isTaggedStructure = structureKey.isPresent() && structureRegistry.getHolderOrThrow(structureKey.get()).is(structureTagKey);
+                    //?} else {
+                    /*boolean isTaggedStructure = structureKey.isPresent() && structureRegistry.getOrThrow(structureKey.get()).is(structureTagKey);
+                    *///?}
+
+                    // Only suppress the feature where an actual piece is (its bounding box + a small
+                    // margin), NOT across the structure's whole bounding box. The overall box can be
+                    // huge and mostly empty, and suppressing it entirely leaves unnatural feature-free
+                    // voids.
+                    if (isTaggedStructure && isAnyReferenceValidStartForStructure(worldGenRegion, structure, references, structureStart -> isAreaNearAnyPiece(structureStart, grown))) {
+                        return true;
+                    }
                 }
             }
         }
@@ -85,29 +98,33 @@ public final class MixinUtils {
     }
 
     /**
-     * True if the position is inside any individual piece of the structure start (inflated by
-     * {@link #STRUCTURE_PIECE_MARGIN}). The overall bounding-box check short-circuits cheaply for
-     * positions nowhere near the structure.
+     * True if the area, already grown by {@link #STRUCTURE_PIECE_MARGIN}, overlaps any individual
+     * piece of the structure start. The overall bounding-box check short-circuits cheaply for areas
+     * nowhere near the structure.
      */
-    private static boolean isPositionNearAnyPiece(StructureStart structureStart, BlockPos pos) {
+    private static boolean isAreaNearAnyPiece(StructureStart structureStart, BoundingBox grown) {
         BoundingBox startBox = structureStart.getBoundingBox();
-        if (pos.getX() < startBox.minX() || pos.getX() > startBox.maxX() || pos.getZ() < startBox.minZ() || pos.getZ() > startBox.maxZ()) return false;
-        boolean insideStart = pos.getY() >= startBox.minY() && pos.getY() <= startBox.maxY();
+        if (!grown.intersects(startBox.minX(), startBox.minZ(), startBox.maxX(), startBox.maxZ())) return false;
         for (StructurePiece piece : structureStart.getPieces()) {
-            BoundingBox box = piece.getBoundingBox().inflatedBy(STRUCTURE_PIECE_MARGIN);
-            if (insideStart && box.isInside(pos)) {
-                return true;
-            }
+            BoundingBox box = piece.getBoundingBox();
+            if (!grown.intersects(box.minX(), box.minZ(), box.maxX(), box.maxZ())) continue;
             // A piece that follows the floor can end up above or below its own box, so it also
             // covers that reach.
             int reach = FollowFloorProcessor.verticalReach(piece);
-            if (reach > 0
-                    && pos.getX() >= box.minX() && pos.getX() <= box.maxX() && pos.getZ() >= box.minZ() && pos.getZ() <= box.maxZ()
-                    && pos.getY() >= box.minY() - reach && pos.getY() <= box.maxY() + reach) {
+            if (grown.maxY() >= box.minY() - reach && grown.minY() <= box.maxY() + reach) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** The largest value the provider can give, which is how far a feature sized by it can reach. */
+    public static int maxOf(IntProvider provider) {
+        //? if <26.1.2 {
+        return provider.getMaxValue();
+        //?} else {
+        /*return provider.maxInclusive();
+        *///?}
     }
 
     /**
