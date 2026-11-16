@@ -10,7 +10,8 @@ import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedT
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
 import com.google.common.collect.Maps;
 //? if <1.21.1 {
-/*import com.mojang.datafixers.util.Pair;
+/*import com.finndog.moogs_structures.world.structures.terrainadaptation.EncapsulateBackport;
+import com.mojang.datafixers.util.Pair;
 *///?}
 import com.mojang.serialization.Codec;
 //? if >=1.20.6 {
@@ -104,11 +105,12 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
     ).apply(instance, GenericJigsawStructure::new));
             //?} else {
             /*Codec.mapPair(Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false),
-                    EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE))
-                    .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, structure.enhancedTerrainAdaptation))
-    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, cannotSpawnInLiquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackAndAdaptation) -> new GenericJigsawStructure(
+                    Codec.mapPair(EncapsulateBackport.FIELD,
+                            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE)))
+                    .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, Pair.of(structure.encapsulateBackport, structure.enhancedTerrainAdaptation)))
+    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, cannotSpawnInLiquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackEncapsulateAndAdaptation) -> new GenericJigsawStructure(
             config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, cannotSpawnInLiquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
-            hackAndAdaptation.getFirst(), hackAndAdaptation.getSecond())));
+            hackEncapsulateAndAdaptation.getFirst(), hackEncapsulateAndAdaptation.getSecond().getFirst(), hackEncapsulateAndAdaptation.getSecond().getSecond())));
             *///?}
 
     public final Holder<StructureTemplatePool> startPool;
@@ -132,7 +134,10 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
     public final boolean useBoundingBoxHack;
     //? if >=1.21.1 {
     public final LiquidSettings liquidSettings;
-    //?}
+    //?} else {
+    /*/^* 1.20 to 1.20.4: terrain_adaptation is "encapsulate", which the game reads as "none" there (EncapsulateBackport). ^/
+    public final boolean encapsulateBackport;
+    *///?}
     public final EnhancedTerrainAdaptation enhancedTerrainAdaptation;
 
 
@@ -158,7 +163,9 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                                   boolean useBoundingBoxHack,
                                   //? if >=1.21.1 {
                                   LiquidSettings liquidSettings,
-                                  //?}
+                                  //?} else {
+                                  /*boolean encapsulateBackport,
+                                  *///?}
                                   EnhancedTerrainAdaptation enhancedTerrainAdaptation)
     {
         super(config);
@@ -184,7 +191,9 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
         this.useBoundingBoxHack = useBoundingBoxHack;
         //? if >=1.21.1 {
         this.liquidSettings = liquidSettings;
-        //?}
+        //?} else {
+        /*this.encapsulateBackport = encapsulateBackport;
+        *///?}
 
 
         //? if >=1.21.1 {

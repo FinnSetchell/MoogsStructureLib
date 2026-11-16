@@ -49,6 +49,10 @@ import java.util.Optional;
 /*import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 
 *///?}
+//? if <1.21.1 {
+/*import com.finndog.moogs_structures.world.structures.terrainadaptation.EncapsulateBackport;
+
+*///?}
 public class GenericNetherJigsawStructure extends GenericJigsawStructure {
 
     //? if >=1.20.6 {
@@ -76,7 +80,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
             //? if >=1.21.1 {
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
-            //?}
+            //?} else {
+            /*EncapsulateBackport.FIELD.forGetter(structure -> structure.encapsulateBackport),
+            *///?}
             EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
     ).apply(instance, GenericNetherJigsawStructure::new));
 
@@ -103,7 +109,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                                         boolean useBoundingBoxHack,
                                         //? if >=1.21.1 {
                                         LiquidSettings liquidSettings,
-                                        //?}
+                                        //?} else {
+                                        /*boolean encapsulateBackport,
+                                        *///?}
                                         EnhancedTerrainAdaptation enhancedTerrainAdaptation) {
         super(config,
             startPool,
@@ -127,7 +135,9 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             useBoundingBoxHack,
             //? if >=1.21.1 {
             liquidSettings,
-            //?}
+            //?} else {
+            /*encapsulateBackport,
+            *///?}
             enhancedTerrainAdaptation);
 
         this.ledgeOffsetY = ledgeOffsetY;

@@ -19,6 +19,11 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 //?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
+//? if <1.20.6 {
+/*import it.unimi.dsi.fastutil.objects.ObjectList;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
+*///?}
 
 /**
  * Injects enhanced (kernel-based) terrain adaptation behavior into vanilla's Beardifier.
@@ -29,6 +34,33 @@ import org.spongepowered.asm.mixin.Unique;
 // vanilla's shared EMPTY happens before any other mod has written to it.
 @Mixin(value = Beardifier.class, priority = 900)
 public class BeardifierMixin implements EnhancedBeardifierData {
+    //? if <1.20.6 {
+    /*@Unique
+    private ObjectList<BoundingBox> moogs_structures_encapsulatedPieces;
+
+    @Unique
+    private ObjectList<JigsawJunction> moogs_structures_encapsulatedJunctions;
+
+    @Unique
+    @Override
+    public ObjectList<BoundingBox> moogs_structures_getEncapsulatedPieces() {
+        return this.moogs_structures_encapsulatedPieces;
+    }
+
+    @Unique
+    @Override
+    public ObjectList<JigsawJunction> moogs_structures_getEncapsulatedJunctions() {
+        return this.moogs_structures_encapsulatedJunctions;
+    }
+
+    @Unique
+    @Override
+    public void moogs_structures_setEncapsulated(ObjectList<BoundingBox> pieces, ObjectList<JigsawJunction> junctions) {
+        this.moogs_structures_encapsulatedPieces = pieces;
+        this.moogs_structures_encapsulatedJunctions = junctions;
+    }
+    *///?}
+
     @Unique
     //? if <26.1.2 {
     private ObjectListIterator<EnhancedJigsawJunction> moogs_structures_enhancedJunctionIterator;
