@@ -2,6 +2,9 @@
 package com.finndog.moogs_structures.misc.trialspawnerconfig;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
+//? if <1.21.5 {
+import com.finndog.moogs_structures.utils.LegacyDropChances;
+//?}
 //? if <1.21.2 {
 import com.google.gson.Gson;
 //?}
@@ -66,6 +69,9 @@ public class TrialSpawnerConfigManager extends SimpleJsonResourceReloadListener 
             try {
                 Tag asNbt = new Dynamic<>(JsonOps.INSTANCE, json).convert(NbtOps.INSTANCE).getValue();
                 if (asNbt instanceof CompoundTag compound) {
+                    //? if <1.21.5 {
+                    floatDropChances(compound);
+                    //?}
                     builder.put(id, compound);
                 } else {
                     MoogsStructuresCommon.LOGGER.error("Moog's Structure Lib Error: trial_spawner config {} is not a JSON object", id);
@@ -76,6 +82,18 @@ public class TrialSpawnerConfigManager extends SimpleJsonResourceReloadListener 
         });
         this.configs = builder;
     }
+
+    //? if <1.21.5 {
+    /** Each mob the config spawns ({@code spawn_potentials[].data.entity}), with its drop chances as the mob reads them. */
+    private static void floatDropChances(CompoundTag config) {
+        for (Tag potential : config.getList("spawn_potentials", Tag.TAG_COMPOUND)) {
+            CompoundTag data = ((CompoundTag) potential).getCompound("data");
+            if (data.contains("entity", Tag.TAG_COMPOUND)) {
+                LegacyDropChances.asFloatLists(data.getCompound("entity"));
+            }
+        }
+    }
+    //?}
 
     @Nullable
     public CompoundTag get(ResourceLocation id) {
