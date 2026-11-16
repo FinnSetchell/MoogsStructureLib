@@ -22,6 +22,7 @@
 - The world no longer freezes while generating some small structures
 - When two mods replace the same vanilla structure, /locate, eyes of ender, explorer maps, advancements, and mob spawns now lead to a replacement that actually generates, whatever order the mods load in
 - Structures that are meant to stay dry no longer fill with waterlogged stairs, slabs, and walls where they meet water on Minecraft 1.20 to 1.20.6, such as the stronghold from Moog's Temples Reimagined
+- Underground structures that ask to be sealed off from the terrain now are on Minecraft 1.20 to 1.20.4 too, so they no longer fill with water from nearby caves, such as the stronghold from Moog's Temples Reimagined
 - Basalt deltas and basalt columns next to Nether structures that keep them out no longer eat into the structure's edges with lava, magma, or basalt
 
 ---
