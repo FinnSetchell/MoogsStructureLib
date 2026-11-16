@@ -766,7 +766,9 @@ public class MslGameTests {
         return new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(), random, templates(helper),
                 level.getSeed(), chunk, level, biome -> true);
         //?} else {
-        /*return new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(), random.sampler(), random, templates(helper),
+        /*// As the game's own StructureCheck makes its climate sampler.
+        var climate = random.createClimateSampler(net.minecraft.world.level.levelgen.densityfunction.SamplerContext.builder().enableCaches().build());
+        return new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(), climate, random, templates(helper),
                 level.getSeed(), chunk, level, biome -> true);
         *///?}
     }
