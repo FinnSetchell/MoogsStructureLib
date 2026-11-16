@@ -497,7 +497,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             *///?}
 
             if(!this.cannotSpawnInLiquid && (heightMapToUse == Heightmap.Types.OCEAN_FLOOR_WG || heightMapToUse == Heightmap.Types.OCEAN_FLOOR)) {
-                int maxHeightForSubmerging = context.chunkGenerator().getSeaLevel() - box.getYSpan();
+                int maxHeightForSubmerging = maxHeightForSubmerging(context, box);
                 highestLandPos = Math.min(highestLandPos, maxHeightForSubmerging);
             }
             else {
@@ -624,7 +624,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             }
 
             if(!this.cannotSpawnInLiquid && (heightMapToUse == Heightmap.Types.OCEAN_FLOOR_WG || heightMapToUse == Heightmap.Types.OCEAN_FLOOR)) {
-                int maxHeightForSubmerging = context.chunkGenerator().getSeaLevel() - box.getYSpan();
+                int maxHeightForSubmerging = maxHeightForSubmerging(context, box);
                 highestLandPos = Math.min(highestLandPos, maxHeightForSubmerging);
             }
             else {
@@ -633,6 +633,14 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
 
             offsetToNewHeight(context, offsetY, pieces, box, highestLandPos);
         }
+    }
+
+    /**
+     * The highest start a sea-floor structure is buried to so it stays under the sea: its top ends in the top water
+     * layer, or one below that with {@code fully_submerged} so a layer of water covers it.
+     */
+    private int maxHeightForSubmerging(GenerationContext context, BoundingBox box) {
+        return context.chunkGenerator().getSeaLevel() - box.getYSpan() - (this.fullySubmerged ? 1 : 0);
     }
 
     private int terrainHeight(GenerationContext context, Heightmap.Types heightMapToUse, int x, int z, Optional<Integer> minYAllowed, int highestLandPos) {
