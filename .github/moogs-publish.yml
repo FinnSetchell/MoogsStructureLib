@@ -29,13 +29,16 @@ targets:
     loaders: [fabric]
     buildCommand: ":{mc}-fabric:build"
     jarDir: "versions/{mc}-fabric/build/libs"
+    # Fabric 1.21.5 and 1.21.6-1.21.8 are separate jars, because 1.21.6 changed how entities load
+    # and how screens draw.
     builds:
       - { mc: "1.20", upTo: "1.20.4", java: 25 }
       - { mc: "1.20.6", from: "1.20.5", java: 25 }
       - { mc: "1.21.1", from: "1.21", java: 25 }
       - { mc: "1.21.2", upTo: "1.21.3", java: 25 }
       - { mc: "1.21.4", java: 25 }
-      - { mc: "1.21.5", upTo: "1.21.8", java: 25 }
+      - { mc: "1.21.5", java: 25 }
+      - { mc: "1.21.6", upTo: "1.21.8", java: 25 }
       - { mc: "1.21.10", java: 25 }
       - { mc: "1.21.11", java: 25 }
       - { mc: "26.1.2", from: "26.1", java: 25 }
@@ -46,15 +49,18 @@ targets:
     loaders: [forge]
     buildCommand: ":{mc}-forge:build"
     jarDir: "versions/{mc}-forge/build/libs"
-    # No Forge for 1.20.5-1.20.6, or for 1.21.5-1.21.8 yet.
+    # No Forge for 1.20.5-1.20.6. Forge 1.21.5 and 1.21.6-1.21.8 are separate jars, because Forge
+    # 1.21.6 changed its event bus.
     builds:
       - { mc: "1.20", upTo: "1.20.4", java: 25 }
       - { mc: "1.21.1", from: "1.21", java: 25 }
       - { mc: "1.21.2", upTo: "1.21.3", java: 25 }
       - { mc: "1.21.4", java: 25 }
+      - { mc: "1.21.5", java: 25 }
+      - { mc: "1.21.6", upTo: "1.21.8", java: 25 }
       - { mc: "1.21.10", java: 25 }
       - { mc: "1.21.11", java: 25 }
-      - { mc: "26.1.2", from: "26.1.1", java: 25 }
+      - { mc: "26.1.2", from: "26.1", java: 25 }
       - { mc: "26.2", java: 25 }
       - { mc: "26.3", java: 25 }
   - branch: main
@@ -62,13 +68,14 @@ targets:
     loaders: [neoforge]
     buildCommand: ":{mc}-neoforge:build"
     jarDir: "versions/{mc}-neoforge/build/libs"
-    # No 1.20.5: NeoForge's 1.20.5 betas can't run MSL on a server.
+    # NeoForge 1.21.5 and 1.21.6-1.21.8 are separate jars, because 1.21.6 changed how screens draw.
     builds:
-      - { mc: "1.20.6", java: 25 }
+      - { mc: "1.20.6", from: "1.20.5", java: 25 }
       - { mc: "1.21.1", from: "1.21", java: 25 }
       - { mc: "1.21.2", upTo: "1.21.3", java: 25 }
       - { mc: "1.21.4", java: 25 }
-      - { mc: "1.21.5", upTo: "1.21.8", java: 25 }
+      - { mc: "1.21.5", java: 25 }
+      - { mc: "1.21.6", upTo: "1.21.8", java: 25 }
       - { mc: "1.21.10", java: 25 }
       - { mc: "1.21.11", java: 25 }
       - { mc: "26.1.2", from: "26.1", java: 25 }

@@ -8,6 +8,8 @@ import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStartEvent;
 import com.finndog.moogs_structures.events.lifecycle.ServerGoingToStopEvent;
 import com.finndog.moogs_structures.events.lifecycle.SetupEvent;
 import com.finndog.moogs_structures.modinit.registry.neoforge.ResourcefulRegistriesImpl;
+import com.finndog.moogs_structures.neoforge.client.MoogsStructuresNeoforgeClient;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -32,7 +34,8 @@ public class MoogsStructuresNeoforge {
 
     public static IEventBus modEventBusTempHolder = null;
 
-    public MoogsStructuresNeoforge(IEventBus modEventBus, ModContainer modContainer) {
+    // FML passes the side in as Dist on every NeoForge version this mod supports.
+    public MoogsStructuresNeoforge(IEventBus modEventBus, ModContainer modContainer, Dist dist) {
         modEventBus.addListener(EventPriority.NORMAL, ResourcefulRegistriesImpl::onRegisterForgeRegistries);
 
         modEventBusTempHolder = modEventBus;
@@ -49,6 +52,11 @@ public class MoogsStructuresNeoforge {
         eventBus.addListener(MoogsStructuresNeoforge::onServerStopping);
         eventBus.addListener(MoogsStructuresNeoforge::onAddReloadListeners);
         eventBus.addListener(MoogsStructuresNeoforge::onRegisterCommands);
+
+        // Only a client may load the config screen classes.
+        if (dist == Dist.CLIENT) {
+            MoogsStructuresNeoforgeClient.registerConfigScreen(modContainer);
+        }
     //? if <1.21.1 {
     /*}
 

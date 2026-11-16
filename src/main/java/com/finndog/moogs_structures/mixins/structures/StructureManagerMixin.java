@@ -20,6 +20,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
+import java.util.List;
 //? if >=1.20.6 {
 import java.util.function.Predicate;
 //?}
@@ -39,12 +41,14 @@ public class StructureManagerMixin {
     )
     private void moogs_structures_aliasStructureAt(BlockPos blockPos, Structure structure, CallbackInfoReturnable<StructureStart> cir) {
         StructureManager self = (StructureManager) (Object) this;
-        Structure replacement = moogs_structures_aliasFor(self, structure, cir.getReturnValue());
-        if (replacement == null) return;
-
-        // Safe to re-enter: the replacement's own id has no alias, so the second call runs vanilla.
-        StructureStart start = self.getStructureAt(blockPos, replacement);
-        if (start.isValid()) cir.setReturnValue(start);
+        for (Structure replacement : moogs_structures_aliasesFor(self, structure, cir.getReturnValue())) {
+            // Safe to re-enter: the replacement's own id has no alias, so the second call runs vanilla.
+            StructureStart start = self.getStructureAt(blockPos, replacement);
+            if (start.isValid()) {
+                cir.setReturnValue(start);
+                return;
+            }
+        }
     }
 
     @Inject(
@@ -62,15 +66,17 @@ public class StructureManagerMixin {
     /*private void moogs_structures_aliasStructureWithPieceAt(int x, int y, int z, Structure structure, CallbackInfoReturnable<StructureStart> cir) {
     *///?}
         StructureManager self = (StructureManager) (Object) this;
-        Structure replacement = moogs_structures_aliasFor(self, structure, cir.getReturnValue());
-        if (replacement == null) return;
-
-        //? if <26.3 {
-        StructureStart start = self.getStructureWithPieceAt(blockPos, replacement);
-        //?} else {
-        /*StructureStart start = self.getStructureWithPieceAt(x, y, z, replacement);
-        *///?}
-        if (start.isValid()) cir.setReturnValue(start);
+        for (Structure replacement : moogs_structures_aliasesFor(self, structure, cir.getReturnValue())) {
+            //? if <26.3 {
+            StructureStart start = self.getStructureWithPieceAt(blockPos, replacement);
+            //?} else {
+            /*StructureStart start = self.getStructureWithPieceAt(x, y, z, replacement);
+            *///?}
+            if (start.isValid()) {
+                cir.setReturnValue(start);
+                return;
+            }
+        }
     }
 
     /**
@@ -99,9 +105,10 @@ public class StructureManagerMixin {
     }
 
         //?}
-    private static Structure moogs_structures_aliasFor(StructureManager manager, Structure asked, StructureStart found) {
-        if (!ReplacementAliases.hasAny()) return null;
-        if (found != null && found.isValid()) return null;
+    /** The structures standing in for the one asked about, in a fixed order, when it was not found itself. */
+    private static List<Structure> moogs_structures_aliasesFor(StructureManager manager, Structure asked, StructureStart found) {
+        if (!ReplacementAliases.hasAny()) return List.of();
+        if (found != null && found.isValid()) return List.of();
 
         //? if <1.21.2 {
         Registry<Structure> registry = manager.registryAccess().registryOrThrow(Registries.STRUCTURE);
@@ -109,15 +116,18 @@ public class StructureManagerMixin {
         /*Registry<Structure> registry = manager.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         *///?}
         ResourceLocation askedId = registry.getKey(asked);
-        if (askedId == null) return null;
+        if (askedId == null) return List.of();
 
-        ReplaceVanillaManager.Replacement replacement = ReplacementAliases.forVanilla(askedId)
-                .filter(r -> r.options().aliasLookups())
-                .orElse(null);
-        //? if <1.21.2 {
-        return replacement == null ? null : registry.get(replacement.replacementStructure());
-        //?} else {
-        /*return replacement == null ? null : registry.getValue(replacement.replacementStructure());
-        *///?}
+        List<Structure> replacements = new ArrayList<>();
+        for (ReplaceVanillaManager.Replacement replacement : ReplacementAliases.forVanilla(askedId)) {
+            if (!replacement.options().aliasLookups()) continue;
+            //? if <1.21.2 {
+            Structure structure = registry.get(replacement.replacementStructure());
+            //?} else {
+            /*Structure structure = registry.getValue(replacement.replacementStructure());
+            *///?}
+            if (structure != null) replacements.add(structure);
+        }
+        return replacements;
     }
 }

@@ -174,18 +174,18 @@ public class TagLoaderMixin {
 
     private void moogs_structures_addReplacement(ReplacementAliases.Snapshot aliases, ResourceLocation vanillaId,
                                                  Collection<Object> holders, Map<ResourceLocation, Object> additions) {
-        ResourceLocation replacementId = aliases.forVanilla(vanillaId)
-                .filter(r -> r.options().mirrorTags())
-                .map(Replacement::replacementStructure)
-                .orElse(null);
-        if (replacementId == null || additions.containsKey(replacementId)) return;
+        for (Replacement replacement : aliases.forVanilla(vanillaId)) {
+            if (!replacement.options().mirrorTags()) continue;
+            ResourceLocation replacementId = replacement.replacementStructure();
+            if (additions.containsKey(replacementId)) continue;
 
-        //? if <1.21.2 {
-        Object replacementHolder = this.idToValue.apply(replacementId).orElse(null);
-        //?} else {
-        /*Object replacementHolder = this.elementLookup.get(replacementId, false).orElse(null);
-        *///?}
-        if (replacementHolder != null && !holders.contains(replacementHolder)) additions.put(replacementId, replacementHolder);
+            //? if <1.21.2 {
+            Object replacementHolder = this.idToValue.apply(replacementId).orElse(null);
+            //?} else {
+            /*Object replacementHolder = this.elementLookup.get(replacementId, false).orElse(null);
+            *///?}
+            if (replacementHolder != null && !holders.contains(replacementHolder)) additions.put(replacementId, replacementHolder);
+        }
     }
 
     private static boolean moogs_structures_isStructureLoader(String directory) {

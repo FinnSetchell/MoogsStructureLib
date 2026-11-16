@@ -22,7 +22,7 @@ import net.minecraft.world.entity.MobSpawnType;
 /*import net.minecraft.world.entity.EntitySpawnRequest;
 *///?}
 import net.minecraft.world.level.ServerLevelAccessor;
-//? if >=1.21.10 {
+//? if >=1.21.6 {
 /*import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.ValueInput;
 *///?}
@@ -138,7 +138,7 @@ public class EntityProcessorMixin {
         moogs_structures$processAndPlaceEntitiesImpl(serverLevelAccessor, ci);
     }
 
-    // Handler for MC 1.21.9 - 1.21.10 (vanilla placeEntities has trailing ProblemReporter param).
+    // Handler for MC 1.21.6 and later (vanilla placeEntities has a trailing ProblemReporter param).
     // require = 0 so this silently skips on MC versions where the signature does not match.
     @Inject(
             method = "placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;ZLnet/minecraft/util/ProblemReporter;)V",
@@ -253,13 +253,13 @@ public class EntityProcessorMixin {
             //? if <1.21.2 {
             return EntityType.create(compoundTag, serverLevelAccessor.getLevel());
             //?}
-            //? if >=1.21.2 <1.21.10 {
+            //? if >=1.21.2 <1.21.6 {
             /*return EntityType.create(compoundTag, serverLevelAccessor.getLevel(), EntitySpawnReason.STRUCTURE);
             *///?}
-            //? if >=1.21.10 {
+            //? if >=1.21.6 {
             /*ValueInput valueInput = TagValueInput.create(ProblemReporter.DISCARDING, serverLevelAccessor.registryAccess(), compoundTag);
             *///?}
-            //? if >=1.21.10 <26.2 {
+            //? if >=1.21.6 <26.2 {
             /*return EntityType.create(valueInput, serverLevelAccessor.getLevel(), EntitySpawnReason.STRUCTURE);
             *///?}
             //? if >=26.2 {

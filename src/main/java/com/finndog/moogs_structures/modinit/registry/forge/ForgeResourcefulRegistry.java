@@ -44,14 +44,14 @@ public class ForgeResourcefulRegistry<T> implements ResourcefulRegistry<T> {
 
     @Override
     public void init() {
-        //? if >=1.21.1 <1.21.5 {
+        //? if >=1.21.1 <1.21.6 {
         register.register(MoogsStructuresForge.modEventBusTempHolder);
         //?}
         //? if <1.21.1 {
         /*IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         register.register(bus);
         *///?}
-        //? if >=1.21.5 {
+        //? if >=1.21.6 {
         /*register.register(MoogsStructuresForge.modBusGroupTempHolder);
         *///?}
     }
