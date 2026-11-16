@@ -2,6 +2,15 @@
 
 ---
 
+## [4.1.0] - <release date>
+
+### Added
+- Structures can now hang from the ceilings of Nether caves
+  - Loose hanging parts, like stalactites and roots, can follow a bumpy ceiling instead of hanging level
+  - Caves no longer cut away the rock a hanging structure hangs from
+
+---
+
 ## [4.0.0] - 2026-11-16
 
 ### Added
