@@ -1108,27 +1108,8 @@ public class PieceLimitedJigsawManager {
                             /*} else {
                             *///?}
                                 if (surfaceHeight == -1) {
-                                    //? if >=1.21.1 <1.21.4 {
-                                    surfaceHeight = context.chunkGenerator().getFirstFreeHeight(jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                    //?}
-                                    //? if <1.21.1 {
-                                    /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                    *///?}
-                                    //? if >=1.21.4 <1.21.5 {
-                                    /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                    *///?}
-                                    //? if >=1.21.5 <26.1.2 {
-                                    /*surfaceHeight = context.chunkGenerator().getFirstFreeHeight(
-                                            jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
-                                    *///?}
-                                    //? if >=26.1.2 {
-                                    /*surfaceHeight = GeneralUtils.getCachedFreeHeight(
-                                            context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
-                                    *///?}
-                                            //? if >=1.21.5 {
-                                            /*(isCandidatePieceOceanFloor || isPieceOceanFloor) ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG,
-                                            heightLimitView, context.randomState());
-                                            *///?}
+                                    surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
+                                            isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
                                 }
 
                                 adjustedCandidatePieceMinY = surfaceHeight - candidateJigsawBlockRelativeY;
@@ -1230,27 +1211,8 @@ public class PieceLimitedJigsawManager {
                                 /*} else {
                                 *///?}
                                     if (surfaceHeight == -1) {
-                                        //? if >=1.21.1 <1.21.4 {
-                                        surfaceHeight = context.chunkGenerator().getFirstFreeHeight(jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                        //?}
-                                        //? if <1.21.1 {
-                                        /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                        *///?}
-                                        //? if >=1.21.4 <1.21.5 {
-                                        /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                        *///?}
-                                        //? if >=1.21.5 <26.1.2 {
-                                        /*surfaceHeight = context.chunkGenerator().getFirstFreeHeight(
-                                                jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
-                                        *///?}
-                                        //? if >=26.1.2 {
-                                        /*surfaceHeight = GeneralUtils.getCachedFreeHeight(
-                                                context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
-                                        *///?}
-                                                //? if >=1.21.5 {
-                                                /*(isCandidatePieceOceanFloor || isPieceOceanFloor) ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG,
-                                                heightLimitView, context.randomState());
-                                                *///?}
+                                        surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
+                                                isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
                                     }
 
                                     candidateJigsawBlockY = surfaceHeight + candidateJigsawYOffsetNeeded / 2;

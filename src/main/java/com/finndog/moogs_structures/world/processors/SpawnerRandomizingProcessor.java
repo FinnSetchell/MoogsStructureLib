@@ -3,6 +3,9 @@ package com.finndog.moogs_structures.world.processors;
 //? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //?}
+//? if <1.21.5 {
+import com.finndog.moogs_structures.utils.LegacyDropChances;
+//?}
 import com.mojang.serialization.Codec;
 //? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
@@ -134,6 +137,10 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
         CompoundTag entityData = new CompoundTag();
         entry.nbt().ifPresent(nbt -> entityData.merge(nbt.copy()));
         entityData.putString("id", entityRL.toString());
+        //? if <1.21.5 {
+        // The nbt came from JSON, so its drop chances need to be floats for the mob to read them.
+        LegacyDropChances.asFloatLists(entityData);
+        //?}
 
         CompoundTag compound = new CompoundTag();
         compound.putShort("Delay", (short) delay);
