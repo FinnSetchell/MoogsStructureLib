@@ -1,6 +1,7 @@
 package com.finndog.moogs_structures.utils;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
+import com.google.common.collect.MapMaker;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
@@ -74,6 +75,7 @@ import java.util.Map;
 /*import java.util.*;
 *///?}
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public final class GeneralUtils {
     private GeneralUtils() {}
@@ -392,19 +394,29 @@ public final class GeneralUtils {
 
     ///////////////////////////////////////////
 
-    private static final ConcurrentHashMap<HeightKey, Integer> CACHED_HEIGHT = new ConcurrentHashMap<>(2048);
-    private record HeightKey(ChunkGenerator chunkGenerator, int x, int z, Heightmap.Types types) {}
+    /**
+     * Heights read from the chunk generator's noise, kept per level. A level's {@link RandomState} is made from
+     * its generator and seed, so it stands for the terrain the heights come from. It is held weakly: once a
+     * world closes, its heights go with it rather than keeping its generator and registries for the rest of
+     * the game (GitHub issue #30). Each level keeps at most {@link #CACHED_HEIGHTS_PER_LEVEL}, starting afresh
+     * when full.
+     */
+    private static final ConcurrentMap<RandomState, Map<HeightKey, Integer>> CACHED_HEIGHT = new MapMaker().weakKeys().makeMap();
+    private static final int CACHED_HEIGHTS_PER_LEVEL = 2048;
+    private record HeightKey(int x, int z, Heightmap.Types types) {}
 
+    /** {@link ChunkGenerator#getFirstFreeHeight}, remembered per level. One below it is the first occupied height. */
     public static int getCachedFreeHeight(ChunkGenerator chunkGenerator, int x, int z, Heightmap.Types types, LevelHeightAccessor levelHeightAccessor, RandomState randomState) {
-        HeightKey key = new HeightKey(chunkGenerator, x, z, types);
-        Integer y = CACHED_HEIGHT.get(key);
+        Map<HeightKey, Integer> heights = CACHED_HEIGHT.computeIfAbsent(randomState, state -> new ConcurrentHashMap<>(CACHED_HEIGHTS_PER_LEVEL));
+        HeightKey key = new HeightKey(x, z, types);
+        Integer y = heights.get(key);
 
         if (y == null) {
-            if (CACHED_HEIGHT.size() >= 2048) {
-                CACHED_HEIGHT.clear();
+            if (heights.size() >= CACHED_HEIGHTS_PER_LEVEL) {
+                heights.clear();
             }
             y = chunkGenerator.getFirstFreeHeight(x, z, types, levelHeightAccessor, randomState);
-            CACHED_HEIGHT.put(key, y);
+            heights.put(key, y);
         }
 
         return y;

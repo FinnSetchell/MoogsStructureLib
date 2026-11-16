@@ -22,6 +22,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -57,9 +58,11 @@ public final class AdaptationArea {
         return DataResult.success(area);
     }
 
-    /** Set when a server starts, for reading footprints where no template manager is passed in. */
-    @Nullable
-    private static volatile StructureTemplateManager serverTemplates;
+    /**
+     * Set when a server starts, for reading footprints where no template manager is passed in. Held weakly:
+     * the server keeps it while it runs, and a closed world's templates and registries aren't kept after.
+     */
+    private static volatile WeakReference<StructureTemplateManager> serverTemplates = new WeakReference<>(null);
 
     private final Optional<List<ColumnRect>> columns;
     private final Optional<Footprint> footprint;
@@ -75,7 +78,7 @@ public final class AdaptationArea {
     }
 
     public static void setServerTemplates(@Nullable StructureTemplateManager manager) {
-        serverTemplates = manager;
+        serverTemplates = new WeakReference<>(manager);
     }
 
     public boolean outsideFollowsGround() {
@@ -93,7 +96,7 @@ public final class AdaptationArea {
         if (cached != null) {
             return cached;
         }
-        StructureTemplateManager templates = manager != null ? manager : serverTemplates;
+        StructureTemplateManager templates = manager != null ? manager : serverTemplates.get();
         if (templates == null) {
             return null;
         }
