@@ -127,9 +127,11 @@ public class TagLoaderMixin {
                                              //?} else {
                                              /*CallbackInfoReturnable<Map<ResourceLocation, List<Object>>> cir) {
                                              *///?}
-        if (!ReplacementAliases.hasAny() || !moogs_structures_isStructureLoader(this.directory)) return;
-
+        if (!moogs_structures_isStructureLoader(this.directory)) return;
         ReplacementAliases.Snapshot aliases = ReplacementAliases.snapshot();
+        boolean anyWiped = this.moogs_structures_replacedByTag != null && !aliases.keptInReplacedTags().isEmpty();
+        if (!aliases.hasAny() && !anyWiped) return;
+
         //? if <1.21.2 {
         for (Map.Entry<ResourceLocation, Collection<Object>> tag : cir.getReturnValue().entrySet()) {
             Collection<Object> holders = tag.getValue();
@@ -153,7 +155,11 @@ public class TagLoaderMixin {
             List<ResourceLocation> replaced = this.moogs_structures_replacedByTag != null
                     ? this.moogs_structures_replacedByTag.get(tag.getKey()) : null;
             if (replaced != null && !holders.isEmpty()) {
-                for (ResourceLocation id : replaced) moogs_structures_addReplacement(aliases, id, holders, additions);
+                for (ResourceLocation id : replaced) {
+                    moogs_structures_addReplacement(aliases, id, holders, additions);
+                    // The replacement structure's own entry, with its preset off as well as on.
+                    if (aliases.keptInReplacedTags().contains(id)) moogs_structures_add(id, holders, additions);
+                }
             }
             if (additions.size() > beforeReplaced) {
                 MoogsStructuresCommon.LOGGER.info("Moogs Structures: another pack replaced structure tag {}; added {} to it anyway",
@@ -175,17 +181,18 @@ public class TagLoaderMixin {
     private void moogs_structures_addReplacement(ReplacementAliases.Snapshot aliases, ResourceLocation vanillaId,
                                                  Collection<Object> holders, Map<ResourceLocation, Object> additions) {
         for (Replacement replacement : aliases.forVanilla(vanillaId)) {
-            if (!replacement.options().mirrorTags()) continue;
-            ResourceLocation replacementId = replacement.replacementStructure();
-            if (additions.containsKey(replacementId)) continue;
-
-            //? if <1.21.2 {
-            Object replacementHolder = this.idToValue.apply(replacementId).orElse(null);
-            //?} else {
-            /*Object replacementHolder = this.elementLookup.get(replacementId, false).orElse(null);
-            *///?}
-            if (replacementHolder != null && !holders.contains(replacementHolder)) additions.put(replacementId, replacementHolder);
+            if (replacement.options().mirrorTags()) moogs_structures_add(replacement.replacementStructure(), holders, additions);
         }
+    }
+
+    private void moogs_structures_add(ResourceLocation id, Collection<Object> holders, Map<ResourceLocation, Object> additions) {
+        if (additions.containsKey(id)) return;
+        //? if <1.21.2 {
+        Object holder = this.idToValue.apply(id).orElse(null);
+        //?} else {
+        /*Object holder = this.elementLookup.get(id, false).orElse(null);
+        *///?}
+        if (holder != null && !holders.contains(holder)) additions.put(id, holder);
     }
 
     private static boolean moogs_structures_isStructureLoader(String directory) {

@@ -24,8 +24,13 @@ import java.util.stream.Collectors;
 public final class ReplacementAliases {
     private ReplacementAliases() {}
 
-    public record Snapshot(Map<ResourceLocation, List<Replacement>> byVanilla, Map<ResourceLocation, List<Replacement>> byReplacement) {
-        public static final Snapshot EMPTY = new Snapshot(Map.of(), Map.of());
+    /**
+     * {@code keptInReplacedTags}: every replacement structure, its preset on or off, that is put back into a
+     * structure tag when another pack's {@code "replace": true} file wipes it out (TagLoaderMixin).
+     */
+    public record Snapshot(Map<ResourceLocation, List<Replacement>> byVanilla, Map<ResourceLocation, List<Replacement>> byReplacement,
+                           Set<ResourceLocation> keptInReplacedTags) {
+        public static final Snapshot EMPTY = new Snapshot(Map.of(), Map.of(), Set.of());
 
         public boolean hasAny() {
             return !this.byVanilla.isEmpty();
@@ -60,7 +65,17 @@ public final class ReplacementAliases {
             byReplacement.computeIfAbsent(replacement.replacementStructure(), k -> new ArrayList<>()).add(replacement);
         }
 
-        current = new Snapshot(freeze(byVanilla), freeze(byReplacement));
+        // A mod's own tag entries for its replacement structure, kept whether or not the preset is on. Otherwise
+        // whether one survives another pack's "replace": true comes down to which mod's data loaded first: MTR
+        // adds its stronghold to eye_of_ender_located, and Integrated Stronghold replaces that tag, so eyes of
+        // ender found MTR's strongholds on Fabric but not on NeoForge.
+        Set<ResourceLocation> kept = ReplaceVanillaManager.getReplacements().stream()
+                .filter(replacement -> replacement.options().mirrorTags() && replacement.replacementStructure() != null
+                        && !replaced.contains(replacement.replacementStructure()))
+                .map(Replacement::replacementStructure)
+                .collect(Collectors.toUnmodifiableSet());
+
+        current = new Snapshot(freeze(byVanilla), freeze(byReplacement), kept);
 
         if (MoogsStructuresCommon.LOGGER.isDebugEnabled()) {
             MoogsStructuresCommon.LOGGER.debug("Moogs Structures: active structure aliases: {}",
