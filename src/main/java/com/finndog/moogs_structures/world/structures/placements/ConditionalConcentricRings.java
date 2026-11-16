@@ -2,6 +2,7 @@ package com.finndog.moogs_structures.world.structures.placements;
 
 import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
+import com.finndog.moogs_structures.utils.StrictOptionalField;
 //? if <26.3 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementType;
 //?}
@@ -31,9 +32,11 @@ import java.util.Optional;
 /**
  * Concentric-rings placement whose ring count depends on whether a replacement preset is enabled:
  * enabled_count when the preset is on (e.g. 1:1 with the vanilla structure it replaces),
- * disabled_count when off (a reduced coexisting density). Extends the vanilla type so Minecraft's
- * special ring handling still applies; the count is read once when ring positions are generated
- * at world load.
+ * disabled_count when off (a reduced coexisting density). The optional enabled_distance likewise
+ * replaces distance while the preset is on, so the rings can sit where vanilla's would when they
+ * stand in for them and further out when they share the world with them. Extends the vanilla type so
+ * Minecraft's special ring handling still applies; count and distance are read once when ring
+ * positions are generated at world load.
  */
 public class ConditionalConcentricRings extends ConcentricRingsStructurePlacement {
     //? if >=1.20.6 {
@@ -46,7 +49,7 @@ public class ConditionalConcentricRings extends ConcentricRingsStructurePlacemen
             Codec.floatRange(0.0F, 1.0F).optionalFieldOf("frequency", 1.0F).forGetter(ConditionalConcentricRings::frequency),
             ExtraCodecs.NON_NEGATIVE_INT.fieldOf("salt").forGetter(ConditionalConcentricRings::salt),
             ExclusionZone.CODEC.optionalFieldOf("exclusion_zone").forGetter(ConditionalConcentricRings::exclusionZone),
-            Codec.intRange(0, 1023).fieldOf("distance").forGetter(ConditionalConcentricRings::distance),
+            Codec.intRange(0, 1023).fieldOf("distance").forGetter(p -> p.disabledDistance),
             Codec.intRange(0, 1023).fieldOf("spread").forGetter(ConditionalConcentricRings::spread),
             //? if <26.3 {
             RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("preferred_biomes").forGetter(ConditionalConcentricRings::preferredBiomes),
@@ -57,13 +60,17 @@ public class ConditionalConcentricRings extends ConcentricRingsStructurePlacemen
             Codec.STRING.fieldOf("vanilla_key").forGetter(p -> p.vanillaKey),
             Codec.intRange(1, 4095).fieldOf("enabled_count").forGetter(p -> p.enabledCount),
             Codec.intRange(0, 4095).fieldOf("disabled_count").forGetter(p -> p.disabledCount),
-            Codec.STRING.optionalFieldOf("structure_id").forGetter(p -> p.structureId)
+            Codec.STRING.optionalFieldOf("structure_id").forGetter(p -> p.structureId),
+            // Absent on an MSL without it, which then uses distance whether the preset is on or off.
+            StrictOptionalField.of(Codec.intRange(0, 1023), "enabled_distance").forGetter(p -> p.enabledDistance)
     ).apply(instance, instance.stable(ConditionalConcentricRings::new)));
 
     private final String modid;
     private final String vanillaKey;
     private final int enabledCount;
     private final int disabledCount;
+    private final int disabledDistance;
+    private final Optional<Integer> enabledDistance;
     private final Optional<String> structureId;
     private final ResourceLocation structureIdRL;
     // Owning structure_set id, stamped at world load so disable works without an explicit structure_id
@@ -73,12 +80,15 @@ public class ConditionalConcentricRings extends ConcentricRingsStructurePlacemen
     public ConditionalConcentricRings(Vec3i locateOffset, FrequencyReductionMethod frequencyReductionMethod, float frequency,
                                       int salt, Optional<ExclusionZone> exclusionZone, int distance, int spread,
                                       HolderSet<Biome> preferredBiomes, String modid, String vanillaKey,
-                                      int enabledCount, int disabledCount, Optional<String> structureId) {
+                                      int enabledCount, int disabledCount, Optional<String> structureId,
+                                      Optional<Integer> enabledDistance) {
         super(locateOffset, frequencyReductionMethod, frequency, salt, exclusionZone, distance, spread, enabledCount, preferredBiomes);
         this.modid = modid;
         this.vanillaKey = vanillaKey;
         this.enabledCount = enabledCount;
         this.disabledCount = disabledCount;
+        this.disabledDistance = distance;
+        this.enabledDistance = enabledDistance;
         this.structureId = structureId;
         this.structureIdRL = structureId.map(ResourceLocation::tryParse).orElse(null);
     }
@@ -100,6 +110,12 @@ public class ConditionalConcentricRings extends ConcentricRingsStructurePlacemen
             return 0;
         }
         return ReplaceVanillaManager.isEnabled(modid, vanillaKey) ? enabledCount : disabledCount;
+    }
+
+    @Override
+    public int distance() {
+        return this.enabledDistance.isPresent() && ReplaceVanillaManager.isEnabled(modid, vanillaKey)
+                ? this.enabledDistance.get() : this.disabledDistance;
     }
 
     @Override
