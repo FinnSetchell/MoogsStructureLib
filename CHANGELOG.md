@@ -10,6 +10,7 @@
 - Structures can now shape the ground around just their main part, such as a house or a tree's trunk, so the ground under gardens, paths, and treetops stays natural, and loose parts around a building can follow the slope
 - Rails in structures can now slope up and down with the ground
 - Sea structures can now be kept fully underwater, so they never stick out
+- Mods can give their strongholds a different spacing while they replace the vanilla ones
 
 ### Fixed
 - The Forge version now loads on Minecraft 1.21.5 to 1.21.8 and 26.1
