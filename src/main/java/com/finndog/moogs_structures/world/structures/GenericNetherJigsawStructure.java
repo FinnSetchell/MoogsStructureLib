@@ -137,6 +137,8 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Optional.empty(),
             cannotSpawnInLiquid,
             false,
+            // max_footprint_in_liquid reads the top of each terrain column, which in the Nether is the bedrock roof.
+            Optional.empty(),
             Optional.empty(),
             Optional.empty(),
             biomeRadius,
