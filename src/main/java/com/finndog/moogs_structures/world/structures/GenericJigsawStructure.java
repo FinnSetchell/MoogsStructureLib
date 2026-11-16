@@ -2,6 +2,7 @@ package com.finndog.moogs_structures.world.structures;
 
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.utils.GeneralUtils;
+import com.finndog.moogs_structures.utils.StrictOptionalField;
 //? if >=1.21.1 {
 import com.finndog.moogs_structures.world.structures.codecs.YRangeAllowance;
 //?}
@@ -9,9 +10,8 @@ import com.finndog.moogs_structures.world.structures.pieces.PieceLimitedJigsawMa
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
 import com.google.common.collect.Maps;
-//? if <1.21.1 {
-/*import com.mojang.datafixers.util.Pair;
-*///?}
+import com.mojang.datafixers.util.Either;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 //? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
@@ -61,8 +61,7 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 import net.minecraft.world.level.levelgen.structure.structures.JigsawStructure;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 //?} else {
-/*import com.finndog.moogs_structures.utils.StrictOptionalField;
-import com.finndog.moogs_structures.world.structures.codecs.LiquidSettings;
+/*import com.finndog.moogs_structures.world.structures.codecs.LiquidSettings;
 *///?}
 
 import java.util.ArrayList;
@@ -92,7 +91,10 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             *///?}
             HeightProvider.CODEC.fieldOf("start_height").forGetter(structure -> structure.startHeight),
             Heightmap.Types.CODEC.optionalFieldOf("project_start_to_heightmap").forGetter(structure -> structure.projectStartToHeightmap),
-            Codec.BOOL.fieldOf("cannot_spawn_in_liquid").orElse(false).forGetter(structure -> structure.cannotSpawnInLiquid),
+            // Shares a slot with fully_submerged (DFU groups cap at 16 slots); the JSON stays flat.
+            Codec.mapPair(Codec.BOOL.fieldOf("cannot_spawn_in_liquid").orElse(false),
+                    StrictOptionalField.of(Codec.BOOL, "fully_submerged", false))
+                    .forGetter(structure -> Pair.of(structure.cannotSpawnInLiquid, structure.fullySubmerged)),
             Codec.intRange(1, 100).optionalFieldOf("terrain_height_radius_check").forGetter(structure -> structure.terrainHeightCheckRadius),
             Codec.intRange(1, 1000).optionalFieldOf("allowed_terrain_height_range").forGetter(structure -> structure.allowedTerrainHeightRange),
             Codec.intRange(1, 100).optionalFieldOf("valid_biome_radius_check").forGetter(structure -> structure.biomeRadius),
@@ -104,14 +106,16 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
             EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
-    ).apply(instance, GenericJigsawStructure::new));
+    ).apply(instance, (config, startPool, size, yAllowance, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, useBoundingBoxHack, liquidSettings, enhancedTerrainAdaptation) -> new GenericJigsawStructure(
+            config, startPool, size, yAllowance, startHeight, projectStartToHeightmap, liquid.getFirst(), liquid.getSecond(), terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
+            useBoundingBoxHack, liquidSettings, enhancedTerrainAdaptation)));
             //?} else {
             /*Codec.mapPair(Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false),
                     Codec.mapPair(StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING),
                             EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE)))
                     .forGetter(structure -> Pair.of(structure.useBoundingBoxHack, Pair.of(structure.liquidSettings, structure.enhancedTerrainAdaptation)))
-    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, cannotSpawnInLiquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackLiquidAndAdaptation) -> new GenericJigsawStructure(
-            config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, cannotSpawnInLiquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
+    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid, terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType, hackLiquidAndAdaptation) -> new GenericJigsawStructure(
+            config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, projectStartToHeightmap, liquid.getFirst(), liquid.getSecond(), terrainHeightCheckRadius, allowedTerrainHeightRange, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, buryingType,
             hackLiquidAndAdaptation.getFirst(), hackLiquidAndAdaptation.getSecond().getFirst(), hackLiquidAndAdaptation.getSecond().getSecond())));
             *///?}
 
@@ -127,6 +131,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
     public final HeightProvider startHeight;
     public final Optional<Heightmap.Types> projectStartToHeightmap;
     public final boolean cannotSpawnInLiquid;
+    public final boolean fullySubmerged;
     public final Optional<Integer> terrainHeightCheckRadius;
     public final Optional<Integer> allowedTerrainHeightRange;
     public final Optional<Integer> biomeRadius;
@@ -151,6 +156,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                                   HeightProvider startHeight,
                                   Optional<Heightmap.Types> projectStartToHeightmap,
                                   boolean cannotSpawnInLiquid,
+                                  boolean fullySubmerged,
                                   Optional<Integer> terrainHeightCheckRadius,
                                   Optional<Integer> allowedTerrainHeightRange,
                                   Optional<Integer> biomeRadius,
@@ -175,6 +181,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
         this.startHeight = startHeight;
         this.projectStartToHeightmap = projectStartToHeightmap;
         this.cannotSpawnInLiquid = cannotSpawnInLiquid;
+        this.fullySubmerged = fullySubmerged;
         this.terrainHeightCheckRadius = terrainHeightCheckRadius;
         this.allowedTerrainHeightRange = allowedTerrainHeightRange;
         this.biomeRadius = biomeRadius;
@@ -405,7 +412,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
 
         int finalTopClipOff = topClipOff;
         int finalBottomClipOff = bottomClipOff;
-        return PieceLimitedJigsawManager.assembleJigsawStructure(
+        Optional<GenerationStub> stub = PieceLimitedJigsawManager.assembleJigsawStructure(
                 context,
                 this.startPool,
                 this.size,
@@ -426,6 +433,22 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
                 this.liquidSettings,
                 //?}
                 (structurePiecesBuilder, pieces) -> postLayoutAdjustments(structurePiecesBuilder, context, offsetY, blockpos, finalTopClipOff, finalBottomClipOff, pieces));
+        return this.fullySubmerged ? stub.flatMap(found -> fullySubmergedLayout(context, found)) : stub;
+    }
+
+    /**
+     * {@code fully_submerged}: lays the pieces out while the spot is still being chosen, and turns the spot
+     * down unless every piece stays under at least one layer of sea water (the top water layer is one below
+     * sea level). Deciding here rather than when the chunk generates keeps /locate and maps from pointing at
+     * a spot that is then skipped. The finished layout is handed on, so it is not laid out twice.
+     */
+    private Optional<GenerationStub> fullySubmergedLayout(GenerationContext context, GenerationStub stub) {
+        StructurePiecesBuilder pieces = stub.getPiecesBuilder();
+        int highestAllowedTop = context.chunkGenerator().getSeaLevel() - 2;
+        if (pieces.isEmpty() || pieces.getBoundingBox().maxY() > highestAllowedTop) {
+            return Optional.empty();
+        }
+        return Optional.of(new GenerationStub(stub.position(), Either.right(pieces)));
     }
 
     protected void postLayoutAdjustments(StructurePiecesBuilder structurePiecesBuilder, GenerationContext context, int offsetY, BlockPos blockpos, int topClipOff, int bottomClipOff, List<PoolElementStructurePiece> pieces) {
@@ -471,7 +494,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             *///?}
 
             if(!this.cannotSpawnInLiquid && (heightMapToUse == Heightmap.Types.OCEAN_FLOOR_WG || heightMapToUse == Heightmap.Types.OCEAN_FLOOR)) {
-                int maxHeightForSubmerging = context.chunkGenerator().getSeaLevel() - box.getYSpan();
+                int maxHeightForSubmerging = maxHeightForSubmerging(context, box);
                 highestLandPos = Math.min(highestLandPos, maxHeightForSubmerging);
             }
             else {
@@ -598,7 +621,7 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             }
 
             if(!this.cannotSpawnInLiquid && (heightMapToUse == Heightmap.Types.OCEAN_FLOOR_WG || heightMapToUse == Heightmap.Types.OCEAN_FLOOR)) {
-                int maxHeightForSubmerging = context.chunkGenerator().getSeaLevel() - box.getYSpan();
+                int maxHeightForSubmerging = maxHeightForSubmerging(context, box);
                 highestLandPos = Math.min(highestLandPos, maxHeightForSubmerging);
             }
             else {
@@ -607,6 +630,14 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
 
             offsetToNewHeight(context, offsetY, pieces, box, highestLandPos);
         }
+    }
+
+    /**
+     * The highest start a sea-floor structure is buried to so it stays under the sea: its top ends in the top water
+     * layer, or one below that with {@code fully_submerged} so a layer of water covers it.
+     */
+    private int maxHeightForSubmerging(GenerationContext context, BoundingBox box) {
+        return context.chunkGenerator().getSeaLevel() - box.getYSpan() - (this.fullySubmerged ? 1 : 0);
     }
 
     private int terrainHeight(GenerationContext context, Heightmap.Types heightMapToUse, int x, int z, Optional<Integer> minYAllowed, int highestLandPos) {
