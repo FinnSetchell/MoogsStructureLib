@@ -9,10 +9,8 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
 //?}
-//? if >=1.21.1 <26.1.2 {
 import net.minecraft.nbt.CompoundTag;
-//?}
-//? if >=1.21.1 <1.21.5 {
+//? if <1.21.5 {
 import net.minecraft.nbt.StringTag;
 //?}
 //? if <1.21.1 {
@@ -22,7 +20,7 @@ import net.minecraft.core.FrontAndTop;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 *///?}
-//? if >=1.21.11 <26.1.2 {
+//? if >=1.21.11 {
 /*import net.minecraft.nbt.StringTag;
 *///?}
 import net.minecraft.resources.ResourceLocation;
@@ -280,73 +278,39 @@ public final class GeneralUtils {
 
     //////////////////////////////////////////////
 
-    // More optimized with checking if the jigsaw blocks can connect
+    // More optimized with checking if the jigsaw blocks can connect. Same rule as vanilla's JigsawBlock.canAttach.
     //? if <1.21.2 {
     public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
+        CompoundTag nbt1 = jigsaw1.nbt();
+        CompoundTag nbt2 = jigsaw2.nbt();
         FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
     //?}
     //? if >=1.21.2 <1.21.5 {
     /*public static boolean canJigsawsAttach(StructureTemplate.JigsawBlockInfo jigsaw1, StructureTemplate.JigsawBlockInfo jigsaw2) {
+        CompoundTag nbt1 = jigsaw1.info().nbt();
+        CompoundTag nbt2 = jigsaw2.info().nbt();
         FrontAndTop prop1 = jigsaw1.info().state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.info().state().getValue(JigsawBlock.ORIENTATION);
     *///?}
     //? if >=1.21.5 {
     /*public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
+        CompoundTag nbt1 = jigsaw1.nbt();
+        CompoundTag nbt2 = jigsaw2.nbt();
         FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
     *///?}
-        //? if >=26.1.2 {
-        /*String joint = String.valueOf(jigsaw1.nbt().getString("joint"));
-        if(joint.isEmpty()) {
-            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
-        }
-        *///?}
-        //? if <1.21.1 {
-        /*String joint = jigsaw1.nbt().getString("joint");
-        if(joint.isEmpty()) {
-            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
-        }
-        *///?}
-
-        //? if >=26.1.2 {
-        /*boolean isRollable = joint.equals("rollable");
-        *///?}
-        //? if <1.21.1 {
-        /*boolean isRollable = joint.equals("rollable");
-        *///?}
         return prop1.front() == prop2.front().getOpposite() &&
-                //? if >=1.21.1 <26.1.2 {
-                (prop1.top() == prop2.top() || isRollableJoint(jigsaw1, prop1)) &&
-                //?}
-                //? if >=1.21.1 <1.21.2 {
-                getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
-                //?}
-                //? if >=1.21.2 <1.21.5 {
-                /*getStringMicroOptimised(jigsaw1.info().nbt(), "target").equals(getStringMicroOptimised(jigsaw2.info().nbt(), "name"));
-                *///?}
-                //? if >=1.21.5 <26.1.2 {
-                /*getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
-                *///?}
-    //? if >=1.21.1 <26.1.2 {
+                (prop1.top() == prop2.top() || isRollableJoint(nbt1, prop1)) &&
+                getStringMicroOptimised(nbt1, "target").equals(getStringMicroOptimised(nbt2, "name"));
     }
 
-    //?}
-    //? if >=1.21.1 <1.21.2 {
-    private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
-        String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
-    //?}
-    //? if >=1.21.2 <1.21.5 {
-    /*private static boolean isRollableJoint(StructureTemplate.JigsawBlockInfo jigsaw1, FrontAndTop prop1) {
-        String joint = getStringMicroOptimised(jigsaw1.info().nbt(), "joint");
-    *///?}
-    //? if >=1.21.5 <26.1.2 {
-    /*private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
-        String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
-    *///?}
-        //? if >=1.21.1 <26.1.2 {
+    // A joint written as "rollable" or "aligned" is used as written. Any other value, or none, rolls when the
+    // jigsaw faces up or down and stays aligned when it faces sideways, as vanilla reads it.
+    private static boolean isRollableJoint(CompoundTag nbt, FrontAndTop orientation) {
+        String joint = getStringMicroOptimised(nbt, "joint");
         if(!joint.equals("rollable") && !joint.equals("aligned")) {
-            return !prop1.front().getAxis().isHorizontal();
+            return !orientation.front().getAxis().isHorizontal();
         }
         else {
             return joint.equals("rollable");
@@ -354,24 +318,15 @@ public final class GeneralUtils {
     }
 
     public static String getStringMicroOptimised(CompoundTag tag, String key) {
-        //?}
-        //? if >=1.21.1 <1.21.5 {
+        //? if <1.21.5 {
         return tag.get(key) instanceof StringTag stringTag ? stringTag.getAsString() : "";
         //?}
-                //? if <1.21.1 {
-                /*(isRollable || prop1.top() == prop2.top()) &&
-                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
-                *///?}
         //? if >=1.21.5 <1.21.11 {
         /*return tag.getString(key).orElse("");
         *///?}
-        //? if >=1.21.11 <26.1.2 {
+        //? if >=1.21.11 {
         /*return tag.get(key) instanceof StringTag stringTag ? stringTag.value() : "";
         *///?}
-                //? if >=26.1.2 {
-                /*(isRollable || prop1.top() == prop2.top()) &&
-                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
-                *///?}
     }
 
     //////////////////////////////////////////////
