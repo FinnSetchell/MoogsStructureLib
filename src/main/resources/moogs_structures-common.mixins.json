@@ -13,6 +13,8 @@
         "structures.AbstractVillagerAccessor",
         "structures.ChunkGeneratorMixin",
         "structures.DisableVanillaStructureMixin",
+        "structures.HangingRockCarversMixin",
+        "structures.HangingRockWorldCarverMixin",
         "structures.JigsawReplacementProcessorMixin",
         "structures.ListPoolElementAccessor",
         "structures.LocateCommandMixin",

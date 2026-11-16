@@ -11,7 +11,9 @@ import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.levelgen.GenerationStep;
 //?}
 //? if >=26.3 {
-/*import net.minecraft.core.Holder;
+/*import com.finndog.moogs_structures.world.structures.HangingRockGuard;
+import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.BiomeResolver;
@@ -78,6 +80,9 @@ final class CarvedTerrain {
         WorldGenerationContext context = new WorldGenerationContext(generator, chunk.getHeightAccessorForGeneration());
         int maxY = context.getMinGenY() + context.getGenDepth() - 1 - (chunk.isUpgrading() ? 0 : 7);
         Recorded mask = new Recorded(context.getMinGenY() + 1, maxY);
+        // The carvers left the rock above hanging structures alone (HangingRockGuard), so leave it out here too.
+        HangingRockGuard guard = level instanceof WorldGenRegion region ? HangingRockGuard.of(region, chunk) : null;
+        CarverOutput output = guard == null ? mask : guard.guarding(mask);
         WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
         ChunkPos pos = chunk.getPos();
         // Same loop as NoiseBasedChunkGenerator.generateCarvers: every carver that starts within 8 chunks.
@@ -89,7 +94,7 @@ final class CarvedTerrain {
                 for (Holder<WorldCarver> carver : generator.getBiomeGenerationSettings(biome).getCarvers()) {
                     random.setLargeFeatureSeed(randomState.seed() + index, source.x(), source.z());
                     if (carver.value().isStartChunk(random)) {
-                        carver.value().carve(context, random, pos, source, mask);
+                        carver.value().carve(context, random, pos, source, output);
                     }
                     index++;
                 }

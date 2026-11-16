@@ -203,6 +203,11 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
         return Optional.of(new GenerationStub(stub.get().position(), Either.right(pieces)));
     }
 
+    /** Whether this structure hangs from a ceiling, so the carvers leave the rock above its pieces (see {@link HangingRockGuard}). */
+    public boolean hangsFromCeiling() {
+        return this.searchDirection == LAND_SEARCH_DIRECTION.CEILING;
+    }
+
     /**
      * Jigsaw children aren't held to y_allowance while a hanging structure is laid out at its starting height:
      * it only reaches its real height when it is hung from the ceiling, where the whole structure is checked.
