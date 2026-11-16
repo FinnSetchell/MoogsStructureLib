@@ -3,7 +3,7 @@ package com.finndog.moogs_structures.world.processors;
 //? if <26.2 {
 import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //?}
-import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
+import com.finndog.moogs_structures.world.structures.PlacingStructure;
 //? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
 //?} else {
@@ -18,7 +18,6 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.block.state.properties.RailShape;
-import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 //? if <26.2 {
@@ -56,23 +55,11 @@ public class RailRotationProcessor extends StructureProcessor {
     /*public static final MapCodec<RailRotationProcessor> MAP_CODEC = MapCodec.unit(() -> INSTANCE);
     *///?}
 
-    private static final ThreadLocal<Boolean> PLACING_MSL_STRUCTURE = ThreadLocal.withInitial(() -> false);
-
     private RailRotationProcessor() {}
-
-    /** Called as a structure starts placing its pieces in a chunk. */
-    public static void startPlacing(Structure structure) {
-        PLACING_MSL_STRUCTURE.set(structure instanceof GenericJigsawStructure);
-    }
-
-    /** Called when that structure has finished placing in the chunk. */
-    public static void stopPlacing() {
-        PLACING_MSL_STRUCTURE.set(false);
-    }
 
     /** Adds this processor, last, to a template being placed for one of MSL's own structures. */
     public static void addWhilePlacingMslStructure(StructurePlaceSettings placeSettings) {
-        if (PLACING_MSL_STRUCTURE.get() && !placeSettings.getProcessors().contains(INSTANCE)) {
+        if (PlacingStructure.get() != null && !placeSettings.getProcessors().contains(INSTANCE)) {
             placeSettings.addProcessor(INSTANCE);
         }
     }
