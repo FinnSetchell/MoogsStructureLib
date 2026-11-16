@@ -1,8 +1,12 @@
 //? if >=1.21.1 {
 package com.finndog.moogs_structures.gametest.neoforge;
 
+import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
+import com.finndog.moogs_structures.utils.BoxOctree;
+import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.world.processors.RailRotationProcessor;
+import com.finndog.moogs_structures.world.structures.pieces.PieceLimitedJigsawManager;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -17,11 +21,15 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.FrontAndTop;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
 //? if <1.21.5 {
 import net.minecraft.gametest.framework.GameTest;
 //?}
@@ -33,23 +41,41 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 *///?}
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.RegistryOps;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.BaseRailBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.JigsawBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.JigsawBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.RailShape;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.LegacyRandomSource;
+import net.minecraft.world.level.levelgen.RandomState;
+import net.minecraft.world.level.levelgen.WorldgenRandom;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
+import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;
+import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
@@ -126,6 +152,12 @@ public class MslGameTests {
         tests.put("follow_floor_onto_a_step", MslGameTests::followFloorOntoAStep);
         tests.put("pillar_down_to_ground", MslGameTests::pillarDownToGround);
         tests.put("rail_slope_towards_higher_ground", MslGameTests::railSlopeTowardsHigherGround);
+        tests.put("jigsaw_joint_rules", MslGameTests::jigsawJointRules);
+        tests.put("box_octree_matches_every_box", MslGameTests::boxOctreeMatchesEveryBox);
+        tests.put("start_reroll_places_the_new_piece", MslGameTests::startRerollPlacesTheNewPiece);
+        tests.put("start_reroll_frees_the_old_room", MslGameTests::startRerollFreesTheOldRoom);
+        tests.put("start_reroll_tries_100_times", MslGameTests::startRerollTries100Times);
+        tests.put("mirrored_jigsaws_face_out", MslGameTests::mirroredJigsawsFaceOut);
         return tests;
     }
 
@@ -405,6 +437,410 @@ public class MslGameTests {
         finish(helper, wrong);
     }
 
+    // ------------------------------------------------------------------ jigsaw assembly
+
+    /**
+     * Whether two jigsaws join, asked the way this version's jigsaw assembler asks it. They join when they face each
+     * other, the first's target is the second's name, and their tops line up or the first's joint rolls. A joint
+     * written as "rollable" or "aligned" is used as written; any other value, or none, rolls when the jigsaw faces up
+     * or down and stays aligned when it faces sideways (vanilla's rule).
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void jigsawJointRules(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        // The first jigsaw's facing, its joint (null: none written, 1: a number), the second's facing, whether they join.
+        Object[][] cases = {
+                {FrontAndTop.UP_NORTH, null, FrontAndTop.DOWN_EAST, true},
+                {FrontAndTop.UP_NORTH, "", FrontAndTop.DOWN_EAST, true},
+                {FrontAndTop.UP_NORTH, "rollable", FrontAndTop.DOWN_EAST, true},
+                {FrontAndTop.UP_NORTH, "aligned", FrontAndTop.DOWN_EAST, false},
+                {FrontAndTop.UP_NORTH, "aligned", FrontAndTop.DOWN_NORTH, true},
+                {FrontAndTop.UP_NORTH, "Rollable", FrontAndTop.DOWN_EAST, true},
+                {FrontAndTop.UP_NORTH, "sideways", FrontAndTop.DOWN_EAST, true},
+                {FrontAndTop.UP_NORTH, 1, FrontAndTop.DOWN_EAST, true},
+                {FrontAndTop.DOWN_SOUTH, null, FrontAndTop.UP_WEST, true},
+                {FrontAndTop.DOWN_SOUTH, "sideways", FrontAndTop.UP_WEST, true},
+                {FrontAndTop.DOWN_SOUTH, "aligned", FrontAndTop.UP_WEST, false},
+                {FrontAndTop.EAST_UP, null, FrontAndTop.WEST_UP, true},
+                {FrontAndTop.EAST_UP, "rollable", FrontAndTop.WEST_UP, true},
+                {FrontAndTop.EAST_UP, "aligned", FrontAndTop.WEST_UP, true},
+                {FrontAndTop.EAST_UP, "sideways", FrontAndTop.WEST_UP, true},
+                {FrontAndTop.EAST_UP, null, FrontAndTop.EAST_UP, false},
+                {FrontAndTop.EAST_UP, "rollable", FrontAndTop.NORTH_UP, false},
+                {FrontAndTop.UP_NORTH, "rollable", FrontAndTop.UP_NORTH, false},
+                {FrontAndTop.UP_NORTH, "rollable", FrontAndTop.WEST_UP, false},
+        };
+        for (Object[] c : cases) {
+            for (boolean named : new boolean[]{true, false}) {
+                StructureTemplate.StructureBlockInfo first = jigsawInfo((FrontAndTop) c[0], "moogs_structures:first", "moogs_structures:second", c[1]);
+                StructureTemplate.StructureBlockInfo second = jigsawInfo((FrontAndTop) c[2], named ? "moogs_structures:second" : "moogs_structures:other", "moogs_structures:first", null);
+                boolean want = named && (Boolean) c[3];
+                String what = c[0] + " with joint " + (c[1] == null ? "none" : c[1] instanceof String ? "\"" + c[1] + "\"" : c[1]) + " to " + c[2]
+                        + (named ? "" : " named something else");
+                boolean msl = mslJigsawsAttach(first, second);
+                if (msl != want) {
+                    wrong.add("MSL: " + what + (msl ? " joins" : " doesn't join"));
+                }
+                //? if >=26.3 {
+                /*// The 26.3 assembler asks vanilla, from the fields vanilla parses out of the jigsaw.
+                boolean vanilla = JigsawBlock.canAttach(StructureTemplate.JigsawBlockInfo.parse(first), StructureTemplate.JigsawBlockInfo.parse(second));
+                if (vanilla != want) {
+                    wrong.add("vanilla: " + what + (vanilla ? " joins" : " doesn't join"));
+                }
+                *///?}
+            }
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * The jigsaw assembler's octree of placed pieces says whether a box overlaps one of them exactly as checking every
+     * placed piece does, for any box inside its bounds (the only boxes the assembler asks about: a pool that ignores
+     * bounds skips the question, and its pieces are still added). Random layouts dense enough to split the tree to its
+     * full depth, some with bounds off the block grid so its halves don't divide evenly.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void boxOctreeMatchesEveryBox(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        RandomSource random = RandomSource.create(538L);
+        int asked = 0;
+        int overlapping = 0;
+        for (int layout = 0; layout < 400 && wrong.size() < 5; layout++) {
+            int range = 4 + random.nextInt(60);
+            int cx = random.nextInt(2001) - 1000;
+            int cy = random.nextInt(321) - 64;
+            int cz = random.nextInt(2001) - 1000;
+            double off = layout % 10 == 0 ? random.nextDouble() : 0;
+            BoxOctree octree = new BoxOctree(new AABB(cx - range + off, cy - 120, cz - range, cx + range + 1, cy + 181, cz + range + 1 - off));
+            List<AABB> placed = new ArrayList<>();
+            for (int step = 0; step < 150; step++) {
+                int x = cx - range - 10 + random.nextInt(2 * range + 20);
+                int y = cy - 20 + random.nextInt(60);
+                int z = cz - range - 10 + random.nextInt(2 * range + 20);
+                AABB box = new AABB(x, y, z, x + 1 + random.nextInt(16), y + 1 + random.nextInt(12), z + 1 + random.nextInt(16));
+                if (random.nextInt(6) == 0) {
+                    // A piece from a pool that ignores bounds: added without asking, and it may stick out.
+                    octree.addBox(box);
+                    placed.add(box);
+                    continue;
+                }
+                AABB question = box.deflate(0.25D);
+                if (!octree.boundaryContains(question)) {
+                    continue;
+                }
+                asked++;
+                boolean overlaps = false;
+                for (AABB other : placed) {
+                    overlaps |= other.intersects(question);
+                }
+                boolean said = octree.intersectsAnyBox(question);
+                if (said != overlaps) {
+                    wrong.add("layout " + layout + ", " + question + " among " + placed.size() + " pieces: the octree says " + (said ? "it overlaps" : "it's clear")
+                            + ", checking every piece says " + (overlaps ? "it overlaps" : "it's clear"));
+                }
+                if (overlaps) {
+                    overlapping++;
+                } else {
+                    octree.addBox(box);
+                    placed.add(box);
+                }
+            }
+        }
+        if (asked < 10000 || overlapping < 1000) {
+            wrong.add("only " + asked + " questions, " + overlapping + " of them overlapping: too few to show anything");
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * A structure with a required piece whose first start can't reach it is laid out again from a fresh pick of its
+     * start pool, and the start placed is that new one, with the required piece on one of its jigsaws. The start pool
+     * holds a lone stone block and a start whose jigsaw leads to the required piece; the structure starts in the first
+     * chunk where the stone block is picked first.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void startRerollPlacesTheNewPiece(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        buildRerollPieces(helper);
+        checkReroll(helper, "start_small", "small", 1, 39, wrong);
+        finish(helper, wrong);
+    }
+
+    /**
+     * As above, with a first pick big enough to cover the spot where the required piece goes: the room the first pick
+     * took is free again for the new start's pieces.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void startRerollFreesTheOldRoom(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        buildRerollPieces(helper);
+        checkReroll(helper, "start_big", "big", 1, 39, wrong);
+        finish(helper, wrong);
+    }
+
+    /**
+     * A structure gets 100 tries at its required pieces: with the dead end 30 times likelier than the good start, in
+     * the chosen chunk the good start first comes up on a try between the 41st and the 100th, and it still generates.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void startRerollTries100Times(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        buildRerollPieces(helper);
+        checkReroll(helper, "start_rare", "rare", 40, 99, wrong);
+        finish(helper, wrong);
+    }
+
+    /**
+     * A mirroring piece, for every mirror and turn: each jigsaw it offers to the assembler is the jigsaw the piece
+     * places at that spot, facing the same way, and it faces out of the piece, so pieces attach to its outside. Placed
+     * with its jigsaws kept, as the keepjigsaws debug option does.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void mirroredJigsawsFaceOut(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        ServerLevel level = helper.getLevel();
+        StructureTemplateManager templates = templates(level);
+        // An uneven 5 x 3 x 4 block with a jigsaw out of each side, its top and its bottom; the top and bottom ones
+        // have their tops along an axis, so a mirror shows on them too.
+        String path = "gametest/mirror/piece";
+        buildPiece(helper, path, new Vec3i(5, 3, 4),
+                new TestJigsaw(new BlockPos(4, 1, 1), FrontAndTop.EAST_UP),
+                new TestJigsaw(new BlockPos(0, 1, 2), FrontAndTop.WEST_UP),
+                new TestJigsaw(new BlockPos(2, 1, 3), FrontAndTop.SOUTH_UP),
+                new TestJigsaw(new BlockPos(1, 1, 0), FrontAndTop.NORTH_UP),
+                new TestJigsaw(new BlockPos(3, 2, 2), FrontAndTop.UP_EAST),
+                new TestJigsaw(new BlockPos(1, 0, 1), FrontAndTop.DOWN_SOUTH));
+        BlockPos origin = helper.absolutePos(new BlockPos(12, 5, 12));
+        for (Mirror mirror : Mirror.values()) {
+            StructurePoolElement element = decode(helper, StructurePoolElement.CODEC, "{\"element_type\":\"moogs_structures:mirroring_single_pool_element\","
+                    + "\"location\":\"moogs_structures:" + path + "\",\"processors\":\"minecraft:empty\",\"projection\":\"rigid\",\"mirror\":\"" + mirror.name() + "\"}");
+            for (Rotation rotation : Rotation.values()) {
+                String where = "mirrored " + mirror + ", turned " + rotation + ": ";
+                BoundingBox box = element.getBoundingBox(templates, origin, rotation);
+                List<StructureTemplate.StructureBlockInfo> offered = jigsaws(element, templates, origin, rotation);
+                element.place(templates, level, level.structureManager(), level.getChunkSource().getGenerator(), origin, origin, rotation, box,
+                        RandomSource.create(0), LiquidSettings.IGNORE_WATERLOGGING, true);
+                int placed = 0;
+                for (BlockPos p : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
+                    placed += level.getBlockState(p).is(Blocks.JIGSAW) ? 1 : 0;
+                }
+                if (offered.size() != 6 || placed != 6) {
+                    wrong.add(where + offered.size() + " jigsaws offered and " + placed + " placed, not 6");
+                }
+                for (StructureTemplate.StructureBlockInfo jigsaw : offered) {
+                    BlockPos at = jigsaw.pos();
+                    FrontAndTop said = jigsaw.state().getValue(JigsawBlock.ORIENTATION);
+                    BlockState there = level.getBlockState(at);
+                    if (!there.is(Blocks.JIGSAW) || there.getValue(JigsawBlock.ORIENTATION) != said) {
+                        wrong.add(where + "offered a jigsaw at " + at.subtract(origin) + " facing " + said + ", where the piece placed "
+                                + (there.is(Blocks.JIGSAW) ? "one facing " + there.getValue(JigsawBlock.ORIENTATION) : there));
+                    }
+                    if (!box.isInside(at) || box.isInside(at.relative(JigsawBlock.getFrontFacing(jigsaw.state())))) {
+                        wrong.add(where + "the jigsaw offered at " + at.subtract(origin) + " faces " + said + ", into the piece");
+                    }
+                }
+                for (BlockPos p : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
+                    level.setBlock(p, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                }
+            }
+        }
+        finish(helper, wrong);
+    }
+
+    // ------------------------------------------------------------------ jigsaw helpers
+
+    private static final String REROLL = "gametest/reroll/";
+    private static final long REROLL_SEED = 5381L;
+
+    /** A jigsaw for {@link #buildPiece}, at a spot in the piece, with what it calls itself, joins to and draws from. */
+    private record TestJigsaw(BlockPos at, FrontAndTop facing, String name, String target, String pool) {
+        TestJigsaw(BlockPos at, FrontAndTop facing) {
+            this(at, facing, "minecraft:empty", "minecraft:empty", "minecraft:empty");
+        }
+    }
+
+    /** The reroll tests' pieces, stored as the templates their pools (in this source set's data) name. */
+    private static void buildRerollPieces(GameTestHelper helper) {
+        String link = "moogs_structures:" + REROLL + "link";
+        buildPiece(helper, REROLL + "dead_end_small", new Vec3i(1, 1, 1));
+        buildPiece(helper, REROLL + "dead_end_big", new Vec3i(9, 1, 9));
+        buildPiece(helper, REROLL + "start", new Vec3i(3, 1, 3),
+                new TestJigsaw(new BlockPos(2, 0, 1), FrontAndTop.EAST_UP, "minecraft:empty", link, "moogs_structures:" + REROLL + "children"));
+        buildPiece(helper, REROLL + "required", new Vec3i(3, 1, 3),
+                new TestJigsaw(new BlockPos(0, 0, 1), FrontAndTop.WEST_UP, link, "minecraft:empty", "minecraft:empty"));
+    }
+
+    /** A stone block of this size with these jigsaws, built in the arena, stored as the template of this id, and cleared again. */
+    private static void buildPiece(GameTestHelper helper, String path, Vec3i size, TestJigsaw... jigsaws) {
+        BlockPos corner = new BlockPos(1, 2, 1);
+        BlockPos far = corner.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
+        fill(helper, corner, far, Blocks.STONE);
+        for (TestJigsaw jigsaw : jigsaws) {
+            BlockPos at = corner.offset(jigsaw.at());
+            helper.setBlock(at, Blocks.JIGSAW.defaultBlockState().setValue(JigsawBlock.ORIENTATION, jigsaw.facing()));
+            JigsawBlockEntity entity = (JigsawBlockEntity) helper.getLevel().getBlockEntity(helper.absolutePos(at));
+            entity.setName(ResourceLocation.parse(jigsaw.name()));
+            entity.setTarget(ResourceLocation.parse(jigsaw.target()));
+            entity.setPool(ResourceKey.create(Registries.TEMPLATE_POOL, ResourceLocation.parse(jigsaw.pool())));
+            entity.setFinalState("minecraft:stone");
+            entity.setJoint(JigsawBlockEntity.JointType.ALIGNED);
+        }
+        fillFromWorld(templates(helper.getLevel()).getOrCreate(id(path)), helper, corner, size);
+        fill(helper, corner, far, Blocks.AIR);
+    }
+
+    /**
+     * Lays out a reroll test structure in the first chunk (along x) where the start pool's own draws, as the assembler
+     * makes them, first give the good start on a try from {@code from} to {@code to} (0 is the first pick), and checks
+     * the start placed is the good start, carrying the required piece on one of its jigsaws, on its ground level.
+     */
+    private static void checkReroll(GameTestHelper helper, String pool, String structure, int from, int to, List<String> wrong) {
+        ServerLevel level = helper.getLevel();
+        StructureTemplateManager templates = templates(level);
+        Holder<StructureTemplatePool> startPool = level.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL)
+                .getOrThrow(ResourceKey.create(Registries.TEMPLATE_POOL, id(REROLL + pool)));
+        ResourceLocation start = id(REROLL + "start");
+        int chunkX = -1;
+        for (int x = 0; x < 5000 && chunkX < 0; x++) {
+            WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
+            random.setLargeFeatureSeed(REROLL_SEED, x, 0);
+            Rotation.getRandom(random);
+            int firstGood = -1;
+            for (int pick = 0; pick < 100 && firstGood < 0; pick++) {
+                if (start.equals(templateId(startPool.value().getRandomTemplate(random)))) {
+                    firstGood = pick;
+                }
+            }
+            if (firstGood >= from && firstGood <= to) {
+                chunkX = x;
+            }
+        }
+        if (chunkX < 0) {
+            wrong.add(structure + ": no chunk where the good start first comes up on try " + from + " to " + to);
+            return;
+        }
+        List<StructurePiece> pieces = assemble(helper, startPool, id(REROLL + structure), chunkX);
+        if (pieces.isEmpty()) {
+            wrong.add(structure + ": nothing generated in chunk " + chunkX);
+            return;
+        }
+        List<ResourceLocation> names = new ArrayList<>();
+        PoolElementStructurePiece required = null;
+        for (StructurePiece piece : pieces) {
+            ResourceLocation name = piece instanceof PoolElementStructurePiece p ? templateId(p.getElement()) : null;
+            names.add(name);
+            if (id(REROLL + "required").equals(name)) {
+                required = (PoolElementStructurePiece) piece;
+            }
+        }
+        PoolElementStructurePiece first = (PoolElementStructurePiece) pieces.get(0);
+        if (!start.equals(names.get(0))) {
+            wrong.add(structure + ": the start piece placed is " + names.get(0) + ", not the good start the structure was laid out from (pieces " + names + ")");
+        }
+        if (required == null) {
+            wrong.add(structure + ": no required piece (pieces " + names + ")");
+        } else if (!joined(templates, first, required)) {
+            wrong.add(structure + ": the required piece hangs on no jigsaw of the start piece placed (pieces " + names + ")");
+        }
+        if (first.getBoundingBox().minY() != 99) {
+            wrong.add(structure + ": the start piece's bottom is at y " + first.getBoundingBox().minY() + ", not 99 (ground level 100, ground level delta 1)");
+        }
+    }
+
+    /** The structure's pieces as PieceLimitedJigsawManager lays them out from this start pool, size 2, at y 100 in this chunk. */
+    private static List<StructurePiece> assemble(GameTestHelper helper, Holder<StructureTemplatePool> startPool, ResourceLocation structure, int chunkX) {
+        ServerLevel level = helper.getLevel();
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        RandomState randomState = level.getChunkSource().randomState();
+        //? if <26.3 {
+        Structure.GenerationContext context = new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(),
+                randomState, templates(level), REROLL_SEED, new ChunkPos(chunkX, 0), level, biome -> true);
+        //?} else {
+        /*Structure.GenerationContext context = new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(),
+                randomState.createClimateSampler(net.minecraft.world.level.levelgen.densityfunction.SamplerContext.builder().build()), randomState,
+                templates(level), REROLL_SEED, new ChunkPos(chunkX, 0), level, biome -> true);
+        *///?}
+        return PieceLimitedJigsawManager.assembleJigsawStructure(context, startPool, 2, structure, new BlockPos(chunkX * 16, 100, 0), false,
+                        Optional.empty(), 1000, -1000, Set.of(), Optional.empty(), Optional.empty(), LiquidSettings.IGNORE_WATERLOGGING, (builder, laidOut) -> { })
+                .map(stub -> stub.getPiecesBuilder().build().pieces())
+                .orElse(List.of());
+    }
+
+    /** Whether a jigsaw of the child sits right in front of a jigsaw of the parent, facing back at it. */
+    private static boolean joined(StructureTemplateManager templates, PoolElementStructurePiece parent, PoolElementStructurePiece child) {
+        for (StructureTemplate.StructureBlockInfo p : jigsaws(parent.getElement(), templates, parent.getPosition(), parent.getRotation())) {
+            Direction facing = JigsawBlock.getFrontFacing(p.state());
+            for (StructureTemplate.StructureBlockInfo c : jigsaws(child.getElement(), templates, child.getPosition(), child.getRotation())) {
+                if (p.pos().relative(facing).equals(c.pos()) && JigsawBlock.getFrontFacing(c.state()) == facing.getOpposite()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** The jigsaws an element offers the assembler, as plain block infos on every version. */
+    private static List<StructureTemplate.StructureBlockInfo> jigsaws(StructurePoolElement element, StructureTemplateManager templates, BlockPos at, Rotation rotation) {
+        List<StructureTemplate.StructureBlockInfo> infos = new ArrayList<>();
+        //? if <1.21.2 {
+        infos.addAll(element.getShuffledJigsawBlocks(templates, at, rotation, RandomSource.create(0)));
+        //?}
+        //? if >=1.21.2 <26.3 {
+        /*element.getShuffledJigsawBlocks(templates, at, rotation, RandomSource.create(0)).forEach(jigsaw -> infos.add(jigsaw.info()));
+        *///?}
+        //? if >=26.3 {
+        /*element.getShuffledJigsawBlocks(templates, at, rotation, RandomSource.create(0)).forEach(jigsaw -> infos.add(new StructureTemplate.StructureBlockInfo(jigsaw.pos(), jigsaw.state(), null)));
+        *///?}
+        return infos;
+    }
+
+    /** GeneralUtils.canJigsawsAttach, passed jigsaws the way this version's assembler passes them. */
+    private static boolean mslJigsawsAttach(StructureTemplate.StructureBlockInfo first, StructureTemplate.StructureBlockInfo second) {
+        //? if >=1.21.2 <1.21.5 {
+        /*return GeneralUtils.canJigsawsAttach(StructureTemplate.JigsawBlockInfo.of(first), StructureTemplate.JigsawBlockInfo.of(second));
+        *///?} else {
+        return GeneralUtils.canJigsawsAttach(first, second);
+        //?}
+    }
+
+    private static StructureTemplate.StructureBlockInfo jigsawInfo(FrontAndTop facing, String name, String target, Object joint) {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putString("name", name);
+        nbt.putString("target", target);
+        nbt.putString("pool", "minecraft:empty");
+        nbt.putString("final_state", "minecraft:air");
+        if (joint instanceof String text) {
+            nbt.putString("joint", text);
+        } else if (joint instanceof Integer number) {
+            nbt.putInt("joint", number);
+        }
+        return new StructureTemplate.StructureBlockInfo(BlockPos.ZERO, Blocks.JIGSAW.defaultBlockState().setValue(JigsawBlock.ORIENTATION, facing), nbt);
+    }
+
+    private static ResourceLocation templateId(StructurePoolElement element) {
+        return element instanceof SinglePoolElement ? ((SinglePoolElementAccessor) element).moogs_structures_getTemplate().left().orElse(null) : null;
+    }
+
+    private static StructureTemplateManager templates(ServerLevel level) {
+        //? if <26.3 {
+        return level.getStructureManager();
+        //?} else {
+        /*return level.getStructureTemplateManager();
+        *///?}
+    }
+
     // ------------------------------------------------------------------ helpers
 
     /** A block state as this version's codec reads it: 26.3 names the block "id" (MSL upgrades the older "Name" only in datapacks). */
@@ -460,8 +896,11 @@ public class MslGameTests {
     }
 
     private static StructureProcessor processor(GameTestHelper helper, String json) {
-        return StructureProcessorType.SINGLE_CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, helper.getLevel().registryAccess()), JsonParser.parseString(json))
-                .getOrThrow();
+        return decode(helper, StructureProcessorType.SINGLE_CODEC, json);
+    }
+
+    private static <T> T decode(GameTestHelper helper, Codec<T> codec, String json) {
+        return codec.parse(RegistryOps.create(JsonOps.INSTANCE, helper.getLevel().registryAccess()), JsonParser.parseString(json)).getOrThrow();
     }
 
     /** The ends a rail shape joins: two flat directions, and for a slope "up <direction>" for the end it climbs to. */
@@ -502,7 +941,10 @@ public class MslGameTests {
 
     /** A template made from the arena's blocks, as a structure block saves one, air included. */
     private static StructureTemplate capture(GameTestHelper helper, BlockPos from, Vec3i size) {
-        StructureTemplate template = new StructureTemplate();
+        return fillFromWorld(new StructureTemplate(), helper, from, size);
+    }
+
+    private static StructureTemplate fillFromWorld(StructureTemplate template, GameTestHelper helper, BlockPos from, Vec3i size) {
         //? if >=1.21.6 {
         /*template.fillFromWorld(helper.getLevel(), helper.absolutePos(from), size, false, List.of(Blocks.STRUCTURE_VOID));
         *///?} else {
