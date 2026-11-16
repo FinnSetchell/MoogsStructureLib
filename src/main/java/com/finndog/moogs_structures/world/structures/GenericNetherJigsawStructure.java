@@ -118,6 +118,7 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             startHeight,
             Optional.empty(),
             cannotSpawnInLiquid,
+            false,
             Optional.empty(),
             Optional.empty(),
             biomeRadius,
