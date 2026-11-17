@@ -61,6 +61,7 @@ public final class MoogsStructuresConfigScreenNeoforge {
 
     private static void buildStructures(ConfigBuilder builder, ConfigEntryBuilder eb) {
         ConfigCategory category = builder.getOrCreateCategory(Component.translatable("moogs_structures.config.category.structures"));
+        reloadNotice(category, eb);
         category.addEntry(eb.startIntSlider(Component.translatable("moogs_structures.config.universal_frequency"), toPercent(MslConfig.get().getUniversalFrequency()), 25, 400)
                 .setDefaultValue(100)
                 .setTextGetter(MoogsStructuresConfigScreenNeoforge::multiplierLabel)
