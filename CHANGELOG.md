@@ -14,6 +14,7 @@
 - Now works on Minecraft 1.21.9, with Fabric, Forge, and NeoForge
 - Mods can now keep a structure to the Minecraft versions that have its blocks, so it simply doesn't appear on older ones
 - Mods can now keep buildings from standing half over a lake or the sea
+- Mods can now have some structures appear only while they replace a vanilla structure, or only while they don't
 
 ### Fixed
 - The Forge version now loads on Minecraft 1.21.5 to 1.21.8 and 26.1
@@ -36,7 +37,7 @@
 - Small structures that stay out of water now check the ground under their middle, so they no longer skip dry spots beside water or end up standing in it (in newly generated chunks)
 - Explorer maps, eyes of ender, dolphins, and /locate no longer hang while searching for structures turned off in the settings
 - Parts that sit on top of or hang under another part, such as roofs, upper floors, and the mobs placed in structures, now turn every way again on Minecraft 26.1 and 26.2 instead of always facing the same way
-- Structures from datapacks that must include certain rooms now get up to 100 tries on every version, and the start room they place is the one their other rooms join onto
+- Structures from datapacks that must include certain rooms now get up to 100 tries on every version, and the start room they place is the one their other rooms join onto, sitting on the ground beneath it
 - Mirrored structure pieces no longer have other pieces attached to them backwards
 - Structures that need the right biome all around them now check it at the height of the ground under the structure, the same on every Minecraft version, so a few near biome edges come out differently on 1.21 to 1.21.3 and 1.21.5 to 1.21.11
 - Tooltips on this mod's settings screen are now shorter and no longer stretch across the whole screen
