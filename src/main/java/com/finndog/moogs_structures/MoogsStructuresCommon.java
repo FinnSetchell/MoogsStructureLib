@@ -40,6 +40,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 //?}
+import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.AdaptationArea;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -105,10 +106,21 @@ public class MoogsStructuresCommon {
             StructurePlacement placement = entry.getValue().placement();
             if (placement instanceof AdvancedRandomSpread ars) {
                 ars.setOwningSetId(id);
+                ars.setNoStructureOnThisVersion(noStructureOnThisVersion(entry.getValue()));
             } else if (placement instanceof ConditionalConcentricRings ccr) {
                 ccr.setOwningSetId(id);
             }
         }
+    }
+
+    /**
+     * A set none of whose structures generates on this Minecraft version (mc_versions). The game already skips such
+     * a set itself, as it has no biome; this also stops it pushing other sets away through their exclusion zones.
+     * A concentric rings set needs nothing: the game gives it no ring positions.
+     */
+    private static boolean noStructureOnThisVersion(StructureSet set) {
+        return !set.structures().isEmpty() && set.structures().stream()
+                .allMatch(entry -> entry.structure().value() instanceof GenericJigsawStructure structure && !structure.generatesOnThisVersion());
     }
 
     private static void onServerStopping(final ServerGoingToStopEvent event) {

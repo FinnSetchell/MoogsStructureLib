@@ -2,6 +2,7 @@ package com.finndog.moogs_structures.world.structures;
 
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.utils.GeneralUtils;
+import com.finndog.moogs_structures.utils.VersionResolver;
 //? if >=1.21.1 {
 import com.finndog.moogs_structures.world.structures.codecs.YRangeAllowance;
 //?}
@@ -85,16 +86,18 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             // DFU groups cap at 16 slots, so before 1.21.1 the last fields share one; the JSON stays flat.
             //? if >=1.21.1 {
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
-            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
+            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation),
+            GenericJigsawStructure.MC_VERSIONS.forGetter(structure -> structure.mcVersions)
     ).apply(instance, GenericNetherJigsawStructure::new));
             //?} else {
             /*Codec.mapPair(StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING),
                     Codec.mapPair(EncapsulateBackport.FIELD,
                             EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE)))
-                    .forGetter(structure -> Pair.of(structure.liquidSettings, Pair.of(structure.encapsulateBackport, structure.enhancedTerrainAdaptation)))
-    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, searchDirection, useBoundingBoxHack, liquidEncapsulateAndAdaptation) -> new GenericNetherJigsawStructure(
+                    .forGetter(structure -> Pair.of(structure.liquidSettings, Pair.of(structure.encapsulateBackport, structure.enhancedTerrainAdaptation))),
+            GenericJigsawStructure.MC_VERSIONS.forGetter(structure -> structure.mcVersions)
+    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, searchDirection, useBoundingBoxHack, liquidEncapsulateAndAdaptation, mcVersions) -> new GenericNetherJigsawStructure(
             config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, searchDirection, useBoundingBoxHack,
-            liquidEncapsulateAndAdaptation.getFirst(), liquidEncapsulateAndAdaptation.getSecond().getFirst(), liquidEncapsulateAndAdaptation.getSecond().getSecond())));
+            liquidEncapsulateAndAdaptation.getFirst(), liquidEncapsulateAndAdaptation.getSecond().getFirst(), liquidEncapsulateAndAdaptation.getSecond().getSecond(), mcVersions)));
             *///?}
 
     public final Optional<Integer> ledgeOffsetY;
@@ -122,7 +125,8 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                                         //? if <1.21.1 {
                                         /*boolean encapsulateBackport,
                                         *///?}
-                                        EnhancedTerrainAdaptation enhancedTerrainAdaptation) {
+                                        EnhancedTerrainAdaptation enhancedTerrainAdaptation,
+                                        Optional<VersionResolver.VersionRange> mcVersions) {
         super(config,
             startPool,
             size,
@@ -137,6 +141,8 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Optional.empty(),
             cannotSpawnInLiquid,
             false,
+            // max_footprint_in_liquid reads the top of each terrain column, which in the Nether is the bedrock roof.
+            Optional.empty(),
             Optional.empty(),
             Optional.empty(),
             biomeRadius,
@@ -148,7 +154,8 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             //? if <1.21.1 {
             /*encapsulateBackport,
             *///?}
-            enhancedTerrainAdaptation);
+            enhancedTerrainAdaptation,
+            mcVersions);
 
         this.ledgeOffsetY = ledgeOffsetY;
         this.searchDirection = searchDirection;
