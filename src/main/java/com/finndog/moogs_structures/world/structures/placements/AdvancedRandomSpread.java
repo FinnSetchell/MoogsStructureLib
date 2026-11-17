@@ -84,6 +84,14 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
     // then resolves both from the set it belongs to. Volatile: published before any worldgen read.
     private volatile String owningSetId;
     private volatile ResourceLocation owningSetIdRL;
+    // Stamped with the set id: true when none of the set's structures generates on this Minecraft version
+    // (mc_versions), so the set acts as turned off and doesn't push its neighbours away either.
+    private volatile boolean noStructureOnThisVersion;
+
+    //? if <1.20.6 {
+    /*/^* Before 1.20.6: set while a structure search checks a chunk of a turned-off set (StructureSearchMixin). ^/
+    public static final ThreadLocal<Boolean> SEARCHING_TURNED_OFF_SET = new ThreadLocal<>();
+    *///?}
 
     // Memoized against MslConfig's generation counter in one immutable holder behind a single volatile
     // field, so concurrent structure-starts (C2ME) snapshot a consistent triple rather than ever
@@ -171,8 +179,25 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
         this.memo = null;
     }
 
+    /** Stamped at world load: whether none of this set's structures generates on this Minecraft version. */
+    public void setNoStructureOnThisVersion(boolean noStructureOnThisVersion) {
+        this.noStructureOnThisVersion = noStructureOnThisVersion;
+    }
+
     private ResourceLocation effectiveDisableId() {
         return structureIdRL != null ? structureIdRL : this.owningSetIdRL;
+    }
+
+    /**
+     * Whether this set starts no structure anywhere: turned off in the config, or none of its structures generates
+     * on this Minecraft version. Generation and structure searches both ask it.
+     */
+    public boolean isDisabled() {
+        if (this.noStructureOnThisVersion) {
+            return true;
+        }
+        ResourceLocation disableId = effectiveDisableId();
+        return disableId != null && MslConfig.get().isStructureDisabled(disableId);
     }
 
     @Override
@@ -200,8 +225,8 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
 
     @Override
     public boolean isStructureChunk(ChunkGeneratorStructureState chunkGeneratorStructureState, int i, int j) {
-        ResourceLocation disableId = effectiveDisableId();
-        if (disableId != null && MslConfig.get().isStructureDisabled(disableId)) {
+        // Before 1.20.6 the game has no applyAdditionalChunkRestrictions to ask, so the gate is here too.
+        if (isDisabled()) {
             return false;
         }
         if (!super.isStructureChunk(chunkGeneratorStructureState, i, j)) {
@@ -211,6 +236,20 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             return this.superExclusionZone.isEmpty() || !this.superExclusionZone.get().isPlacementForbidden(chunkGeneratorStructureState, i, j);
         }
     }
+
+    //? if >=1.20.6 {
+    /**
+     * The game asks this before it tries a chunk for a structure search (/locate, explorer maps, dolphins, eyes of
+     * ender, other mods' searches), after looking for a start already there and before the structure lays itself
+     * out or the chunk is loaded. A disabled set says no here, so a search for its structures costs nothing per
+     * chunk instead of a layout and a chunk load that can only find nothing. A start made before the set was
+     * turned off is still found. Generation asks it too, through isStructureChunk.
+     */
+    @Override
+    public boolean applyAdditionalChunkRestrictions(int x, int z, long seed) {
+        return !isDisabled() && super.applyAdditionalChunkRestrictions(x, z, seed);
+    }
+    //?}
 
     @Override
     public ChunkPos getPotentialStructureChunk(long seed, int x, int z) {

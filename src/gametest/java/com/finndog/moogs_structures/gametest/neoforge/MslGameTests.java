@@ -3,10 +3,15 @@ package com.finndog.moogs_structures.gametest.neoforge;
 
 import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
 import com.finndog.moogs_structures.utils.BoxOctree;
+import com.finndog.moogs_structures.config.MslConfig;
+import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.world.processors.RailRotationProcessor;
 import com.finndog.moogs_structures.world.structures.pieces.PieceLimitedJigsawManager;
+import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
+import com.finndog.moogs_structures.world.structures.GenericNetherJigsawStructure;
+import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -26,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -53,6 +59,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.entity.Entity;
 //? if >=1.21.2 {
 /*import net.minecraft.world.entity.EntitySpawnReason;
@@ -75,11 +83,15 @@ import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
+import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
+import net.minecraft.world.level.levelgen.structure.StructureCheckResult;
+import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;
@@ -173,6 +185,12 @@ public class MslGameTests {
         tests.put("start_reroll_frees_the_old_room", MslGameTests::startRerollFreesTheOldRoom);
         tests.put("start_reroll_tries_100_times", MslGameTests::startRerollTries100Times);
         tests.put("mirrored_jigsaws_face_out", MslGameTests::mirroredJigsawsFaceOut);
+        tests.put("placement_field_values", MslGameTests::placementFieldValues);
+        tests.put("mc_versions_gate_biomes", MslGameTests::mcVersionsGateBiomes);
+        tests.put("version_gated_set_turned_off", MslGameTests::versionGatedSetTurnedOff);
+        tests.put("liquid_check_at_start_piece_centre", MslGameTests::liquidCheckAtStartPieceCentre);
+        tests.put("footprint_in_liquid_share", MslGameTests::footprintInLiquidShare);
+        tests.put("disabled_set_skipped_by_searches", MslGameTests::disabledSetSkippedBySearches);
         tests.put("cached_height_matches_the_generator", MslGameTests::cachedHeightMatchesTheGenerator);
         tests.put("height_cache_lets_go_of_a_closed_world", MslGameTests::heightCacheLetsGoOfAClosedWorld);
         return tests;
@@ -856,6 +874,390 @@ public class MslGameTests {
         //?} else {
         /*return level.getStructureTemplateManager();
         *///?}
+    }
+
+    // ------------------------------------------------------------------ placement checks
+
+    /**
+     * max_footprint_in_liquid is a number from 0 to 1, and mc_versions one version range, on both structure types
+     * that read them; anything else is refused. Both share a codec slot with older fields, and still write as plain
+     * top-level keys.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void placementFieldValues(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        for (String good : List.of("0", "0.25", "1")) {
+            accepted(helper, Structure.DIRECT_CODEC, generic("\"max_footprint_in_liquid\":" + good), wrong);
+        }
+        refused(helper, Structure.DIRECT_CODEC, generic("\"max_footprint_in_liquid\":1.5"), "outside of range", wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"max_footprint_in_liquid\":-0.1"), "outside of range", wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"max_footprint_in_liquid\":\"half\""), "", wrong);
+        accepted(helper, Structure.DIRECT_CODEC, generic("\"cannot_spawn_in_liquid\":true,\"fully_submerged\":true,\"max_footprint_in_liquid\":0.5"), wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"fully_submerged\":\"yes\""), "", wrong);
+
+        for (String good : List.of("1.21.4-26.3", "1.21.1", "1.0-99")) {
+            accepted(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":\"" + good + "\""), wrong);
+            accepted(helper, Structure.DIRECT_CODEC, nether("\"mc_versions\":\"" + good + "\""), wrong);
+        }
+        refused(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":\"1.21.4-\""), "must specify both", wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":\"1.21.4-1.21\""), "minimum greater than its maximum", wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":\"latest\""), "non-numeric", wrong);
+        refused(helper, Structure.DIRECT_CODEC, generic("\"mc_versions\":1.21"), "", wrong);
+        refused(helper, Structure.DIRECT_CODEC, nether("\"mc_versions\":\"1.21.4-\""), "must specify both", wrong);
+
+        // Written back, both are top-level keys beside the fields they share a slot with.
+        Structure both = decode(helper, generic("\"max_footprint_in_liquid\":0.25,\"mc_versions\":\"1.21-99\""));
+        JsonElement written = Structure.DIRECT_CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, helper.getLevel().registryAccess()), both)
+                .result().orElse(null);
+        if (written == null || !written.isJsonObject()
+                || !written.getAsJsonObject().has("max_footprint_in_liquid") || !written.getAsJsonObject().has("mc_versions")
+                || !written.getAsJsonObject().has("start_pool") || !written.getAsJsonObject().has("cannot_spawn_in_liquid")) {
+            wrong.add("written back as " + written + ", not with max_footprint_in_liquid, mc_versions, start_pool and cannot_spawn_in_liquid at the top");
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * Outside mc_versions a structure has no biome, so the game gives it no placement, and it turns down every spot;
+     * inside, or without the field, it has its biomes as usual. On both structure types.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void mcVersionsGateBiomes(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        testPiece(helper);
+        String current = VersionResolver.getCurrentVersionString();
+        Set<?> everyVersion = Set.copyOf(decode(helper, generic("")).biomes().stream().toList());
+        if (everyVersion.isEmpty()) {
+            wrong.add("the test structure has no biomes without mc_versions");
+        }
+        Map<String, Boolean> ranges = new LinkedHashMap<>();
+        ranges.put("1.0-1.20.6", false);
+        ranges.put("100-200", false);
+        ranges.put(current, true);
+        ranges.put("1.21-99", true);
+        for (Map.Entry<String, Boolean> range : ranges.entrySet()) {
+            for (String json : List.of(generic("\"mc_versions\":\"" + range.getKey() + "\""), nether("\"mc_versions\":\"" + range.getKey() + "\""))) {
+                GenericJigsawStructure structure = (GenericJigsawStructure) decode(helper, json);
+                Set<?> biomes = Set.copyOf(structure.biomes().stream().toList());
+                String type = structure instanceof GenericNetherJigsawStructure ? "nether" : "generic";
+                if (structure.generatesOnThisVersion() != range.getValue()) {
+                    wrong.add(type + " mc_versions " + range.getKey() + " on " + current + ": generates " + structure.generatesOnThisVersion());
+                }
+                if (range.getValue() ? !biomes.equals(everyVersion) : !biomes.isEmpty()) {
+                    wrong.add(type + " mc_versions " + range.getKey() + " on " + current + ": " + biomes.size() + " biomes, not " + (range.getValue() ? everyVersion.size() : 0));
+                }
+            }
+        }
+        // Even handed every biome, a structure outside its range turns the spot down before reading any terrain.
+        ChunkPos chunk = new ChunkPos(100, 100);
+        ChunkGenerator dry = puddles(helper, (x, z) -> false);
+        if (decode(helper, generic("\"mc_versions\":\"1.0-1.20.6\"")).findValidGenerationPoint(context(helper, dry, chunk)).isPresent()) {
+            wrong.add("a structure outside its mc_versions still found a spot");
+        }
+        if (decode(helper, generic("\"mc_versions\":\"1.21-99\"")).findValidGenerationPoint(context(helper, dry, chunk)).isEmpty()) {
+            wrong.add("a structure inside its mc_versions found no spot on dry ground");
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * The test pack's msl_test_gated set holds one structure outside its mc_versions, so at world load MSL marks the
+     * set as starting nothing, and it stops pushing other sets away; msl_test_shared also holds a structure that
+     * generates, so it stays on.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void versionGatedSetTurnedOff(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        //? if <1.21.2 {
+        var sets = helper.getLevel().registryAccess().registryOrThrow(Registries.STRUCTURE_SET);
+        var structures = helper.getLevel().registryAccess().registryOrThrow(Registries.STRUCTURE);
+        StructureSet gated = sets.get(id("msl_test_gated"));
+        StructureSet shared = sets.get(id("msl_test_shared"));
+        Structure gatedStructure = structures.get(id("msl_test_gated"));
+        //?} else {
+        /*var sets = helper.getLevel().registryAccess().lookupOrThrow(Registries.STRUCTURE_SET);
+        var structures = helper.getLevel().registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        StructureSet gated = sets.getValue(id("msl_test_gated"));
+        StructureSet shared = sets.getValue(id("msl_test_shared"));
+        Structure gatedStructure = structures.getValue(id("msl_test_gated"));
+        *///?}
+        if (gated == null || shared == null || !(gatedStructure instanceof GenericJigsawStructure gatedJigsaw)) {
+            wrong.add("the test pack's gated sets or structure did not load");
+        } else {
+            if (gatedJigsaw.generatesOnThisVersion() || gatedJigsaw.biomes().size() != 0) {
+                wrong.add("msl_test_gated generates here, or has " + gatedJigsaw.biomes().size() + " biomes");
+            }
+            if (!(gated.placement() instanceof AdvancedRandomSpread gatedSpread) || !gatedSpread.isDisabled()) {
+                wrong.add("the set holding only a structure outside its mc_versions is still on");
+            }
+            if (!(shared.placement() instanceof AdvancedRandomSpread sharedSpread) || sharedSpread.isDisabled()) {
+                wrong.add("the set that also holds a structure that generates was turned off");
+            }
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * cannot_spawn_in_liquid reads the column at the middle of the start piece, which MSL centres on the start chunk's
+     * corner. A 5x5 start piece over dry land in a sea spawns, though the chunk's middle (7 blocks off in x and z,
+     * where the check used to read) is water; the same piece over a pond in dry land doesn't. The piece lands with
+     * its middle on the corner.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void liquidCheckAtStartPieceCentre(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        testPiece(helper);
+        ChunkPos chunk = new ChunkPos(100, 100);
+        int cx = chunk.getMinBlockX();
+        int cz = chunk.getMinBlockZ();
+        BiPredicate<Integer, Integer> underPiece = (x, z) -> Math.abs(x - cx) <= 2 && Math.abs(z - cz) <= 2;
+        ChunkGenerator islandInSea = puddles(helper, (x, z) -> !underPiece.test(x, z));
+        ChunkGenerator pondInLand = puddles(helper, underPiece);
+        Structure checked = decode(helper, generic("\"cannot_spawn_in_liquid\":true"));
+        Structure unchecked = decode(helper, generic(""));
+
+        Optional<Structure.GenerationStub> onIsland = checked.findValidGenerationPoint(context(helper, islandInSea, chunk));
+        if (onIsland.isEmpty()) {
+            wrong.add("turned down dry land under the start piece (water 7 blocks off, at the chunk's middle)");
+        } else {
+            BoundingBox start = onIsland.get().getPiecesBuilder().build().pieces().get(0).getBoundingBox();
+            if (start.minX() != cx - 2 || start.maxX() != cx + 2 || start.minZ() != cz - 2 || start.maxZ() != cz + 2) {
+                wrong.add("the start piece landed at " + start + ", not centred on the chunk corner " + cx + ", " + cz);
+            }
+        }
+        if (checked.findValidGenerationPoint(context(helper, pondInLand, chunk)).isPresent()) {
+            wrong.add("spawned with water under the start piece (dry land at the chunk's middle)");
+        }
+        if (unchecked.findValidGenerationPoint(context(helper, pondInLand, chunk)).isEmpty()) {
+            wrong.add("without cannot_spawn_in_liquid, water under the piece still turned the spot down");
+        }
+        if (!GenericJigsawStructure.isColumnInLiquid(context(helper, pondInLand, chunk), cx, cz)
+                || GenericJigsawStructure.isColumnInLiquid(context(helper, pondInLand, chunk), cx + 7, cz + 7)) {
+            wrong.add("the test terrain's columns read wrong");
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * max_footprint_in_liquid reads an even grid over the start piece, edges and corners included, at most five
+     * columns a side, and turns the spot down when more than that share is over liquid. Here two of the 5x5 piece's
+     * five columns of samples are in water: a share of 0.4.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void footprintInLiquidShare(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        Map<String, int[]> grids = new LinkedHashMap<>();
+        grids.put("0-0", new int[]{0});
+        grids.put("0-1", new int[]{0, 1});
+        grids.put("0-4", new int[]{0, 1, 2, 3, 4});
+        grids.put("0-5", new int[]{0, 1, 3, 4, 5});
+        grids.put("0-8", new int[]{0, 2, 4, 6, 8});
+        grids.put("-10-89", new int[]{-10, 15, 40, 64, 89});
+        for (Map.Entry<String, int[]> grid : grids.entrySet()) {
+            String[] ends = grid.getKey().split("(?<=\\d)-");
+            int[] got = GenericJigsawStructure.footprintSamples(Integer.parseInt(ends[0]), Integer.parseInt(ends[1]));
+            if (!java.util.Arrays.equals(got, grid.getValue())) {
+                wrong.add("columns " + grid.getKey() + " sampled at " + java.util.Arrays.toString(got) + ", not " + java.util.Arrays.toString(grid.getValue()));
+            }
+        }
+
+        testPiece(helper);
+        ChunkPos chunk = new ChunkPos(100, 100);
+        int cx = chunk.getMinBlockX();
+        int cz = chunk.getMinBlockZ();
+        ChunkGenerator westWet = puddles(helper, (x, z) -> x <= cx - 1);
+        double share = GenericJigsawStructure.footprintInLiquid(context(helper, westWet, chunk), new BoundingBox(cx - 2, 60, cz - 2, cx + 2, 70, cz + 2));
+        if (share != 0.4) {
+            wrong.add("a 5x5 box with two of its five columns in water read " + share + " in liquid, not 0.4");
+        }
+        Map<String, Boolean> spawns = new LinkedHashMap<>();
+        spawns.put("", true);
+        spawns.put("\"max_footprint_in_liquid\":0.4", true);
+        spawns.put("\"max_footprint_in_liquid\":1", true);
+        spawns.put("\"max_footprint_in_liquid\":0.39", false);
+        spawns.put("\"max_footprint_in_liquid\":0", false);
+        for (Map.Entry<String, Boolean> spawn : spawns.entrySet()) {
+            boolean found = decode(helper, generic(spawn.getKey())).findValidGenerationPoint(context(helper, westWet, chunk)).isPresent();
+            if (found != spawn.getValue()) {
+                wrong.add("with {" + spawn.getKey() + "} over a footprint 0.4 in water it " + (found ? "spawned" : "was turned down"));
+            }
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * A set turned off in the config tells a structure search there is no start in its chunks before the structure is
+     * asked or the chunk loaded (vanilla's StructureCheck, as /locate, maps, dolphins and eyes use it), and isn't
+     * generated there; turned back on, both find the chunk again. The answer isn't cached.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void disabledSetSkippedBySearches(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        testPiece(helper);
+        ServerLevel level = helper.getLevel();
+        String off = "moogs_structures:msl_test_off";
+        AdvancedRandomSpread spread = (AdvancedRandomSpread) StructurePlacement.CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, level.registryAccess()),
+                JsonParser.parseString("{\"type\":\"moogs_structures:advanced_random_spread\",\"salt\":7,\"spacing\":6,\"separation\":2,\"structure_id\":\"" + off + "\"}"))
+                .getOrThrow();
+        Structure structure = decode(helper, generic(""));
+        var state = level.getChunkSource().getGeneratorState();
+        // A chunk this set tries, far from anything generated.
+        ChunkPos chunk = spread.getPotentialStructureChunk(state.getLevelSeed(), 3000, 3000);
+        int[] xz = xz(chunk);
+        try {
+            setDisabled(off, true);
+            expectSearch(level, spread, structure, chunk, state, false, "turned off", wrong);
+            setDisabled(off, false);
+            expectSearch(level, spread, structure, chunk, state, true, "turned on", wrong);
+            setDisabled(off, true);
+            expectSearch(level, spread, structure, chunk, state, false, "turned off again", wrong);
+        } finally {
+            setDisabled(off, false);
+        }
+        if (wrong.isEmpty() && !spread.applyAdditionalChunkRestrictions(xz[0], xz[1], state.getLevelSeed())) {
+            wrong.add("turned back on, the set still refuses its chunk");
+        }
+        finish(helper, wrong);
+    }
+
+    private static void expectSearch(ServerLevel level, AdvancedRandomSpread spread, Structure structure, ChunkPos chunk,
+                                     net.minecraft.world.level.chunk.ChunkGeneratorStructureState state, boolean on, String when, List<String> wrong) {
+        int[] xz = xz(chunk);
+        if (spread.isDisabled() == on) {
+            wrong.add(when + ": the set reads as " + (on ? "off" : "on"));
+        }
+        if (spread.isStructureChunk(state, xz[0], xz[1]) != on) {
+            wrong.add(when + ": generation " + (on ? "skips" : "still tries") + " the set's chunk");
+        }
+        StructureCheckResult result = level.structureManager().checkStructurePresence(chunk, structure, spread, false);
+        StructureCheckResult want = on ? StructureCheckResult.CHUNK_LOAD_NEEDED : StructureCheckResult.START_NOT_PRESENT;
+        if (result != want) {
+            wrong.add(when + ": a search got " + result + ", not " + want);
+        }
+    }
+
+    private static void setDisabled(String id, boolean disabled) {
+        MslConfig.get().setStructureDisabledAndSave(id, disabled);
+        // As /reload does: the worldgen side reads the config's snapshot, rebuilt on load.
+        ReplaceVanillaManager.reloadConfig();
+    }
+
+    /** A generic jigsaw structure whose start pool is msl_test_piece alone, in every overworld biome, with these fields. */
+    private static String generic(String fields) {
+        return structureJson("moogs_structures:moogs_structures_generic_jigsaw_structure", "", fields);
+    }
+
+    private static String nether(String fields) {
+        return structureJson("moogs_structures:moogs_structures_generic_nether_jigsaw_structure", "\"land_search_direction\":\"HIGHEST_LAND\",", fields);
+    }
+
+    private static String structureJson(String type, String extra, String fields) {
+        return "{\"type\":\"" + type + "\",\"start_pool\":{\"fallback\":\"minecraft:empty\",\"elements\":[{\"weight\":1,\"element\":"
+                + "{\"element_type\":\"minecraft:single_pool_element\",\"location\":\"moogs_structures:msl_test_piece\",\"processors\":\"minecraft:empty\",\"projection\":\"rigid\"}}]},"
+                + "\"size\":1,\"start_height\":{\"absolute\":64},\"biomes\":\"#minecraft:is_overworld\",\"step\":\"surface_structures\",\"spawn_overrides\":{},"
+                + extra + "\"use_bounding_box_hack\":false" + (fields.isEmpty() ? "" : "," + fields) + "}";
+    }
+
+    private static Structure decode(GameTestHelper helper, String json) {
+        return Structure.DIRECT_CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, helper.getLevel().registryAccess()), JsonParser.parseString(json)).getOrThrow();
+    }
+
+    /** msl_test_piece: a 5x1x5 slab of stone, the start piece the liquid tests lay out. */
+    private static void testPiece(GameTestHelper helper) {
+        fill(helper, new BlockPos(1, 10, 1), new BlockPos(5, 10, 5), Blocks.STONE);
+        StructureTemplate piece = templates(helper).getOrCreate(id("msl_test_piece"));
+        //? if >=1.21.6 {
+        /*piece.fillFromWorld(helper.getLevel(), helper.absolutePos(new BlockPos(1, 10, 1)), new Vec3i(5, 1, 5), false, List.of(Blocks.STRUCTURE_VOID));
+        *///?} else {
+        piece.fillFromWorld(helper.getLevel(), helper.absolutePos(new BlockPos(1, 10, 1)), new Vec3i(5, 1, 5), false, Blocks.STRUCTURE_VOID);
+        //?}
+        fill(helper, new BlockPos(1, 10, 1), new BlockPos(5, 10, 5), Blocks.AIR);
+    }
+
+    private static StructureTemplateManager templates(GameTestHelper helper) {
+        //? if <26.3 {
+        return helper.getLevel().getServer().getStructureManager();
+        //?} else {
+        /*return helper.getLevel().getServer().getStructureTemplateManager();
+        *///?}
+    }
+
+    /** The test world's flat generator, its terrain stone to y 63 except where {@code wet} puts water over y 50. */
+    private static ChunkGenerator puddles(GameTestHelper helper, BiPredicate<Integer, Integer> wet) {
+        if (!(helper.getLevel().getChunkSource().getGenerator() instanceof FlatLevelSource flat)) {
+            throw new IllegalStateException("the game test world isn't flat");
+        }
+        return new PuddleGenerator(flat.settings(), wet);
+    }
+
+    /** What structures are told about a chunk while they choose a spot, here over the given terrain, in any biome. */
+    private static Structure.GenerationContext context(GameTestHelper helper, ChunkGenerator generator, ChunkPos chunk) {
+        ServerLevel level = helper.getLevel();
+        RandomState random = level.getChunkSource().randomState();
+        //? if <26.3 {
+        return new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(), random, templates(helper),
+                level.getSeed(), chunk, level, biome -> true);
+        //?} else {
+        /*// As the game's own StructureCheck makes its climate sampler.
+        var climate = random.createClimateSampler(net.minecraft.world.level.levelgen.densityfunction.SamplerContext.builder().enableCaches().build());
+        return new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(), climate, random, templates(helper),
+                level.getSeed(), chunk, level, biome -> true);
+        *///?}
+    }
+
+    /** A chunk's x and z: fields before 26.1.2, record components from it. */
+    private static int[] xz(ChunkPos chunk) {
+        //? if <26.1.2 {
+        return new int[]{chunk.x, chunk.z};
+        //?} else {
+        /*return new int[]{chunk.x(), chunk.z()};
+        *///?}
+    }
+
+    /** Flat-world terrain the liquid checks can read: stone to y 63, or water from y 51 up where {@code wet} says. */
+    private static final class PuddleGenerator extends FlatLevelSource {
+        private static final int TOP = 63;
+        private static final int FLOOR = 50;
+        private final BiPredicate<Integer, Integer> wet;
+
+        private PuddleGenerator(FlatLevelGeneratorSettings settings, BiPredicate<Integer, Integer> wet) {
+            super(settings);
+            this.wet = wet;
+        }
+
+        @Override
+        public int getBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor level, RandomState random) {
+            // Water fills the surface heightmaps, not the ocean floor ones.
+            boolean water = this.wet.test(x, z) && !type.isOpaque().test(Blocks.WATER.defaultBlockState());
+            return (water ? FLOOR : TOP) + 1;
+        }
+
+        @Override
+        public NoiseColumn getBaseColumn(int x, int z, LevelHeightAccessor level, RandomState random) {
+            //? if <1.21.2 {
+            int minY = level.getMinBuildHeight();
+            //?} else {
+            /*int minY = level.getMinY();
+            *///?}
+            boolean water = this.wet.test(x, z);
+            BlockState[] states = new BlockState[TOP - minY + 1];
+            for (int y = minY; y <= TOP; y++) {
+                states[y - minY] = water && y > FLOOR ? Blocks.WATER.defaultBlockState() : Blocks.STONE.defaultBlockState();
+            }
+            return new NoiseColumn(minY, states);
+        }
     }
 
     // ------------------------------------------------------------------ spawners
