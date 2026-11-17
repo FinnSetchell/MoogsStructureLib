@@ -6,6 +6,10 @@
 # Minecraft version it compiles against, which is usually the same but not always.
 # mod.mc_compat is the range the jar declares, in each loader's own syntax.
 # mod.access picks the access widener / transformer pair in src/main/access.
+#
+# src/main/resources/pack.mcmeta declares one data pack format range for every node. A node for a newer
+# Minecraft needs its data pack format in that range (max_format and supported_formats), or the game lists
+# MSL's datapack as incompatible there.
 
 # Loom for the obfuscated versions, applied by dev.kikugie.loom-back-compat.
 loomx.loom_version = "1.17-SNAPSHOT"
