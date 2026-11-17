@@ -41,6 +41,8 @@
 - Mirrored structure pieces no longer have other pieces attached to them backwards
 - Structures that need the right biome all around them now check it at the height of the ground under the structure, the same on every Minecraft version, so a few near biome edges come out differently on 1.21 to 1.21.3 and 1.21.5 to 1.21.11
 - Tooltips on this mod's settings screen are now shorter and no longer stretch across the whole screen
+- The datapack list no longer shows this mod's datapack as incompatible on Minecraft 1.20.2 and newer
+- The Structures tab of this mod's settings now says when changes take effect with Forge and NeoForge too, as it already did with Fabric
 
 ---
 
