@@ -38,6 +38,8 @@
 - Parts that sit on top of or hang under another part, such as roofs, upper floors, and the mobs placed in structures, now turn every way again on Minecraft 26.1 and 26.2 instead of always facing the same way
 - Structures from datapacks that must include certain rooms now get up to 100 tries on every version, and the start room they place is the one their other rooms join onto
 - Mirrored structure pieces no longer have other pieces attached to them backwards
+- Structures that need the right biome all around them now check it at the height of the ground under the structure, the same on every Minecraft version, so a few near biome edges come out differently on 1.21 to 1.21.3 and 1.21.5 to 1.21.11
+- Tooltips on this mod's settings screen are now shorter and no longer stretch across the whole screen
 
 ---
 

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "moogs_structures:forge_native_hook_equips",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "moogs_structures:armor_stand_processor_test_empty"
+}

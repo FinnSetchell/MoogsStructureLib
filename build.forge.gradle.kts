@@ -23,7 +23,13 @@ val gametestFiles = listOf(
     "com/finndog/moogs_structures/gametest/**",
     "data/minecraft/structure/moogs_structures.armor_stand_processor_test_empty.nbt",
     "data/moogs_structures/structure/armor_stand_processor_test_empty.nbt",
+    "data/moogs_structures/structure/equiparmorstandprocessortest.armor_stand_processor_test_empty.nbt",
+    "data/moogs_structures/test_instance/**",
+    "$modId-forge-gametest.mixins.json",
 )
+// From 1.21.5 a GameTest runs from a test instance in data, which names a test function registered in code. MSL's
+// Forge GameTest is compiled up to 26.1.2, and a test instance whose function is missing fails the run.
+val hasTestInstances = sc.current.parsed >= "1.21.5" && sc.current.parsed < "26.1.2"
 
 version = property("mod_version").toString()
 base.archivesName = "${property("archives_base_name")}-forge-$mcBuild"
@@ -67,6 +73,8 @@ minecraft {
             systemProperty("forge.enabledGameTestNamespaces", modId)
             systemProperty("forge.enableGameTest", "true")
             systemProperty("forge.gameTestServer", "true")
+            // On Forge 55 to 58 this starts the GameTest server the way Forge 59 does; elsewhere the config is empty.
+            args("--mixin.config", "$modId-forge-gametest.mixins.json")
         }
     }
 }
@@ -118,6 +126,7 @@ tasks {
         filesMatching(listOf("META-INF/mods.toml", "*.mixins.json", "pack.mcmeta")) { expand(props) }
         from(awFile) { rename { "$modId.accesswidener" } }
         from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
+        if (!hasTestInstances) exclude("data/moogs_structures/test_instance/**")
     }
 
     jar {

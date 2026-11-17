@@ -1,9 +1,11 @@
 package com.finndog.moogs_structures.fabric.client;
 
+import com.finndog.moogs_structures.client.ConfigTooltips;
 import com.finndog.moogs_structures.client.SpacingPreviewSliderEntry;
 import com.finndog.moogs_structures.client.StructureActionsEntry;
 import com.finndog.moogs_structures.client.SupportLinks;
 import com.finndog.moogs_structures.config.MslConfig;
+import com.finndog.moogs_structures.config.PlatformConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.config.StructureListManager;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
@@ -46,10 +48,11 @@ public final class MoogsStructuresConfigScreen {
         ConfigCategory category = builder.getOrCreateCategory(Component.translatable("moogs_structures.config.category.replace_vanilla"));
         reloadNotice(category, eb);
         for (ReplaceVanillaManager.PresetInfo preset : ReplaceVanillaManager.getPresets()) {
-            String tooltip = preset.description().isEmpty() ? preset.modid() : preset.description();
+            String modName = PlatformConfig.INSTANCE.getModName(preset.modid());
+            String tooltip = !preset.description().isEmpty() ? preset.description() : modName != null ? modName : preset.modid();
             category.addEntry(eb.startBooleanToggle(Component.literal(preset.name()), ReplaceVanillaManager.isPresetEnabled(preset))
                     .setDefaultValue(preset.defaultEnabled())
-                    .setTooltip(Component.literal(tooltip))
+                    .setTooltip(ConfigTooltips.wrap(Component.literal(tooltip)))
                     .setSaveConsumer(value -> ReplaceVanillaManager.setPresetEnabled(preset, value))
                     .build());
         }
@@ -61,7 +64,7 @@ public final class MoogsStructuresConfigScreen {
         category.addEntry(eb.startIntSlider(Component.translatable("moogs_structures.config.universal_frequency"), toPercent(MslConfig.get().getUniversalFrequency()), 25, 400)
                 .setDefaultValue(100)
                 .setTextGetter(MoogsStructuresConfigScreen::multiplierLabel)
-                .setTooltip(Component.translatable("moogs_structures.config.universal_frequency.tooltip"))
+                .setTooltip(ConfigTooltips.wrap(Component.translatable("moogs_structures.config.universal_frequency.tooltip")))
                 .setSaveConsumer(v -> { if (v != toPercent(MslConfig.get().getUniversalFrequency())) MslConfig.get().setUniversalFrequencyAndSave(v / 100.0); })
                 .build());
 
@@ -70,7 +73,7 @@ public final class MoogsStructuresConfigScreen {
             entries.add(eb.startIntSlider(Component.translatable("moogs_structures.config.all_of_mod", group.modName()), toPercent(MslConfig.get().getModFrequency(group.modid())), 25, 400)
                     .setDefaultValue(100)
                     .setTextGetter(MoogsStructuresConfigScreen::multiplierLabel)
-                    .setTooltip(Component.translatable("moogs_structures.config.mod_frequency.tooltip", group.modName()))
+                    .setTooltip(ConfigTooltips.wrap(Component.translatable("moogs_structures.config.mod_frequency.tooltip", group.modName())))
                     .setSaveConsumer(v -> { if (v != toPercent(MslConfig.get().getModFrequency(group.modid()))) MslConfig.get().setModFrequencyAndSave(group.modid(), v / 100.0); })
                     .build());
             for (StructureListManager.StructureEntry s : group.structures()) {
