@@ -11,6 +11,9 @@
 - Rails in structures can now slope up and down with the ground
 - Sea structures can now be kept fully underwater, so they never stick out
 - Mods can give their strongholds a different spacing while they replace the vanilla ones
+- Now works on Minecraft 1.21.9, with Fabric, Forge, and NeoForge
+- Mods can now keep a structure to the Minecraft versions that have its blocks, so it simply doesn't appear on older ones
+- Mods can now keep buildings from standing half over a lake or the sea
 
 ### Fixed
 - The Forge version now loads on Minecraft 1.21.5 to 1.21.8 and 26.1
@@ -26,6 +29,15 @@
 - Structures that are meant to stay dry no longer fill with waterlogged stairs, slabs, and walls where they meet water on Minecraft 1.20 to 1.20.6, such as the stronghold from Moog's Temples Reimagined
 - Underground structures that ask to be sealed off from the terrain now are on Minecraft 1.20 to 1.20.4 too, so they no longer fill with water from nearby caves, such as the stronghold from Moog's Temples Reimagined
 - Basalt deltas and basalt columns next to Nether structures that keep them out no longer eat into the structure's edges with lava, magma, or basalt
+- Armour and weapons on mobs from structure spawners now drop as rarely as the structure says on Minecraft 1.20 to 1.21.4, instead of 8.5% of the time
+- A settings file with a mistake in it is no longer replaced with the default settings; it's left alone and a copy is kept beside it
+- The settings file can no longer be left empty or cut short if the game closes while saving it
+- Leaving a world no longer keeps that world's data in memory for the rest of the game
+- Small structures that stay out of water now check the ground under their middle, so they no longer skip dry spots beside water or end up standing in it (in newly generated chunks)
+- Explorer maps, eyes of ender, dolphins, and /locate no longer hang while searching for structures turned off in the settings
+- Parts that sit on top of or hang under another part, such as roofs, upper floors, and the mobs placed in structures, now turn every way again on Minecraft 26.1 and 26.2 instead of always facing the same way
+- Structures from datapacks that must include certain rooms now get up to 100 tries on every version, and the start room they place is the one their other rooms join onto
+- Mirrored structure pieces no longer have other pieces attached to them backwards
 
 ---
 
