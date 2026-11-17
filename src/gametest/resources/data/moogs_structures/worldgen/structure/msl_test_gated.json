@@ -1,0 +1,25 @@
+{
+  "type": "moogs_structures:moogs_structures_generic_jigsaw_structure",
+  "start_pool": {
+    "fallback": "minecraft:empty",
+    "elements": [
+      {
+        "weight": 1,
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "moogs_structures:msl_test_piece",
+          "processors": "minecraft:empty",
+          "projection": "rigid"
+        }
+      }
+    ]
+  },
+  "size": 1,
+  "start_height": {
+    "absolute": 64
+  },
+  "biomes": "#minecraft:is_overworld",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "mc_versions": "1.0-1.20.6"
+}

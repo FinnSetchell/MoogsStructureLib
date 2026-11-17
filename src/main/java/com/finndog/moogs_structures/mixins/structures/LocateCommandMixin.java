@@ -4,6 +4,8 @@ import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresTags;
 import com.finndog.moogs_structures.replacement.ReplacementAliases;
+import com.finndog.moogs_structures.utils.VersionResolver;
+import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
 import com.google.common.base.Stopwatch;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
@@ -23,6 +25,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 //? if <26.2 {
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -50,9 +53,10 @@ public class LocateCommandMixin {
     private static DynamicCommandExceptionType ERROR_STRUCTURE_NOT_FOUND;
 
     /**
-     * When a structure has been replaced or disabled via the Moogs Structures config, tell the
-     * player instead of running the vanilla search (which has nothing left to find, and would run
-     * the full - up to 2000 chunk - radius fruitlessly).
+     * When a structure has been replaced or disabled via the Moogs Structures config, or doesn't
+     * generate on this Minecraft version (mc_versions), tell the player instead of running the vanilla
+     * search (which has nothing left to find, and would run the full - up to 2000 chunk - radius
+     * fruitlessly).
      */
     @Inject(
             method = "locateStructure(Lnet/minecraft/commands/CommandSourceStack;Lnet/minecraft/commands/arguments/ResourceOrTagKeyArgument$Result;)I",
@@ -72,6 +76,18 @@ public class LocateCommandMixin {
             if (MslConfig.get().isStructureDisabled(id)) {
                 source.sendSuccess(() -> Component.literal(
                         id + " is disabled in the Moogs Structures config (config/moogs_structures.json)."), false);
+                cir.setReturnValue(1);
+                return;
+            }
+            //? if <1.21.2 {
+            Structure structure = source.registryAccess().registryOrThrow(Registries.STRUCTURE).get(key);
+            //?} else {
+            /*Structure structure = source.registryAccess().lookupOrThrow(Registries.STRUCTURE).getValue(key);
+            *///?}
+            if (structure instanceof GenericJigsawStructure gated && !gated.generatesOnThisVersion()) {
+                source.sendSuccess(() -> Component.literal(
+                        id + " doesn't generate on Minecraft " + VersionResolver.getCurrentVersionString()
+                                + " (only on " + gated.mcVersions.map(Object::toString).orElse("other versions") + ")."), false);
                 cir.setReturnValue(1);
                 return;
             }
