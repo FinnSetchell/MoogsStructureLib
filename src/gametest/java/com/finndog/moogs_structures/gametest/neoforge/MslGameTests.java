@@ -18,9 +18,7 @@ import com.google.gson.JsonParser;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
-//? if >=1.21.5 {
-/*import com.mojang.serialization.MapCodec;
-*///?}
+import com.mojang.serialization.MapCodec;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,10 +31,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.FrontAndTop;
 import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 //? if <1.21.5 {
@@ -66,7 +67,13 @@ import net.minecraft.world.entity.Entity;
 /*import net.minecraft.world.entity.EntitySpawnReason;
 *///?}
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.biome.Biome;
+//? if >=26.3 {
+/*import net.minecraft.world.level.biome.BiomeResolver;
+*///?}
+import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.FixedBiomeSource;
 import net.minecraft.world.level.block.BaseRailBlock;
 import net.minecraft.world.level.block.Block;
@@ -114,8 +121,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 /**
  * MSL's deterministic checks, on a headless game test server: what its codecs refuse (and the message),
  * what its version ranges pick, and what its terrain-reading processors do to a template placed over
- * ground built in the test's own arena. Structures generating in a real world are the mod-director
- * suite's (mod-director/suites/msl) and the structure tester's.
+ * ground built in the test's own arena.
  *
  * <p>Each test is one static method; below 1.21.5 the annotations register them, from 1.21.5 the event
  * registers the same methods as test instances. Run with {@code ./gradlew :<node>:runGameTestServer}.
@@ -190,6 +196,7 @@ public class MslGameTests {
         tests.put("version_gated_set_turned_off", MslGameTests::versionGatedSetTurnedOff);
         tests.put("liquid_check_at_start_piece_centre", MslGameTests::liquidCheckAtStartPieceCentre);
         tests.put("footprint_in_liquid_share", MslGameTests::footprintInLiquidShare);
+        tests.put("biome_radius_reads_the_corner_height", MslGameTests::biomeRadiusReadsTheCornerHeight);
         tests.put("disabled_set_skipped_by_searches", MslGameTests::disabledSetSkippedBySearches);
         tests.put("cached_height_matches_the_generator", MslGameTests::cachedHeightMatchesTheGenerator);
         tests.put("height_cache_lets_go_of_a_closed_world", MslGameTests::heightCacheLetsGoOfAClosedWorld);
@@ -1096,6 +1103,48 @@ public class MslGameTests {
     }
 
     /**
+     * valid_biome_radius_check reads the biomes at the ground's height under the start piece, whose middle MSL puts
+     * on the start chunk's corner, on every version. Biomes here change with height (desert from y 120 up), the
+     * ground is 13 blocks lower under a pond than on dry land, and start_height 64 sits on top of the ground. With
+     * the pond at the corner the check finds no desert and the structure spawns; with the pond 7 blocks off in x and
+     * z (at the chunk's middle, where some versions used to read) it finds desert and is turned down.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void biomeRadiusReadsTheCornerHeight(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        testPiece(helper);
+        Structure checked = decode(helper, generic("\"project_start_to_heightmap\":\"OCEAN_FLOOR_WG\",\"valid_biome_radius_check\":1"));
+        Structure unchecked = decode(helper, generic("\"project_start_to_heightmap\":\"OCEAN_FLOOR_WG\""));
+        var biomes = helper.getLevel().registryAccess().lookupOrThrow(Registries.BIOME);
+        BiomeSource layered = new LayeredBiomes(biomes.getOrThrow(Biomes.PLAINS), biomes.getOrThrow(Biomes.DESERT), 120);
+        Predicate<Holder<Biome>> notDesert = biome -> !biome.is(Biomes.DESERT);
+
+        // Chunks of their own, so no other test's terrain is in the height cache at these columns.
+        ChunkPos pondAtCorner = new ChunkPos(-300, 200);
+        if (checked.findValidGenerationPoint(context(helper, pond(helper, pondAtCorner, 0), layered, pondAtCorner, notDesert)).isEmpty()) {
+            wrong.add("turned down with the ground under the start piece below the desert (the chunk's middle is in it)");
+        }
+        ChunkPos pondAtMiddle = new ChunkPos(-310, 200);
+        if (checked.findValidGenerationPoint(context(helper, pond(helper, pondAtMiddle, 7), layered, pondAtMiddle, notDesert)).isPresent()) {
+            wrong.add("spawned with the ground under the start piece in the desert (the chunk's middle is below it)");
+        }
+        ChunkPos control = new ChunkPos(-320, 200);
+        if (unchecked.findValidGenerationPoint(context(helper, pond(helper, control, 0), layered, control, notDesert)).isEmpty()) {
+            wrong.add("without valid_biome_radius_check, the pond at the corner was still turned down");
+        }
+        finish(helper, wrong);
+    }
+
+    /** The flat test terrain with a 7x7 pond whose middle is {@code offset} blocks into the chunk in x and z. */
+    private static ChunkGenerator pond(GameTestHelper helper, ChunkPos chunk, int offset) {
+        int x = chunk.getMinBlockX() + offset;
+        int z = chunk.getMinBlockZ() + offset;
+        return puddles(helper, (px, pz) -> Math.abs(px - x) <= 3 && Math.abs(pz - z) <= 3);
+    }
+
+    /**
      * A set turned off in the config tells a structure search there is no start in its chunks before the structure is
      * asked or the chunk loaded (vanilla's StructureCheck, as /locate, maps, dolphins and eyes use it), and isn't
      * generated there; turned back on, both find the chunk again. The answer isn't cached.
@@ -1204,16 +1253,22 @@ public class MslGameTests {
 
     /** What structures are told about a chunk while they choose a spot, here over the given terrain, in any biome. */
     private static Structure.GenerationContext context(GameTestHelper helper, ChunkGenerator generator, ChunkPos chunk) {
+        return context(helper, generator, generator.getBiomeSource(), chunk, biome -> true);
+    }
+
+    /** The same, with these biomes and only the biomes {@code valid} lets through. */
+    private static Structure.GenerationContext context(GameTestHelper helper, ChunkGenerator generator, BiomeSource biomes, ChunkPos chunk,
+                                                       Predicate<Holder<Biome>> valid) {
         ServerLevel level = helper.getLevel();
         RandomState random = level.getChunkSource().randomState();
         //? if <26.3 {
-        return new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(), random, templates(helper),
-                level.getSeed(), chunk, level, biome -> true);
+        return new Structure.GenerationContext(level.registryAccess(), generator, biomes, random, templates(helper),
+                level.getSeed(), chunk, level, valid);
         //?} else {
         /*// As the game's own StructureCheck makes its climate sampler.
         var climate = random.createClimateSampler(net.minecraft.world.level.levelgen.densityfunction.SamplerContext.builder().enableCaches().build());
-        return new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(), climate, random, templates(helper),
-                level.getSeed(), chunk, level, biome -> true);
+        return new Structure.GenerationContext(level.registryAccess(), generator, biomes, climate, random, templates(helper),
+                level.getSeed(), chunk, level, valid);
         *///?}
     }
 
@@ -1258,6 +1313,41 @@ public class MslGameTests {
             }
             return new NoiseColumn(minY, states);
         }
+    }
+
+    /** One biome below a height and another from it up, the same in every column. */
+    private static final class LayeredBiomes extends BiomeSource {
+        private final Holder<Biome> below;
+        private final Holder<Biome> above;
+        private final int fromQuart;
+
+        private LayeredBiomes(Holder<Biome> below, Holder<Biome> above, int fromY) {
+            this.below = below;
+            this.above = above;
+            this.fromQuart = QuartPos.fromBlock(fromY);
+        }
+
+        @Override
+        protected MapCodec<? extends BiomeSource> codec() {
+            throw new UnsupportedOperationException("only built in game tests");
+        }
+
+        @Override
+        protected Stream<Holder<Biome>> collectPossibleBiomes() {
+            return Stream.of(this.below, this.above);
+        }
+
+        //? if <26.3 {
+        @Override
+        public Holder<Biome> getNoiseBiome(int x, int y, int z, Climate.Sampler sampler) {
+            return y >= this.fromQuart ? this.above : this.below;
+        }
+        //?} else {
+        /*@Override
+        public BiomeResolver createResolver(Climate.Sampler sampler) {
+            return (x, y, z) -> y >= this.fromQuart ? this.above : this.below;
+        }
+        *///?}
     }
 
     // ------------------------------------------------------------------ spawners

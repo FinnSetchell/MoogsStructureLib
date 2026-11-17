@@ -359,14 +359,8 @@ public class GenericJigsawStructure extends Structure implements EnhancedTerrain
             int validBiomeRange = this.biomeRadius.get();
             int sectionY = blockPos.getY();
             if (projectStartToHeightmap.isPresent()) {
-                // The ground's height is read at the chunk's middle on the versions with the Repurposed Structures
-                // port and at its corner on the others; which is meant is still to be decided (#538).
-                //? if >=1.21.1 <1.21.4 || >=1.21.5 <26.1.2 {
-                int sampleOffset = 7;
-                //?} else {
-                /*int sampleOffset = 0;
-                *///?}
-                sectionY += GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), blockPos.getX() + sampleOffset, blockPos.getZ() + sampleOffset, projectStartToHeightmap.get(), context.heightAccessor(), context.randomState()) - 1;
+                // The ground's height at the chunk's corner, where the start piece's middle goes (centerAllPieces).
+                sectionY += GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), blockPos.getX(), blockPos.getZ(), projectStartToHeightmap.get(), context.heightAccessor(), context.randomState()) - 1;
             }
             sectionY = QuartPos.fromBlock(sectionY);
 
