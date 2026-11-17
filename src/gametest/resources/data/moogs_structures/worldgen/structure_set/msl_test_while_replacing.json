@@ -1,0 +1,21 @@
+{
+  "structures": [
+    {
+      "structure": "minecraft:end_city",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "moogs_structures:advanced_random_spread",
+    "salt": 11,
+    "spacing": 2,
+    "separation": 1,
+    "generates": "when_replacing",
+    "when_replacing": {
+      "modid": "moogs_structures",
+      "vanilla_key": "msl_test",
+      "spacing": 2,
+      "separation": 1
+    }
+  }
+}

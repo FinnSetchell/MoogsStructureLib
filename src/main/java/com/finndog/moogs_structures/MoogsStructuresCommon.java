@@ -107,6 +107,7 @@ public class MoogsStructuresCommon {
             if (placement instanceof AdvancedRandomSpread ars) {
                 ars.setOwningSetId(id);
                 ars.setNoStructureOnThisVersion(noStructureOnThisVersion(entry.getValue()));
+                warnIfReplacementMissing(id, ars);
             } else if (placement instanceof ConditionalConcentricRings ccr) {
                 ccr.setOwningSetId(id);
             }
@@ -121,6 +122,18 @@ public class MoogsStructuresCommon {
     private static boolean noStructureOnThisVersion(StructureSet set) {
         return !set.structures().isEmpty() && set.structures().stream()
                 .allMatch(entry -> entry.structure().value() instanceof GenericJigsawStructure structure && !structure.generatesOnThisVersion());
+    }
+
+    /** A set that generates by its replacement's state when no installed mod declares that replacement. */
+    private static void warnIfReplacementMissing(ResourceLocation id, AdvancedRandomSpread spread) {
+        if (spread.generates() == AdvancedRandomSpread.Generates.ALWAYS || spread.whenReplacing().isEmpty()) {
+            return;
+        }
+        AdvancedRandomSpread.ReplacementSpacing replacement = spread.whenReplacing().get();
+        if (ReplaceVanillaManager.presetName(replacement.modid(), replacement.vanillaKey()).isEmpty()) {
+            LOGGER.warn("Moogs Structures: structure set {} generates {}, but no installed mod declares the replacement {}/{}, so it counts as never replacing",
+                    id, spread.generates().getSerializedName(), replacement.modid(), replacement.vanillaKey());
+        }
     }
 
     private static void onServerStopping(final ServerGoingToStopEvent event) {
