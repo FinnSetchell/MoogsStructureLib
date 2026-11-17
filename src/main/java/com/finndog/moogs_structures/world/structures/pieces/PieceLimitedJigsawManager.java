@@ -152,14 +152,7 @@ public class PieceLimitedJigsawManager {
         BoundingBox pieceBoundingBox = startPiece.getBoundingBox();
         int pieceCenterX = (pieceBoundingBox.maxX() + pieceBoundingBox.minX()) / 2;
         int pieceCenterZ = (pieceBoundingBox.maxZ() + pieceBoundingBox.minZ()) / 2;
-        int pieceCenterY = heightmapType
-                //? if <26.1.2 {
-                .map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
-                //?} else {
-                /*.map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(
-                        context.chunkGenerator(), pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
-                *///?}
-                .orElseGet(startPos::getY);
+        int pieceCenterY = groundLevel(context, startPiece, startPos, heightmapType);
 
         if (heightmapType.isPresent() && (pieceCenterY > maxY || pieceCenterY < minY)) {
             return Optional.empty();
@@ -217,8 +210,9 @@ public class PieceLimitedJigsawManager {
                     break;
                 }
 
-                // Every attempt after the first starts over from a fresh pick of the start pool, set where the first
-                // one was, and that piece is the start everywhere: in the pieces, under the children and in the octree.
+                // Every attempt after the first starts over from a fresh pick of the start pool, at the same spot and
+                // turn as the first and on the ground under its own middle, and that piece is the start everywhere:
+                // in the pieces, under the children and in the octree.
                 PoolElementStructurePiece attemptStartPiece = startPiece;
                 if (attempts > 0) {
                     StructurePoolElement attemptStartBlueprint = startPool.getRandomTemplate(random);
@@ -231,7 +225,12 @@ public class PieceLimitedJigsawManager {
                     //?} else {
                     /*attemptStartPiece = newStartPiece(context, attemptStartBlueprint, startPos, rotation);
                     *///?}
-                    moveToGroundLevel(attemptStartPiece, pieceCenterY);
+                    int attemptGroundY = groundLevel(context, attemptStartPiece, startPos, heightmapType);
+                    // Like the first pick, a start whose ground is outside the structure's heights can't be used.
+                    if (heightmapType.isPresent() && (attemptGroundY > maxY || attemptGroundY < minY)) {
+                        continue;
+                    }
+                    moveToGroundLevel(attemptStartPiece, attemptGroundY);
                 }
 
                 components.clear();
@@ -308,6 +307,17 @@ public class PieceLimitedJigsawManager {
                 /*blueprint.getBoundingBox(context.structureTemplateManager(), startPos, rotation)
                 *///?}
         );
+    }
+
+    // The height a start piece's ground level goes to: the start position's y, raised by the heightmap's height under
+    // the middle of the piece when the structure has a heightmap.
+    private static int groundLevel(Structure.GenerationContext context, PoolElementStructurePiece piece, BlockPos startPos, Optional<Heightmap.Types> heightmapType) {
+        BoundingBox box = piece.getBoundingBox();
+        int centerX = (box.maxX() + box.minX()) / 2;
+        int centerZ = (box.maxZ() + box.minZ()) / 2;
+        return heightmapType
+                .map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), centerX, centerZ, types, context.heightAccessor(), context.randomState()))
+                .orElseGet(startPos::getY);
     }
 
     // Moves a start piece up or down so its ground level (its bottom plus its ground level delta) is at groundY.
@@ -1060,43 +1070,19 @@ public class PieceLimitedJigsawManager {
                                     candidateJigsawBlockY = surfaceHeight + candidateJigsawYOffsetNeeded / 2;
                                 }
 
-                                // Add the junction to the existing piece
-                                //? if <1.21.5 {
-                                piece.addJunction(
-                                        new JigsawJunction(
-                                                jigsawBlockTargetPos.getX(),
-                                                candidateJigsawBlockY - jigsawBlockRelativeY + newPieceGroundLevelDelta,
-                                                jigsawBlockTargetPos.getZ(),
-                                                candidateJigsawYOffsetNeeded,
-                                                candidatePlacementBehavior)
-                                );
-                                //?} else {
-                                /*piece.addJunction(new JigsawJunction(
+                                // Add a junction to each piece, naming the projection of the piece at its other end, as vanilla does
+                                piece.addJunction(new JigsawJunction(
                                         jigsawBlockTargetPos.getX(),
                                         candidateJigsawBlockY - jigsawBlockRelativeY + newPieceGroundLevelDelta,
                                         jigsawBlockTargetPos.getZ(),
                                         candidateJigsawYOffsetNeeded,
-                                        piecePlacementBehavior));
-                                *///?}
-
-                                // Add the junction to the new piece
-                                //? if <1.21.5 {
-                                newPiece.addJunction(
-                                        new JigsawJunction(
-                                                jigsawBlockPos.getX(),
-                                                candidateJigsawBlockY - candidateJigsawBlockRelativeY + groundLevelDelta,
-                                                jigsawBlockPos.getZ(),
-                                                -candidateJigsawYOffsetNeeded,
-                                                piecePlacementBehavior)
-                                );
-                                //?} else {
-                                /*newPiece.addJunction(new JigsawJunction(
+                                        candidatePlacementBehavior));
+                                newPiece.addJunction(new JigsawJunction(
                                         jigsawBlockPos.getX(),
                                         candidateJigsawBlockY - candidateJigsawBlockRelativeY + groundLevelDelta,
                                         jigsawBlockPos.getZ(),
                                         -candidateJigsawYOffsetNeeded,
                                         piecePlacementBehavior));
-                                *///?}
 
                                 // Add the piece
                                 this.structurePieces.add(newPiece);

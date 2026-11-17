@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.IntBinaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import net.minecraft.core.BlockPos;
@@ -100,6 +101,7 @@ import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureCheckResult;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
+import net.minecraft.world.level.levelgen.structure.pools.JigsawJunction;
 import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
@@ -191,6 +193,8 @@ public class MslGameTests {
         tests.put("start_reroll_places_the_new_piece", MslGameTests::startRerollPlacesTheNewPiece);
         tests.put("start_reroll_frees_the_old_room", MslGameTests::startRerollFreesTheOldRoom);
         tests.put("start_reroll_tries_100_times", MslGameTests::startRerollTries100Times);
+        tests.put("start_reroll_grounds_the_new_piece", MslGameTests::startRerollGroundsTheNewPiece);
+        tests.put("jigsaw_junction_projections", MslGameTests::jigsawJunctionProjections);
         tests.put("mirrored_jigsaws_face_out", MslGameTests::mirroredJigsawsFaceOut);
         tests.put("placement_field_values", MslGameTests::placementFieldValues);
         tests.put("mc_versions_gate_biomes", MslGameTests::mcVersionsGateBiomes);
@@ -670,6 +674,80 @@ public class MslGameTests {
     }
 
     /**
+     * A start picked again sits on the ground under its own middle, as the first pick does under its own. The reroll
+     * test's big dead end is picked first and the small good start after it, over ground that steps up along x and z,
+     * so the ground under the two middles differs whichever way the structure is turned.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void startRerollGroundsTheNewPiece(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        buildRerollPieces(helper);
+        ServerLevel level = helper.getLevel();
+        Holder<StructureTemplatePool> startPool = pool(level, REROLL + "start_big");
+        int chunkX = rerollChunk(startPool, 1, 39);
+        if (chunkX < 0) {
+            wrong.add("no chunk where the good start first comes up on try 1 to 39");
+            finish(helper, wrong);
+            return;
+        }
+        IntBinaryOperator ground = (x, z) -> 40 + Math.floorMod(x, 16) + 2 * Math.floorMod(z, 16);
+        BlockPos startPos = new BlockPos(chunkX * 16, 0, 0);
+        List<StructurePiece> pieces = assemble(helper, sloped(helper, ground), Optional.of(Heightmap.Types.WORLD_SURFACE_WG), startPos,
+                startPool, id(REROLL + "big"));
+        if (pieces.isEmpty() || !(pieces.get(0) instanceof PoolElementStructurePiece start) || !id(REROLL + "start").equals(templateId(start.getElement()))) {
+            wrong.add("the good start isn't the start piece placed (pieces " + pieces + ")");
+            finish(helper, wrong);
+            return;
+        }
+        BoundingBox firstPick = templates(level).getOrCreate(id(REROLL + "dead_end_big"))
+                .getBoundingBox(new StructurePlaceSettings().setRotation(start.getRotation()), startPos);
+        int underFirstPick = ground.applyAsInt(middleX(firstPick), middleZ(firstPick));
+        int underItself = ground.applyAsInt(middleX(start.getBoundingBox()), middleZ(start.getBoundingBox()));
+        int groundLevel = start.getBoundingBox().minY() + start.getGroundLevelDelta();
+        if (underFirstPick == underItself) {
+            wrong.add("the ground under both middles is at y " + underItself + ", so this can't tell them apart");
+        } else if (groundLevel != underItself) {
+            wrong.add("the new start's ground level is y " + groundLevel + ", not y " + underItself + " under its own middle"
+                    + (groundLevel == underFirstPick ? " (it is the ground under the first pick's middle)" : ""));
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * Each jigsaw join records a junction on both pieces, naming the projection of the piece at the other end, as
+     * vanilla does: a rigid start with a terrain-matching piece on its jigsaw, over flat ground at y 64.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void jigsawJunctionProjections(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        String link = "moogs_structures:" + JUNCTION + "link";
+        buildPiece(helper, JUNCTION + "start", new Vec3i(3, 1, 3),
+                new TestJigsaw(new BlockPos(2, 0, 1), FrontAndTop.EAST_UP, "minecraft:empty", link, "moogs_structures:" + JUNCTION + "children"));
+        buildPiece(helper, JUNCTION + "child", new Vec3i(3, 1, 3),
+                new TestJigsaw(new BlockPos(0, 0, 1), FrontAndTop.WEST_UP, link, "minecraft:empty", "minecraft:empty"));
+        List<StructurePiece> pieces = assemble(helper, sloped(helper, (x, z) -> 64), Optional.empty(), new BlockPos(0, 100, 0),
+                pool(helper.getLevel(), JUNCTION + "start"), id(JUNCTION + "pair"));
+        if (pieces.size() != 2) {
+            wrong.add(pieces.size() + " pieces laid out, not the start and the piece on its jigsaw (pieces " + pieces + ")");
+        } else {
+            expectJunction("the rigid start", (PoolElementStructurePiece) pieces.get(0), StructureTemplatePool.Projection.TERRAIN_MATCHING, wrong);
+            expectJunction("the terrain-matching piece", (PoolElementStructurePiece) pieces.get(1), StructureTemplatePool.Projection.RIGID, wrong);
+        }
+        finish(helper, wrong);
+    }
+
+    private static void expectJunction(String whose, PoolElementStructurePiece piece, StructureTemplatePool.Projection other, List<String> wrong) {
+        List<StructureTemplatePool.Projection> named = piece.getJunctions().stream().map(JigsawJunction::getDestProjection).toList();
+        if (!named.equals(List.of(other))) {
+            wrong.add(whose + "'s junctions name " + named + ", not [" + other + "], the piece at the other end");
+        }
+    }
+
+    /**
      * A mirroring piece, for every mirror and turn: each jigsaw it offers to the assembler is the jigsaw the piece
      * places at that spot, facing the same way, and it faces out of the piece, so pieces attach to its outside. Placed
      * with its jigsaws kept, as the keepjigsaws debug option does.
@@ -731,6 +809,7 @@ public class MslGameTests {
     // ------------------------------------------------------------------ jigsaw helpers
 
     private static final String REROLL = "gametest/reroll/";
+    private static final String JUNCTION = "gametest/junction/";
     private static final long REROLL_SEED = 5381L;
 
     /** A jigsaw for {@link #buildPiece}, at a spot in the piece, with what it calls itself, joins to and draws from. */
@@ -778,24 +857,9 @@ public class MslGameTests {
     private static void checkReroll(GameTestHelper helper, String pool, String structure, int from, int to, List<String> wrong) {
         ServerLevel level = helper.getLevel();
         StructureTemplateManager templates = templates(level);
-        Holder<StructureTemplatePool> startPool = level.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL)
-                .getOrThrow(ResourceKey.create(Registries.TEMPLATE_POOL, id(REROLL + pool)));
+        Holder<StructureTemplatePool> startPool = pool(level, REROLL + pool);
         ResourceLocation start = id(REROLL + "start");
-        int chunkX = -1;
-        for (int x = 0; x < 5000 && chunkX < 0; x++) {
-            WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
-            random.setLargeFeatureSeed(REROLL_SEED, x, 0);
-            Rotation.getRandom(random);
-            int firstGood = -1;
-            for (int pick = 0; pick < 100 && firstGood < 0; pick++) {
-                if (start.equals(templateId(startPool.value().getRandomTemplate(random)))) {
-                    firstGood = pick;
-                }
-            }
-            if (firstGood >= from && firstGood <= to) {
-                chunkX = x;
-            }
-        }
+        int chunkX = rerollChunk(startPool, from, to);
         if (chunkX < 0) {
             wrong.add(structure + ": no chunk where the good start first comes up on try " + from + " to " + to);
             return;
@@ -828,23 +892,73 @@ public class MslGameTests {
         }
     }
 
+    /**
+     * The first chunk (along x) where the start pool's own draws, as the assembler makes them, first give the reroll
+     * tests' good start on a try from {@code from} to {@code to} (0 is the first pick), or -1.
+     */
+    private static int rerollChunk(Holder<StructureTemplatePool> startPool, int from, int to) {
+        ResourceLocation start = id(REROLL + "start");
+        for (int x = 0; x < 5000; x++) {
+            WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
+            random.setLargeFeatureSeed(REROLL_SEED, x, 0);
+            Rotation.getRandom(random);
+            int firstGood = -1;
+            for (int pick = 0; pick < 100 && firstGood < 0; pick++) {
+                if (start.equals(templateId(startPool.value().getRandomTemplate(random)))) {
+                    firstGood = pick;
+                }
+            }
+            if (firstGood >= from && firstGood <= to) {
+                return x;
+            }
+        }
+        return -1;
+    }
+
+    private static Holder<StructureTemplatePool> pool(ServerLevel level, String path) {
+        return level.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL).getOrThrow(ResourceKey.create(Registries.TEMPLATE_POOL, id(path)));
+    }
+
     /** The structure's pieces as PieceLimitedJigsawManager lays them out from this start pool, size 2, at y 100 in this chunk. */
     private static List<StructurePiece> assemble(GameTestHelper helper, Holder<StructureTemplatePool> startPool, ResourceLocation structure, int chunkX) {
         ServerLevel level = helper.getLevel();
-        ChunkGenerator generator = level.getChunkSource().getGenerator();
-        RandomState randomState = level.getChunkSource().randomState();
+        return assemble(helper, level.getChunkSource().getGenerator(), level.getChunkSource().randomState(), Optional.empty(),
+                new BlockPos(chunkX * 16, 100, 0), startPool, structure);
+    }
+
+    /**
+     * As above over this terrain, starting from this spot, with the start set on the ground this heightmap finds under
+     * its middle if one is given. Heights are cached per random state, so the terrain gets one of its own.
+     */
+    private static List<StructurePiece> assemble(GameTestHelper helper, ChunkGenerator generator, Optional<Heightmap.Types> heightmap, BlockPos startPos,
+                                                 Holder<StructureTemplatePool> startPool, ResourceLocation structure) {
+        return assemble(helper, generator, randomState(helper.getLevel(), REROLL_SEED), heightmap, startPos, startPool, structure);
+    }
+
+    private static List<StructurePiece> assemble(GameTestHelper helper, ChunkGenerator generator, RandomState randomState, Optional<Heightmap.Types> heightmap,
+                                                 BlockPos startPos, Holder<StructureTemplatePool> startPool, ResourceLocation structure) {
+        ServerLevel level = helper.getLevel();
+        ChunkPos chunk = new ChunkPos(startPos.getX() >> 4, startPos.getZ() >> 4);
         //? if <26.3 {
         Structure.GenerationContext context = new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(),
-                randomState, templates(level), REROLL_SEED, new ChunkPos(chunkX, 0), level, biome -> true);
+                randomState, templates(level), REROLL_SEED, chunk, level, biome -> true);
         //?} else {
         /*Structure.GenerationContext context = new Structure.GenerationContext(level.registryAccess(), generator, generator.getBiomeSource(),
                 randomState.createClimateSampler(net.minecraft.world.level.levelgen.densityfunction.SamplerContext.builder().build()), randomState,
-                templates(level), REROLL_SEED, new ChunkPos(chunkX, 0), level, biome -> true);
+                templates(level), REROLL_SEED, chunk, level, biome -> true);
         *///?}
-        return PieceLimitedJigsawManager.assembleJigsawStructure(context, startPool, 2, structure, new BlockPos(chunkX * 16, 100, 0), false,
-                        Optional.empty(), 1000, -1000, Set.of(), Optional.empty(), Optional.empty(), LiquidSettings.IGNORE_WATERLOGGING, (builder, laidOut) -> { })
+        return PieceLimitedJigsawManager.assembleJigsawStructure(context, startPool, 2, structure, startPos, false,
+                        heightmap, 1000, -1000, Set.of(), Optional.empty(), Optional.empty(), LiquidSettings.IGNORE_WATERLOGGING, (builder, laidOut) -> { })
                 .map(stub -> stub.getPiecesBuilder().build().pieces())
                 .orElse(List.of());
+    }
+
+    private static int middleX(BoundingBox box) {
+        return (box.minX() + box.maxX()) / 2;
+    }
+
+    private static int middleZ(BoundingBox box) {
+        return (box.minZ() + box.maxZ()) / 2;
     }
 
     /** Whether a jigsaw of the child sits right in front of a jigsaw of the parent, facing back at it. */
@@ -1475,6 +1589,29 @@ public class MslGameTests {
             return (x, y, z) -> y >= this.fromQuart ? this.above : this.below;
         }
         *///?}
+    }
+
+    /** The test world's flat generator with its ground, as heightmaps see it, at the height {@code ground} gives each column. */
+    private static ChunkGenerator sloped(GameTestHelper helper, IntBinaryOperator ground) {
+        if (!(helper.getLevel().getChunkSource().getGenerator() instanceof FlatLevelSource flat)) {
+            throw new IllegalStateException("the game test world isn't flat");
+        }
+        return new SlopedGenerator(flat.settings(), ground);
+    }
+
+    /** Flat-world terrain whose surface height changes from column to column. */
+    private static final class SlopedGenerator extends FlatLevelSource {
+        private final IntBinaryOperator ground;
+
+        private SlopedGenerator(FlatLevelGeneratorSettings settings, IntBinaryOperator ground) {
+            super(settings);
+            this.ground = ground;
+        }
+
+        @Override
+        public int getBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor level, RandomState random) {
+            return this.ground.applyAsInt(x, z);
+        }
     }
 
     // ------------------------------------------------------------------ spawners
