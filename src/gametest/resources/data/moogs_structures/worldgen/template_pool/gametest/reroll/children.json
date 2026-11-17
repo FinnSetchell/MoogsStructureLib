@@ -1,0 +1,6 @@
+{
+  "fallback": "minecraft:empty",
+  "elements": [
+    {"weight":1,"element":{"element_type":"minecraft:single_pool_element","location":"moogs_structures:gametest/reroll/required","processors":"minecraft:empty","projection":"rigid"}}
+  ]
+}
