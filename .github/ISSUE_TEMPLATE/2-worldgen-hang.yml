@@ -1,0 +1,116 @@
+name: World generation freezes
+description: The world stops loading, or the game or server freezes, while new land or structures generate.
+title: "[Freeze]: "
+labels: ["bug", "hang", "worldgen"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this! Freezes are hard to track down, so the log and the details below help a lot.
+
+  - type: input
+    id: mc-version
+    attributes:
+      label: Minecraft version
+      placeholder: "1.21.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: loader
+    attributes:
+      label: Mod loader
+      options:
+        - Fabric
+        - Forge
+        - NeoForge
+        - Other (say which below)
+    validations:
+      required: true
+
+  - type: input
+    id: loader-version
+    attributes:
+      label: Mod loader version
+      description: Shown in the launcher, or at the top of the log.
+      placeholder: "0.16.14"
+    validations:
+      required: false
+
+  - type: input
+    id: msl-version
+    attributes:
+      label: Moog's Structure Lib version
+      description: It's in the jar's file name, or in the mod list.
+      placeholder: "4.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: when
+    attributes:
+      label: When does it freeze?
+      options:
+        - While creating a new world
+        - While exploring new land
+        - After using /locate, an explorer map, an eye of ender, or a dolphin
+        - While saving, leaving the world, or stopping the server
+        - Somewhere else (say where below)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: recovers
+    attributes:
+      label: Does it come back?
+      options:
+        - It comes back after a while
+        - It never comes back, I have to close the game or server
+    validations:
+      required: true
+
+  - type: input
+    id: log-link
+    attributes:
+      label: Link to the log
+      description: |
+        Upload `logs/latest.log` from after the freeze to https://mclo.gs and paste the link here.
+      placeholder: "https://mclo.gs/..."
+    validations:
+      required: true
+
+  - type: input
+    id: profile-link
+    attributes:
+      label: Link to a profile or thread dump, if you have one
+      description: |
+        If it comes back: a [spark](https://spark.lucko.me) profile, started with `/spark profiler start --thread *` before the freeze and stopped with `/spark profiler stop` after it.
+        If it never comes back: a thread dump, or the crash report a server writes when it stops responding.
+    validations:
+      required: false
+
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: Other mods
+      description: The modpack name and version, or the list of mods you have installed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Where you were, what you were doing, and how long you waited. A world seed and coordinates help if you have them.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I've searched the existing issues for this freeze.
+          required: true
+        - label: I'm on the newest Moog's Structure Lib for my Minecraft version and mod loader.
+          required: true
