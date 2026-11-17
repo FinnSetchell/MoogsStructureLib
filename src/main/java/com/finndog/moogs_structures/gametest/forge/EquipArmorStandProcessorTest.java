@@ -5,6 +5,9 @@ import com.finndog.moogs_structures.world.processors.EquipArmorStandProcessor;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.BlockPos;
+//? if >=1.21.5 {
+/*import net.minecraft.core.registries.Registries;
+*///?}
 //? if <1.21.5 {
 import net.minecraft.gametest.framework.GameTest;
 //?}
@@ -14,6 +17,9 @@ import net.minecraft.gametest.framework.GameTestHelper;
 *///?}
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.RegistryOps;
+//? if >=1.21.5 {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -21,31 +27,43 @@ import net.minecraft.world.phys.Vec3;
 //? if <1.21.5 {
 import net.minecraftforge.gametest.GameTestHolder;
 //?} else {
-/*import net.minecraftforge.gametest.GameTest;
-import net.minecraftforge.gametest.GameTestDontPrefix;
-import net.minecraftforge.gametest.GameTestNamespace;
+/*import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.RegisterEvent;
+*///?}
+//? if >=1.21.5 <1.21.6 {
+/*import net.minecraftforge.eventbus.api.SubscribeEvent;
+*///?}
+//? if >=1.21.6 {
+/*import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 *///?}
 
-// Forge 1.21.5+ dropped vanilla's @GameTest annotation for GameTestInstance, but kept its own
-// annotation system (net.minecraftforge.gametest). Same idea as the older branches otherwise.
+// From Forge 55 (Minecraft 1.21.5) a test is a function in Minecraft's test_function registry, run by a test
+// instance in data (test_instance/forge_native_hook_equips.json). Forge's own @GameTest annotations are never
+// read, so the function is registered here.
 //? if <1.21.5 {
 @GameTestHolder("moogs_structures")
 //?} else {
-/*@GameTestNamespace("moogs_structures")
-@GameTestDontPrefix
+/*@Mod.EventBusSubscriber(modid = "moogs_structures", bus = Mod.EventBusSubscriber.Bus.MOD)
 *///?}
 public class EquipArmorStandProcessorTest {
 
 	private static final String PROCESSOR_JSON =
 		"{\"armor_sets\":[{\"armor\":{\"chest\":{\"id\":\"minecraft:diamond_chestplate\",\"count\":1}},\"weight\":1}]}";
 
+	//? if >=1.21.5 {
+	/*@SubscribeEvent
+	public static void registerTestFunctions(RegisterEvent event) {
+		event.register(Registries.TEST_FUNCTION, helper -> helper.register(
+			ResourceLocation.fromNamespaceAndPath("moogs_structures", "forge_native_hook_equips"),
+			EquipArmorStandProcessorTest::forgeNativeHookEquips));
+	}
+
+	*///?}
 	// Calls Forge's NATIVE processEntity signature (the one structure placement invokes), NOT MSL's
 	// overload. Before the forge bridge this runs Forge's no-op default and the stand stays unequipped.
 	//? if <1.21.5 {
 	@GameTest(template = "armor_stand_processor_test_empty")
-	//?} else {
-	/*@GameTest(structure = "armor_stand_processor_test_empty")
-	*///?}
+	//?}
 	public static void forgeNativeHookEquips(GameTestHelper helper) {
 		var ops = RegistryOps.create(JsonOps.INSTANCE, helper.getLevel().registryAccess());
 		EquipArmorStandProcessor processor = EquipArmorStandProcessor.CODEC
