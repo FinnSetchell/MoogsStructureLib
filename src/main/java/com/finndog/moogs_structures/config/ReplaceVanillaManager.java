@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 /**
@@ -122,6 +123,16 @@ public final class ReplaceVanillaManager {
     public static boolean isEnabled(String modid, String vanillaKey) {
         Replacement r = BY_VANILLA_KEY.get(modid + "/" + vanillaKey);
         return r != null && MslConfig.get().presetEnabled(r.modid(), r.presetId(), r.defaultEnabled());
+    }
+
+    /** The name of the preset holding this replacement, as the config screen shows it, if an installed mod declares it. */
+    public static Optional<String> presetName(String modid, String vanillaKey) {
+        Replacement r = BY_VANILLA_KEY.get(modid + "/" + vanillaKey);
+        if (r == null) return Optional.empty();
+        return PRESETS.stream()
+                .filter(p -> p.modid().equals(r.modid()) && p.presetId().equals(r.presetId()))
+                .map(PresetInfo::name)
+                .findFirst();
     }
 
     /** True when any replacement targeting this vanilla structure is currently enabled. */

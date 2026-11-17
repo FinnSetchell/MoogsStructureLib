@@ -1,0 +1,16 @@
+{
+  "presets": [
+    {
+      "id": "msl_test_preset",
+      "name": "MSL Test Preset",
+      "description": "Only in MSL's game tests: a replacement for a structure that doesn't exist, for sets to follow.",
+      "default_enabled": false,
+      "replacements": [
+        {
+          "vanilla_key": "msl_test",
+          "vanilla_structure": "moogs_structures:msl_test_no_such_structure"
+        }
+      ]
+    }
+  ]
+}

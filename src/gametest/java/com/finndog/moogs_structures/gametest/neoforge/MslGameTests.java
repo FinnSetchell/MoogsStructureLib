@@ -180,6 +180,7 @@ public class MslGameTests {
         tests.put("versioned_element_needs_a_template", MslGameTests::versionedElementNeedsATemplate);
         tests.put("version_ranges", MslGameTests::versionRanges);
         tests.put("spread_spacing_above_separation", MslGameTests::spreadSpacingAboveSeparation);
+        tests.put("spread_generates_values", MslGameTests::spreadGeneratesValues);
         tests.put("nether_y_allowance_order", MslGameTests::netherYAllowanceOrder);
         tests.put("rail_rotation_every_shape", MslGameTests::railRotationEveryShape);
         tests.put("follow_floor_onto_a_step", MslGameTests::followFloorOntoAStep);
@@ -198,6 +199,8 @@ public class MslGameTests {
         tests.put("footprint_in_liquid_share", MslGameTests::footprintInLiquidShare);
         tests.put("biome_radius_reads_the_corner_height", MslGameTests::biomeRadiusReadsTheCornerHeight);
         tests.put("disabled_set_skipped_by_searches", MslGameTests::disabledSetSkippedBySearches);
+        tests.put("sets_follow_their_replacement", MslGameTests::setsFollowTheirReplacement);
+        tests.put("set_off_for_its_replacement_pushes_nothing_away", MslGameTests::setOffForItsReplacementPushesNothingAway);
         tests.put("cached_height_matches_the_generator", MslGameTests::cachedHeightMatchesTheGenerator);
         tests.put("height_cache_lets_go_of_a_closed_world", MslGameTests::heightCacheLetsGoOfAClosedWorld);
         return tests;
@@ -324,6 +327,30 @@ public class MslGameTests {
         accepted(helper, StructurePlacement.CODEC, spread + "\"spacing\":6,\"separation\":2}", wrong);
         accepted(helper, StructurePlacement.CODEC, spread + "\"spacing\":6,\"separation\":2,\"frequency\":0.5,"
                 + "\"when_replacing\":{\"modid\":\"moogs_structures\",\"vanilla_key\":\"fortress\",\"spacing\":4,\"separation\":1}}", wrong);
+        finish(helper, wrong);
+    }
+
+    /**
+     * advanced_random_spread's generates is always (the default), when_replacing or unless_replacing; the last two
+     * need a when_replacing naming the replacement they follow, whose spacing pair is then optional, both or neither.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void spreadGeneratesValues(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        String spread = "{\"type\":\"moogs_structures:advanced_random_spread\",\"salt\":1,\"spacing\":6,\"separation\":2,";
+        String follows = "\"when_replacing\":{\"modid\":\"moogs_structures\",\"vanilla_key\":\"msl_test\"";
+        accepted(helper, StructurePlacement.CODEC, spread + "\"generates\":\"always\"}", wrong);
+        accepted(helper, StructurePlacement.CODEC, spread + "\"generates\":\"when_replacing\"," + follows + "}}", wrong);
+        accepted(helper, StructurePlacement.CODEC, spread + "\"generates\":\"unless_replacing\"," + follows + "}}", wrong);
+        accepted(helper, StructurePlacement.CODEC, spread + "\"generates\":\"when_replacing\"," + follows + ",\"spacing\":4,\"separation\":1}}", wrong);
+        accepted(helper, StructurePlacement.CODEC, spread + follows + "}}", wrong);
+        refused(helper, StructurePlacement.CODEC, spread + "\"generates\":\"sometimes\"," + follows + "}}", "sometimes", wrong);
+        refused(helper, StructurePlacement.CODEC, spread + "\"generates\":\"when_replacing\"}", "needs a when_replacing", wrong);
+        refused(helper, StructurePlacement.CODEC, spread + "\"generates\":\"unless_replacing\"}", "needs a when_replacing", wrong);
+        refused(helper, StructurePlacement.CODEC, spread + follows + ",\"spacing\":4}}", "both spacing and separation", wrong);
+        refused(helper, StructurePlacement.CODEC, spread + follows + ",\"separation\":1}}", "both spacing and separation", wrong);
         finish(helper, wrong);
     }
 
@@ -1179,6 +1206,106 @@ public class MslGameTests {
             wrong.add("turned back on, the set still refuses its chunk");
         }
         finish(helper, wrong);
+    }
+
+    /**
+     * A set that generates only when replacing, or only unless replacing, starts nothing while the preset holding its
+     * replacement is in the other state: generation skips its chunks, and a search is told there's no start there
+     * before the structure is asked or the chunk loaded. A set without generates is on either way. Switching the
+     * preset applies at once, both ways.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void setsFollowTheirReplacement(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        Optional<ReplaceVanillaManager.PresetInfo> preset = testPreset();
+        if (preset.isEmpty()) {
+            wrong.add("the test preset did not load");
+            finish(helper, wrong);
+            return;
+        }
+        testPiece(helper);
+        ServerLevel level = helper.getLevel();
+        var state = level.getChunkSource().getGeneratorState();
+        String follows = "\"when_replacing\":{\"modid\":\"moogs_structures\",\"vanilla_key\":\"msl_test\",\"spacing\":6,\"separation\":2}";
+        AdvancedRandomSpread whileReplacing = spread(level, 21, "\"generates\":\"when_replacing\"," + follows);
+        AdvancedRandomSpread unlessReplacing = spread(level, 22, "\"generates\":\"unless_replacing\"," + follows);
+        AdvancedRandomSpread always = spread(level, 23, follows);
+        Structure structure = decode(helper, generic(""));
+        boolean was = ReplaceVanillaManager.isPresetEnabled(preset.get());
+        try {
+            for (boolean replacing : new boolean[]{false, true, false}) {
+                ReplaceVanillaManager.setPresetEnabled(preset.get(), replacing);
+                String when = replacing ? "replacing" : "not replacing";
+                expectSearch(level, whileReplacing, structure, farChunk(whileReplacing, state), state, replacing, "when_replacing set, " + when, wrong);
+                expectSearch(level, unlessReplacing, structure, farChunk(unlessReplacing, state), state, !replacing, "unless_replacing set, " + when, wrong);
+                expectSearch(level, always, structure, farChunk(always, state), state, true, "set without generates, " + when, wrong);
+            }
+        } finally {
+            ReplaceVanillaManager.setPresetEnabled(preset.get(), was);
+        }
+        finish(helper, wrong);
+    }
+
+    /**
+     * A set kept off by generates pushes no other set away: a set whose exclusion_zone or super_exclusion_zone names
+     * msl_test_while_replacing (a chunk every 3 a side while on) keeps its chunk while not replacing, and loses it
+     * once the preset is on.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void setOffForItsReplacementPushesNothingAway(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        Optional<ReplaceVanillaManager.PresetInfo> preset = testPreset();
+        if (preset.isEmpty()) {
+            wrong.add("the test preset did not load");
+            finish(helper, wrong);
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+        var state = level.getChunkSource().getGeneratorState();
+        String named = "\"moogs_structures:msl_test_while_replacing\"";
+        Map<String, AdvancedRandomSpread> neighbours = new LinkedHashMap<>();
+        neighbours.put("exclusion_zone", spread(level, 31, "\"exclusion_zone\":{\"other_set\":" + named + ",\"chunk_count\":4}"));
+        neighbours.put("super_exclusion_zone", spread(level, 32, "\"super_exclusion_zone\":{\"other_set\":[" + named + "],\"chunk_count\":4}"));
+        boolean was = ReplaceVanillaManager.isPresetEnabled(preset.get());
+        try {
+            for (boolean replacing : new boolean[]{false, true, false}) {
+                ReplaceVanillaManager.setPresetEnabled(preset.get(), replacing);
+                String when = replacing ? "replacing" : "not replacing";
+                for (Map.Entry<String, AdvancedRandomSpread> neighbour : neighbours.entrySet()) {
+                    int[] xz = xz(farChunk(neighbour.getValue(), state));
+                    if (neighbour.getValue().isStructureChunk(state, xz[0], xz[1]) == replacing) {
+                        wrong.add(when + ": the set with an " + neighbour.getKey() + " naming the when_replacing set "
+                                + (replacing ? "kept" : "lost") + " its chunk");
+                    }
+                }
+            }
+        } finally {
+            ReplaceVanillaManager.setPresetEnabled(preset.get(), was);
+        }
+        finish(helper, wrong);
+    }
+
+    private static Optional<ReplaceVanillaManager.PresetInfo> testPreset() {
+        return ReplaceVanillaManager.getPresets().stream()
+                .filter(p -> p.modid().equals("moogs_structures") && p.presetId().equals("msl_test_preset"))
+                .findFirst();
+    }
+
+    /** An advanced_random_spread with spacing 6 and separation 2, this salt and these fields. */
+    private static AdvancedRandomSpread spread(ServerLevel level, int salt, String fields) {
+        return (AdvancedRandomSpread) StructurePlacement.CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, level.registryAccess()),
+                JsonParser.parseString("{\"type\":\"moogs_structures:advanced_random_spread\",\"salt\":" + salt
+                        + ",\"spacing\":6,\"separation\":2," + fields + "}"))
+                .getOrThrow();
+    }
+
+    /** The chunk this set tries nearest chunk 3000, 3000, far from anything generated. */
+    private static ChunkPos farChunk(AdvancedRandomSpread spread, net.minecraft.world.level.chunk.ChunkGeneratorStructureState state) {
+        return spread.getPotentialStructureChunk(state.getLevelSeed(), 3000, 3000);
     }
 
     private static void expectSearch(ServerLevel level, AdvancedRandomSpread spread, Structure structure, ChunkPos chunk,
