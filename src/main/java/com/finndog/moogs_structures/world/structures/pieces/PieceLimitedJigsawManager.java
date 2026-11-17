@@ -1060,43 +1060,19 @@ public class PieceLimitedJigsawManager {
                                     candidateJigsawBlockY = surfaceHeight + candidateJigsawYOffsetNeeded / 2;
                                 }
 
-                                // Add the junction to the existing piece
-                                //? if <1.21.5 {
-                                piece.addJunction(
-                                        new JigsawJunction(
-                                                jigsawBlockTargetPos.getX(),
-                                                candidateJigsawBlockY - jigsawBlockRelativeY + newPieceGroundLevelDelta,
-                                                jigsawBlockTargetPos.getZ(),
-                                                candidateJigsawYOffsetNeeded,
-                                                candidatePlacementBehavior)
-                                );
-                                //?} else {
-                                /*piece.addJunction(new JigsawJunction(
+                                // Add a junction to each piece, naming the projection of the piece at its other end, as vanilla does
+                                piece.addJunction(new JigsawJunction(
                                         jigsawBlockTargetPos.getX(),
                                         candidateJigsawBlockY - jigsawBlockRelativeY + newPieceGroundLevelDelta,
                                         jigsawBlockTargetPos.getZ(),
                                         candidateJigsawYOffsetNeeded,
-                                        piecePlacementBehavior));
-                                *///?}
-
-                                // Add the junction to the new piece
-                                //? if <1.21.5 {
-                                newPiece.addJunction(
-                                        new JigsawJunction(
-                                                jigsawBlockPos.getX(),
-                                                candidateJigsawBlockY - candidateJigsawBlockRelativeY + groundLevelDelta,
-                                                jigsawBlockPos.getZ(),
-                                                -candidateJigsawYOffsetNeeded,
-                                                piecePlacementBehavior)
-                                );
-                                //?} else {
-                                /*newPiece.addJunction(new JigsawJunction(
+                                        candidatePlacementBehavior));
+                                newPiece.addJunction(new JigsawJunction(
                                         jigsawBlockPos.getX(),
                                         candidateJigsawBlockY - candidateJigsawBlockRelativeY + groundLevelDelta,
                                         jigsawBlockPos.getZ(),
                                         -candidateJigsawYOffsetNeeded,
                                         piecePlacementBehavior));
-                                *///?}
 
                                 // Add the piece
                                 this.structurePieces.add(newPiece);
