@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Discord community
+    url: https://moogsmods.com/discord?r=github
+    about: For quick questions, modpack help, or general chat, Discord is the fastest place to get a reply.
+  - name: Ko-fi
+    url: https://ko-fi.com/finndog
+    about: Support development with a one-time tip or monthly subscription.

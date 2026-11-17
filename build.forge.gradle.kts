@@ -33,6 +33,22 @@ sourceSets.main {
     resources.srcDir(rootProject.file("src/forge/resources"))
 }
 
+// Forge's dev launcher makes each folder on the run classpath its own module. With classes and resources in
+// two folders, MSL's classes end up in two modules and runServer, runClient and runGameTestServer fail to
+// start, so each source set gets one output folder, as in Forge's MDK.
+sourceSets.configureEach {
+    val dir = layout.buildDirectory.dir("sourcesSets/$name")
+    output.setResourcesDir(dir)
+    java.destinationDirectory.set(dir)
+}
+
+// Forge 52 (1.21.1) publishes accesstransformers and modlauncher asking for jopt-simple 6.0-alpha-3, which wins
+// the version conflict, but its modlauncher needs 5.0.4 (module jopt.simple), the version Forge's installer
+// ships, so the 1.21.1 dev runs fail to start. Every other node resolves 5.0.4 already.
+configurations.runtimeClasspath {
+    resolutionStrategy.force("net.sf.jopt-simple:jopt-simple:5.0.4")
+}
+
 minecraft {
     mappings("official", mcBuild)
     accessTransformers.from(atFile)
@@ -41,6 +57,9 @@ minecraft {
         // Per-node game directory, so worlds are never opened by a different Minecraft version.
         configureEach {
             workingDir.set(rootProject.file("run/${project.name}"))
+            // A jar names its mixin configs in its manifest; a dev run loads MSL from a folder, which has none,
+            // so without these MSL's mixins are never applied in dev runs and GameTests.
+            mixinConfigs.split(',').forEach { args("--mixin.config", it) }
         }
         register("client")
         register("server") { args("--nogui") }
