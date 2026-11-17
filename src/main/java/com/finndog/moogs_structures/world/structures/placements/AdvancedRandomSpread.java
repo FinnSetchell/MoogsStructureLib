@@ -8,9 +8,7 @@ import com.finndog.moogs_structures.modinit.MoogsStructuresStructurePlacementTyp
 //?}
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-//? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
-//?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -48,11 +46,9 @@ import java.util.Set;
 //?}
 
 public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
-    //? if >=1.20.6 {
-    public static final MapCodec<AdvancedRandomSpread> CODEC = RecordCodecBuilder.<AdvancedRandomSpread>mapCodec((instance) -> instance.group(
-    //?} else {
-    /*public static final Codec<AdvancedRandomSpread> CODEC = RecordCodecBuilder.<AdvancedRandomSpread>create((instance) -> instance.group(
-    *///?}
+    // A MapCodec on every version. Before 1.20.6 the placement type hands the game a Codec, and the type dispatch reads
+    // the fields inline only from a MapCodec's own codec; from any other codec it reads them under a "value" key.
+    private static final MapCodec<AdvancedRandomSpread> MAP_CODEC = RecordCodecBuilder.<AdvancedRandomSpread>mapCodec((instance) -> instance.group(
             Vec3i.offsetCodec(16).optionalFieldOf("locate_offset", Vec3i.ZERO).forGetter(AdvancedRandomSpread::locateOffset),
             FrequencyReductionMethod.CODEC.optionalFieldOf("frequency_reduction_method", FrequencyReductionMethod.DEFAULT).forGetter(AdvancedRandomSpread::frequencyReductionMethod),
             Codec.floatRange(0.0F, 1.0F).optionalFieldOf("frequency", 1.0F).forGetter(AdvancedRandomSpread::frequency),
@@ -68,6 +64,12 @@ public class AdvancedRandomSpread extends RandomSpreadStructurePlacement {
             StrictOptionalField.of(ReplacementSpacing.CODEC, "when_replacing").forGetter(p -> p.whenReplacing),
             StrictOptionalField.of(Generates.CODEC, "generates", Generates.ALWAYS).forGetter(p -> p.generates)
     ).apply(instance, instance.stable(AdvancedRandomSpread::new))).flatXmap(AdvancedRandomSpread::followsAReplacement, DataResult::success);
+
+    //? if >=1.20.6 {
+    public static final MapCodec<AdvancedRandomSpread> CODEC = MAP_CODEC;
+    //?} else {
+    /*public static final Codec<AdvancedRandomSpread> CODEC = MAP_CODEC.codec();
+    *///?}
 
     private final int spacing;
     private final int separation;
