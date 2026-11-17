@@ -23,6 +23,7 @@ val gametestFiles = listOf(
     "com/finndog/moogs_structures/gametest/**",
     "data/minecraft/structure/moogs_structures.armor_stand_processor_test_empty.nbt",
     "data/moogs_structures/structure/armor_stand_processor_test_empty.nbt",
+    "data/moogs_structures/structure/equiparmorstandprocessortest.armor_stand_processor_test_empty.nbt",
     "data/moogs_structures/test_instance/**",
     "$modId-forge-gametest.mixins.json",
 )
