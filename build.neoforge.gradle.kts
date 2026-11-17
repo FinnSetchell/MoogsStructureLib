@@ -100,6 +100,14 @@ tasks {
         from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
     }
 
+    // The gametest structure files sit in 1.21's `structure` folder. Minecraft before 1.21 reads `structures`.
+    if (sc.current.parsed < "1.21") {
+        named<ProcessResources>(gametest.processResourcesTaskName) {
+            eachFile { path = path.replace(Regex("^data/([^/]+)/structure/"), "data/\$1/structures/") }
+            includeEmptyDirs = false
+        }
+    }
+
     jar {
         from(rootProject.file("LICENSE")) { rename { "${it}_${modName}" } }
         manifest {
