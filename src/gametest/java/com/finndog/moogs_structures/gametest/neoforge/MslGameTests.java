@@ -121,8 +121,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 /**
  * MSL's deterministic checks, on a headless game test server: what its codecs refuse (and the message),
  * what its version ranges pick, and what its terrain-reading processors do to a template placed over
- * ground built in the test's own arena. Structures generating in a real world are the mod-director
- * suite's (mod-director/suites/msl) and the structure tester's.
+ * ground built in the test's own arena.
  *
  * <p>Each test is one static method; below 1.21.5 the annotations register them, from 1.21.5 the event
  * registers the same methods as test instances. Run with {@code ./gradlew :<node>:runGameTestServer}.
