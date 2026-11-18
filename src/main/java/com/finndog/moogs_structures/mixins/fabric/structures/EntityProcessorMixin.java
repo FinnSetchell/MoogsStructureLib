@@ -147,8 +147,10 @@ public class EntityProcessorMixin {
                 entityNbt.put("Pos", listTag);
                 entityNbt.remove("UUID");
                 moogs_structures$tryCreateEntity(serverLevelAccessor, entityNbt).ifPresent((entity) -> {
+                    // The game's yaw, mirror(yaw) + turn. Mirrored first, so a hanging entity turns its facing the
+                    // way its wall's blocks turn (see HangingEntityAnchorProcessor).
                     float f = entity.mirror(ctx.structurePlaceSettings().getMirror());
-                    f += entity.getYRot() - entity.rotate(ctx.structurePlaceSettings().getRotation());
+                    f += entity.rotate(ctx.structurePlaceSettings().getRotation()) - entity.getYRot();
                     //? if <1.21.5 {
                     entity.moveTo(entityPos.x, entityPos.y, entityPos.z, f, entity.getXRot());
                     //?} else {
