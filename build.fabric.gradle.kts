@@ -120,10 +120,11 @@ tasks {
         from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
     }
 
-    // The Fabric tests only need the empty arena; the rest of src/gametest/resources is NeoForge's test datapack.
-    // Minecraft before 1.21 reads structure files from `structures`.
+    // The Fabric tests only need the empty arena and one trial spawner config; the rest of src/gametest/resources is
+    // NeoForge's test datapack. Minecraft before 1.21 reads structure files from `structures`.
     named<ProcessResources>(gametest.processResourcesTaskName) {
-        include("fabric.mod.json", "data/moogs_structures/structure/msl_arena.nbt")
+        include("fabric.mod.json", "data/moogs_structures/structure/msl_arena.nbt",
+            "data/moogs_structures/trial_spawner/gametest_guardian.json")
         if (sc.current.parsed < "1.21") {
             eachFile { path = path.replace("/structure/", "/structures/") }
         }

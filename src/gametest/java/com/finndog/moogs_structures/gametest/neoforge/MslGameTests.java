@@ -5,6 +5,7 @@ import com.finndog.moogs_structures.mixins.structures.SinglePoolElementAccessor;
 import com.finndog.moogs_structures.utils.BoxOctree;
 import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
+import com.finndog.moogs_structures.gametest.SpawnerMobNbtCheck;
 import com.finndog.moogs_structures.utils.GeneralUtils;
 import com.finndog.moogs_structures.utils.VersionResolver;
 import com.finndog.moogs_structures.world.processors.RailRotationProcessor;
@@ -207,6 +208,7 @@ public class MslGameTests {
         tests.put("set_off_for_its_replacement_pushes_nothing_away", MslGameTests::setOffForItsReplacementPushesNothingAway);
         tests.put("cached_height_matches_the_generator", MslGameTests::cachedHeightMatchesTheGenerator);
         tests.put("height_cache_lets_go_of_a_closed_world", MslGameTests::heightCacheLetsGoOfAClosedWorld);
+        tests.put("spawner_mobs_keep_their_nbt", MslGameTests::spawnerMobsKeepTheirNbt);
         return tests;
     }
 
@@ -1615,6 +1617,14 @@ public class MslGameTests {
     }
 
     // ------------------------------------------------------------------ spawners
+
+    /** Mob NBT written once for an old version, with nbt_version, comes out whole on this one. */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void spawnerMobsKeepTheirNbt(GameTestHelper helper) {
+        finish(helper, SpawnerMobNbtCheck.run(helper));
+    }
 
     //? if <1.21.5 {
     /**

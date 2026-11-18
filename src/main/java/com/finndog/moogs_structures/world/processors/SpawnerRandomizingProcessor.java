@@ -6,6 +6,7 @@ import com.finndog.moogs_structures.modinit.MoogsStructuresProcessors;
 //? if <1.21.5 {
 import com.finndog.moogs_structures.utils.LegacyDropChances;
 //?}
+import com.finndog.moogs_structures.utils.MobNbtUpgrader;
 import com.mojang.serialization.Codec;
 //? if >=1.20.6 {
 import com.mojang.serialization.MapCodec;
@@ -68,7 +69,8 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("required_player_range").orElse(16).forGetter(p -> p.requiredPlayerRange),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("spawn_count").orElse(4).forGetter(p -> p.spawnCount),
             Codec.intRange(0, Integer.MAX_VALUE).fieldOf("spawn_range").orElse(4).forGetter(p -> p.spawnRange),
-            BlockState.CODEC.fieldOf("spawner_replacement_block").orElse(Blocks.AIR.defaultBlockState()).forGetter(p -> p.replacementState)
+            BlockState.CODEC.fieldOf("spawner_replacement_block").orElse(Blocks.AIR.defaultBlockState()).forGetter(p -> p.replacementState),
+            MobNbtUpgrader.VERSION_CODEC.optionalFieldOf("nbt_version").forGetter(p -> p.nbtVersion)
     ).apply(instance, instance.stable(SpawnerRandomizingProcessor::new)));
 
     public final List<WeightedEntity> weightedEntities;
@@ -80,10 +82,13 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
     public final int spawnCount;
     public final int spawnRange;
     public final BlockState replacementState;
+    /** The Minecraft version the entities' nbt is written for; it is upgraded to the running version. */
+    public final Optional<MobNbtUpgrader.NbtVersion> nbtVersion;
 
     private SpawnerRandomizingProcessor(List<WeightedEntity> weightedEntities,
                                         int delay, int maxNearbyEntities, int maxSpawnDelay, int minSpawnDelay,
-                                        int requiredPlayerRange, int spawnCount, int spawnRange, BlockState replacementState) {
+                                        int requiredPlayerRange, int spawnCount, int spawnRange, BlockState replacementState,
+                                        Optional<MobNbtUpgrader.NbtVersion> nbtVersion) {
         this.weightedEntities = weightedEntities;
         this.delay = delay;
         this.maxNearbyEntities = maxNearbyEntities;
@@ -93,6 +98,7 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
         this.spawnCount = spawnCount;
         this.spawnRange = spawnRange;
         this.replacementState = replacementState;
+        this.nbtVersion = nbtVersion;
     }
 
     @Override
@@ -134,8 +140,10 @@ public class SpawnerRandomizingProcessor extends StructureProcessor {
         ResourceLocation entityRL = BuiltInRegistries.ENTITY_TYPE.getKey(entry.entity());
 
         // Build entity compound: merge optional custom NBT first, then set authoritative id.
-        CompoundTag entityData = new CompoundTag();
-        entry.nbt().ifPresent(nbt -> entityData.merge(nbt.copy()));
+        CompoundTag mob = new CompoundTag();
+        entry.nbt().ifPresent(nbt -> mob.merge(nbt.copy()));
+        mob.putString("id", entityRL.toString());
+        CompoundTag entityData = nbtVersion.map(version -> MobNbtUpgrader.upgrade(mob, version)).orElse(mob);
         entityData.putString("id", entityRL.toString());
         //? if <1.21.5 {
         // The nbt came from JSON, so its drop chances need to be floats for the mob to read them.

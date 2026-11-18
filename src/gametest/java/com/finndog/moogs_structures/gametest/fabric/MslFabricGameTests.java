@@ -1,6 +1,7 @@
 package com.finndog.moogs_structures.gametest.fabric;
 
 import com.finndog.moogs_structures.gametest.EntityFacingCheck;
+import com.finndog.moogs_structures.gametest.SpawnerMobNbtCheck;
 //? if <1.21.5 {
 import net.minecraft.gametest.framework.GameTest;
 //?} else {
@@ -25,7 +26,19 @@ public class MslFabricGameTests {
     /*@GameTest(structure = "moogs_structures:msl_arena", maxTicks = 100)
     *///?}
     public void entitiesFaceAsTheGamePlacesThem(GameTestHelper helper) {
-        List<String> wrong = EntityFacingCheck.run(helper);
+        finish(helper, EntityFacingCheck.run(helper));
+    }
+
+    //? if <1.21.5 {
+    @GameTest(template = "moogs_structures:msl_arena")
+    //?} else {
+    /*@GameTest(structure = "moogs_structures:msl_arena", maxTicks = 100)
+    *///?}
+    public void spawnerMobsKeepTheirNbt(GameTestHelper helper) {
+        finish(helper, SpawnerMobNbtCheck.run(helper));
+    }
+
+    private static void finish(GameTestHelper helper, List<String> wrong) {
         if (wrong.isEmpty()) {
             helper.succeed();
             return;
