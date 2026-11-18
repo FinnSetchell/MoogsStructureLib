@@ -44,6 +44,7 @@
 - The datapack list no longer shows this mod's datapack as incompatible on Minecraft 1.20.2 and newer
 - The Structures tab of this mod's settings now says when changes take effect with Forge and NeoForge too, as it already did with Fabric
 - Paintings in structures no longer end up one block too high or one block to the side, where they could overlap the painting next to them
+- Armour stands and mobs in turned parts of structures now face the right way with Fabric, instead of the opposite way
 
 ---
 
