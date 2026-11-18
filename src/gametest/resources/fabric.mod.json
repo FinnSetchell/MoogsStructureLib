@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "moogs_structures_gametest",
+  "version": "1.0.0",
+  "name": "Moog's Structure Lib game tests",
+  "description": "Dev-only game tests for Moog's Structure Lib on Fabric. Never shipped.",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": ["com.finndog.moogs_structures.gametest.fabric.MslFabricGameTests"]
+  },
+  "depends": {
+    "moogs_structures": "*"
+  }
+}
