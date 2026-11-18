@@ -14,6 +14,7 @@
 - Now works on Minecraft 1.21.9, with Fabric, Forge, and NeoForge
 - Mods can now keep a structure to the Minecraft versions that have its blocks, so it simply doesn't appear on older ones
 - Mods can now keep buildings from standing half over a lake or the sea
+- Structure mods can write a spawner's mob once, and its armour, weapons, name and health now carry over to every Minecraft version
 - Mods can now have some structures appear only while they replace a vanilla structure, or only while they don't
 
 ### Fixed
