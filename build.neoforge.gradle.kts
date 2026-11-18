@@ -27,6 +27,7 @@ sourceSets.main {
 
 // NeoForge's gametests live in their own source set, so they never reach the shipped jar.
 val gametest: SourceSet = sourceSets.create("gametest") {
+    java.exclude("**/fabric/**", "**/forge/**")
     compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.main.get().output
     runtimeClasspath += sourceSets.main.get().runtimeClasspath + sourceSets.main.get().output
 }
