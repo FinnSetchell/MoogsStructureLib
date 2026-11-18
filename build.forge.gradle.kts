@@ -157,10 +157,6 @@ tasks {
     // Forge's Minecraft setup must not run before Stonecutter has written the processed sources.
     withType<JavaCompile>().configureEach { dependsOn("stonecutterGenerate") }
 
-    // Shared classes a Forge node leaves out, e.g. config-screen widgets on a range where Forge's
-    // config is file-only and the GUI API differs from the version the shared code targets.
-    compileJava { exclude(prop("mod.forge_compile_excludes").split(',').filter { it.isNotBlank() }) }
-
     register<Copy>("buildAndCollect") {
         group = "build"
         description = "Builds the mod jar and copies it to build/libs/{mod version}/"

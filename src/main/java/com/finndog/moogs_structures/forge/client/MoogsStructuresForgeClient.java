@@ -2,6 +2,7 @@
 package com.finndog.moogs_structures.forge.client;
 
 import com.finndog.moogs_structures.client.ClothRequiredScreen;
+import com.finndog.moogs_structures.client.MoogsStructuresConfigScreen;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -27,7 +28,7 @@ public final class MoogsStructuresForgeClient {
                         //?} else {
                         /*(minecraft, parent) -> clothPresent
                         *///?}
-                                ? MoogsStructuresConfigScreenForge.create(parent)
+                                ? MoogsStructuresConfigScreen.create(parent)
                                 : new ClothRequiredScreen(parent)));
     }
 }

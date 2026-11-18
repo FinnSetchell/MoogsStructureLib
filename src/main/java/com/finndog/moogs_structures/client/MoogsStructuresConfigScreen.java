@@ -1,9 +1,5 @@
-package com.finndog.moogs_structures.fabric.client;
+package com.finndog.moogs_structures.client;
 
-import com.finndog.moogs_structures.client.ConfigTooltips;
-import com.finndog.moogs_structures.client.SpacingPreviewSliderEntry;
-import com.finndog.moogs_structures.client.StructureActionsEntry;
-import com.finndog.moogs_structures.client.SupportLinks;
 import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.PlatformConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
@@ -21,7 +17,9 @@ import java.util.List;
 
 /**
  * Builds the Cloth Config screen from the presets and structures discovered across all mods.
- * Only loaded when Cloth Config is present (see {@link ModMenuIntegration}).
+ * Shared by every loader. Each loader's client hook (Mod Menu on Fabric, the config-screen extension
+ * point on Forge and NeoForge) opens it only when Cloth Config is present, so nothing loads this
+ * class without Cloth. Client-only.
  */
 public final class MoogsStructuresConfigScreen {
     private MoogsStructuresConfigScreen() {}
