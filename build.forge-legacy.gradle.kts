@@ -153,7 +153,6 @@ tasks {
 
     named("createMinecraftArtifacts") { dependsOn("stonecutterGenerate") }
     withType<JavaCompile>().configureEach { dependsOn("stonecutterGenerate") }
-    compileJava { exclude(prop("mod.forge_compile_excludes").split(',').filter { it.isNotBlank() }) }
 
     register<Copy>("buildAndCollect") {
         group = "build"

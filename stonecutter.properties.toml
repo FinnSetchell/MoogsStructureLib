@@ -38,7 +38,6 @@ deps.forge = "46.0.14"
 deps.forge_range = "[46,)"
 deps.cloth_config = "11.0.99"
 deps.cloth_config_loader = "forge"
-mod.forge_compile_excludes = ""
 
 # ------------------------------------------------------------------ 1.20.5-1.20.6 (Java 21)
 ["1.20.6"]
@@ -88,7 +87,6 @@ deps.forge = "52.0.28"
 deps.forge_range = "[51,)"
 deps.cloth_config = "15.0.140"
 deps.cloth_config_loader = "forge"
-mod.forge_compile_excludes = ""
 
 [neoforge."1.21.1"]
 mod.mc_build = "1.21.1"
@@ -122,7 +120,6 @@ deps.forge = "53.1.0"
 deps.forge_range = "[53,)"
 deps.cloth_config = "16.0.143"
 deps.cloth_config_loader = "forge"
-mod.forge_compile_excludes = ""
 
 [neoforge."1.21.2"]
 mod.mc_build = "1.21.2"
@@ -155,7 +152,6 @@ deps.forge = "54.1.14"
 deps.forge_range = "[54,)"
 deps.cloth_config = "17.0.144"
 deps.cloth_config_loader = "forge"
-mod.forge_compile_excludes = ""
 
 [neoforge."1.21.4"]
 mod.mc_build = "1.21.4"
@@ -194,7 +190,6 @@ deps.forge = "55.1.0"
 deps.forge_range = "[55,)"
 deps.cloth_config = "18.0.145"
 deps.cloth_config_loader = "neoforge"
-mod.forge_compile_excludes = ""
 
 # NeoForge 1.21.5 only, for the same reason as Fabric: its settings screen draws with calls 1.21.6
 # removed. NeoForge 1.21.6-1.21.8 has its own node below.
@@ -242,8 +237,6 @@ deps.forge = "56.0.9"
 deps.forge_range = "[56,)"
 deps.cloth_config = "19.0.146"
 deps.cloth_config_loader = "neoforge"
-# Forge has no config screen here, so the config screen widgets are left out.
-mod.forge_compile_excludes = "**/client/SupportButton.java,**/client/SupportLinks.java"
 
 # ------------------------------------------------------------------ 1.21.9-1.21.10 (Java 21)
 # Compiled against 1.21.9, the older of the two, so it runs on both. 1.21.9 already has 1.21.10's
@@ -271,7 +264,6 @@ deps.forge = "59.0.0"
 deps.forge_range = "[59,)"
 deps.cloth_config = "20.0.149"
 deps.cloth_config_loader = "neoforge"
-mod.forge_compile_excludes = ""
 
 # NeoForge 21.9.14-beta is the first with FML's JarContents (FML 10.0.14), which the config code reads
 # mod files through; older 1.21.9 betas have neither that nor the findResource the older nodes use.
@@ -306,7 +298,6 @@ deps.forge = "61.1.0"
 deps.forge_range = "[61,)"
 deps.cloth_config = "21.11.153"
 deps.cloth_config_loader = "neoforge"
-mod.forge_compile_excludes = ""
 
 [neoforge."1.21.11"]
 mod.mc_build = "1.21.11"
@@ -341,7 +332,6 @@ deps.forge = "62.0.9"
 deps.forge_range = "[62,)"
 deps.cloth_config = "26.1.154"
 deps.cloth_config_loader = "neoforge"
-mod.forge_compile_excludes = ""
 
 [neoforge."26.1.2"]
 mod.mc_build = "26.1.2"
@@ -374,7 +364,6 @@ deps.forge = "65.1.2"
 deps.forge_range = "[65,)"
 deps.cloth_config = "26.2.155"
 deps.cloth_config_loader = "neoforge"
-mod.forge_compile_excludes = ""
 
 [neoforge."26.2"]
 mod.mc_build = "26.2"
@@ -407,7 +396,6 @@ deps.forge = "66.0.5"
 deps.forge_range = "[66,)"
 deps.cloth_config = "26.3.158"
 deps.cloth_config_loader = "neoforge"
-mod.forge_compile_excludes = ""
 
 [neoforge."26.3"]
 mod.mc_build = "26.3"

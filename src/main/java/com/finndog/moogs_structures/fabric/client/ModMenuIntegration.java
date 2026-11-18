@@ -1,6 +1,7 @@
 package com.finndog.moogs_structures.fabric.client;
 
 import com.finndog.moogs_structures.client.ClothRequiredScreen;
+import com.finndog.moogs_structures.client.MoogsStructuresConfigScreen;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import net.fabricmc.loader.api.FabricLoader;
