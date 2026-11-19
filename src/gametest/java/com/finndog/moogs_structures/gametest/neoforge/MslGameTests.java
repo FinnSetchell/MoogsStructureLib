@@ -202,6 +202,7 @@ public class MslGameTests {
         tests.put("version_gated_set_turned_off", MslGameTests::versionGatedSetTurnedOff);
         tests.put("liquid_check_at_start_piece_centre", MslGameTests::liquidCheckAtStartPieceCentre);
         tests.put("nether_structures_stay_under_the_roof", MslGameTests::netherStructuresStayUnderTheRoof);
+        tests.put("nether_lowest_corner", MslGameTests::netherLowestCorner);
         tests.put("footprint_in_liquid_share", MslGameTests::footprintInLiquidShare);
         tests.put("biome_radius_reads_the_corner_height", MslGameTests::biomeRadiusReadsTheCornerHeight);
         tests.put("disabled_set_skipped_by_searches", MslGameTests::disabledSetSkippedBySearches);
@@ -1232,13 +1233,43 @@ public class MslGameTests {
         finish(helper, wrong);
     }
 
+    /**
+     * burying_type LOWEST_CORNER on the Nether type: the land is searched for under each corner of the 5x5 start piece
+     * and the lowest is used. The ground is at y 60, and at y 55 under the piece's east side (from x 2 east of the chunk
+     * corner, the piece's middle). HIGHEST_LAND puts the base on the ground at 60 (55 with LOWEST_CORNER); LOWEST_LAND
+     * one above it, at 61 (56). The type refuses the other burying types, and LOWEST_CORNER with FIXED_HEIGHT.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void netherLowestCorner(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        buildPiece(helper, ROOF + "wide", new Vec3i(5, 3, 5));
+        int stepX = new ChunkPos(100, 100).getMinBlockX() + 2;
+        ChunkGenerator stepped = netherTerrain(helper, (x, y, z) -> y <= (x >= stepX ? 55 : 60) || y >= 118);
+        String bury = ",\"burying_type\":\"LOWEST_CORNER\"";
+        String highest = "\"land_search_direction\":\"HIGHEST_LAND\",\"start_height\":{\"absolute\":0}";
+        String lowest = "\"land_search_direction\":\"LOWEST_LAND\",\"start_height\":{\"absolute\":0}";
+        netherStart(helper, stepped, "wide", highest, 60, 2, "HIGHEST_LAND", wrong);
+        netherStart(helper, stepped, "wide", highest + bury, 55, 2, "HIGHEST_LAND with LOWEST_CORNER", wrong);
+        netherStart(helper, stepped, "wide", lowest, 61, 2, "LOWEST_LAND", wrong);
+        netherStart(helper, stepped, "wide", lowest + bury, 56, 2, "LOWEST_LAND with LOWEST_CORNER", wrong);
+        refused(helper, Structure.DIRECT_CODEC, netherJson("wide", highest + ",\"burying_type\":\"AVERAGE_LAND\""), "only take burying_type LOWEST_CORNER", wrong);
+        refused(helper, Structure.DIRECT_CODEC, netherJson("wide", "\"land_search_direction\":\"FIXED_HEIGHT\",\"start_height\":{\"absolute\":40}" + bury), "needs a land search", wrong);
+        refused(helper, Structure.DIRECT_CODEC, netherJson("wide", highest + ",\"burying_type\":\"SIDEWAYS\""), "", wrong);
+        finish(helper, wrong);
+    }
+
     private static final String ROOF = "gametest/roof/";
 
     /** Lays out a 14-row Nether structure from this start piece with these placement fields, and checks where it lands. */
     private static void roofStart(GameTestHelper helper, ChunkGenerator terrain, String start, String placement, int wantBase, String what, List<String> wrong) {
-        Structure structure = decode(helper, "{\"type\":\"moogs_structures:moogs_structures_generic_nether_jigsaw_structure\",\"start_pool\":{\"fallback\":\"minecraft:empty\",\"elements\":[{\"weight\":1,\"element\":"
-                + "{\"element_type\":\"minecraft:single_pool_element\",\"location\":\"moogs_structures:" + ROOF + start + "\",\"processors\":\"minecraft:empty\",\"projection\":\"rigid\"}}]},"
-                + "\"size\":1,\"biomes\":\"#minecraft:is_nether\",\"step\":\"surface_structures\",\"spawn_overrides\":{}," + placement + "}");
+        netherStart(helper, terrain, start, placement, wantBase, 13, what, wrong);
+    }
+
+    /** Lays out a Nether structure from this start piece with these placement fields, and checks its base and its top, {@code height} rows above. */
+    private static void netherStart(GameTestHelper helper, ChunkGenerator terrain, String start, String placement, int wantBase, int height, String what, List<String> wrong) {
+        Structure structure = decode(helper, netherJson(start, placement));
         Optional<Structure.GenerationStub> stub = structure.findValidGenerationPoint(context(helper, terrain, new ChunkPos(100, 100)));
         if (stub.isEmpty()) {
             wrong.add(start + " " + what + ": didn't spawn");
@@ -1247,9 +1278,16 @@ public class MslGameTests {
         List<StructurePiece> pieces = stub.get().getPiecesBuilder().build().pieces();
         int base = pieces.get(0).getBoundingBox().minY();
         int top = pieces.stream().mapToInt(piece -> piece.getBoundingBox().maxY()).max().orElseThrow();
-        if (base != wantBase || top != wantBase + 13) {
-            wrong.add(start + " " + what + ": from y " + base + " to " + top + " in " + pieces.size() + " pieces, not " + wantBase + " to " + (wantBase + 13));
+        if (base != wantBase || top != wantBase + height) {
+            wrong.add(start + " " + what + ": from y " + base + " to " + top + " in " + pieces.size() + " pieces, not " + wantBase + " to " + (wantBase + height));
         }
+    }
+
+    /** A Nether structure whose start pool is this test piece alone, size 1, with these placement fields. */
+    private static String netherJson(String start, String placement) {
+        return "{\"type\":\"moogs_structures:moogs_structures_generic_nether_jigsaw_structure\",\"start_pool\":{\"fallback\":\"minecraft:empty\",\"elements\":[{\"weight\":1,\"element\":"
+                + "{\"element_type\":\"minecraft:single_pool_element\",\"location\":\"moogs_structures:" + ROOF + start + "\",\"processors\":\"minecraft:empty\",\"projection\":\"rigid\"}}]},"
+                + "\"size\":1,\"biomes\":\"#minecraft:is_nether\",\"step\":\"surface_structures\",\"spawn_overrides\":{}," + placement + "}";
     }
 
     /**
@@ -1550,24 +1588,34 @@ public class MslGameTests {
         return new PuddleGenerator(flat.settings(), wet);
     }
 
-    /** The test world's flat generator made 128 tall like the Nether, with the terrain netherTerrainColumn describes. */
+    /**
+     * The test world's flat generator made 128 tall like the Nether, lava sea at 32, the same column everywhere: rock
+     * to y 60, air to 70, a ledge of rock to 85, then air, and from y 118 the roof's rock (air when not {@code roofed}).
+     */
     private static ChunkGenerator netherTerrain(GameTestHelper helper, boolean roofed) {
+        return netherTerrain(helper, (x, y, z) -> y <= 60 || (y >= 71 && y <= 85) || (roofed && y >= 118));
+    }
+
+    /** The same, with rock wherever {@code rock} says. */
+    private static ChunkGenerator netherTerrain(GameTestHelper helper, Rock rock) {
         if (!(helper.getLevel().getChunkSource().getGenerator() instanceof FlatLevelSource flat)) {
             throw new IllegalStateException("the game test world isn't flat");
         }
-        return new NetherTerrainGenerator(flat.settings(), roofed);
+        return new NetherTerrainGenerator(flat.settings(), rock);
     }
 
-    /**
-     * The same column everywhere, y 0 to 127 like the Nether, lava sea at 32: rock to y 60, air to 70, a ledge of rock
-     * to 85, then air, and from y 118 the roof's rock (air when not {@code roofed}).
-     */
-    private static final class NetherTerrainGenerator extends FlatLevelSource {
-        private final boolean roofed;
+    /** Whether the test terrain has rock at a spot. */
+    private interface Rock {
+        boolean at(int x, int y, int z);
+    }
 
-        private NetherTerrainGenerator(FlatLevelGeneratorSettings settings, boolean roofed) {
+    /** Terrain y 0 to 127 like the Nether, lava sea at 32, netherrack where {@code rock} says and air elsewhere. */
+    private static final class NetherTerrainGenerator extends FlatLevelSource {
+        private final Rock rock;
+
+        private NetherTerrainGenerator(FlatLevelGeneratorSettings settings, Rock rock) {
             super(settings);
-            this.roofed = roofed;
+            this.rock = rock;
         }
 
         @Override
@@ -1589,8 +1637,7 @@ public class MslGameTests {
         public NoiseColumn getBaseColumn(int x, int z, LevelHeightAccessor level, RandomState random) {
             BlockState[] states = new BlockState[128];
             for (int y = 0; y < 128; y++) {
-                boolean rock = y <= 60 || (y >= 71 && y <= 85) || (this.roofed && y >= 118);
-                states[y] = rock ? Blocks.NETHERRACK.defaultBlockState() : Blocks.AIR.defaultBlockState();
+                states[y] = this.rock.at(x, y, z) ? Blocks.NETHERRACK.defaultBlockState() : Blocks.AIR.defaultBlockState();
             }
             return new NoiseColumn(0, states);
         }
