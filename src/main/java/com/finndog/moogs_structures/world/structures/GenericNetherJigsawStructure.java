@@ -26,8 +26,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.levelgen.LegacyRandomSource;
-import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.heightproviders.HeightProvider;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
@@ -174,15 +172,15 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             NoiseColumn column = chunkGenerator.getBaseColumn(blockPos.getX(), blockPos.getZ(), context.heightAccessor(), context.randomState());
             return !column.getBlock(blockPos.getY() + this.ledgeOffsetY.orElse(0)).getFluidState().isEmpty();
         }
-        return noLand(context, this.findLand(context, new BoundingBox(blockPos)));
+        return noLand(context, this.findLand(context, new BoundingBox(blockPos), Integer.MAX_VALUE));
     }
 
-    /** The land the placement searches for, at the middle column of {@code around}. */
-    private BlockPos findLand(GenerationContext context, BoundingBox around) {
+    /** The land the placement searches for, at the middle column of {@code around}, at or under {@code highestY}. */
+    private BlockPos findLand(GenerationContext context, BoundingBox around, int highestY) {
         if (this.searchDirection == LAND_SEARCH_DIRECTION.HIGHEST_LAND) {
-            return GeneralUtils.getHighestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid);
+            return GeneralUtils.getHighestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid, highestY);
         }
-        return GeneralUtils.getLowestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid);
+        return GeneralUtils.getLowestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid, highestY);
     }
 
     /** The land search found nothing usable, so placement falls back to sea level (in the Nether, on the lava sea). */
@@ -194,50 +192,73 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
     protected void postLayoutAdjustments(StructurePiecesBuilder structurePiecesBuilder, GenerationContext context, int offsetY, BlockPos blockpos, int topClipOff, int bottomClipOff, List<PoolElementStructurePiece> pieces) {
         GeneralUtils.centerAllPieces(blockpos, pieces);
 
-        // Decide the target base (Y of the lowest point of the start piece).
-        int targetBaseY;
-        if (this.searchDirection == LAND_SEARCH_DIRECTION.FIXED_HEIGHT) {
-            // Spawn at a fixed height: place the structure base at the sampled start_height and skip the terrain search.
-            targetBaseY = offsetY + this.ledgeOffsetY.orElse(0);
-        }
-        else {
-            WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
-            //? if <26.1.2 {
-            random.setLargeFeatureSeed(context.seed(), context.chunkPos().x, context.chunkPos().z);
-            //?} else {
-            /*random.setLargeFeatureSeed(context.seed(), context.chunkPos().x(), context.chunkPos().z());
-            *///?}
-            BlockPos placementPos = this.findLand(context, structurePiecesBuilder.getBoundingBox());
-            // With cannot_spawn_in_liquid the structure only spawned because the start piece's column has
-            // land (isInLiquid). If the middle of the whole structure has none, use that land instead of
-            // dropping to the lava sea.
-            if (this.cannotSpawnInLiquid && noLand(context, placementPos)) {
-                placementPos = this.findLand(context, new BoundingBox(blockpos));
-            }
-
-            if (noLand(context, placementPos)) {
-                targetBaseY = context.chunkGenerator().getSeaLevel() + this.ledgeOffsetY.orElse(0);
-            }
-            else {
-                targetBaseY = placementPos.getY() + this.ledgeOffsetY.orElse(0);
-            }
-
-            // Fold in the start_height offset so the y allowance is evaluated against the final world position.
-            targetBaseY += offsetY;
-        }
-
-        // Enforce the structure's y_allowance on the FINAL placement. topClipOff/bottomClipOff are derived from
-        // max_y_allowed / min_y_allowed (Integer.MAX_VALUE / Integer.MIN_VALUE when unset). For nether structures the
-        // vertical position is decided here (not during assembly), so without this clamp max_y_allowed has no effect.
-        // We clamp the structure's bounding box so no part generates outside the allowed range.
         BoundingBox fullBox = structurePiecesBuilder.getBoundingBox();
         int currentBaseY = pieces.get(0).getBoundingBox().minY();
-        int structureHeight = fullBox.maxY() - fullBox.minY();
         int baseToBoxMin = fullBox.minY() - currentBaseY; // usually <= 0 (other pieces may sit below the start piece)
+        int baseToBoxMax = fullBox.maxY() - currentBaseY;
 
+        // Decide the target base (Y of the lowest point of the start piece).
+        int targetBaseY = this.allowedBaseY(this.baseY(context, fullBox, blockpos, offsetY, Integer.MAX_VALUE), topClipOff, bottomClipOff, baseToBoxMin, baseToBoxMax);
+
+        // Under a roof (the Nether's bedrock, y 123 to 127) no part of the structure, every jigsaw piece included, goes
+        // higher than y 122. Only a structure that would is moved: one on land goes on the highest land in its column
+        // low enough for it, or is lowered into its land when there's none. A fixed-height structure set to start
+        // above y 122 was put in or on the roof on purpose and stays.
+        int highestTopUnderRoof = GeneralUtils.getMaxTerrainLimit(context.chunkGenerator()) - GeneralUtils.ROOF_MARGIN;
+        int highestBaseUnderRoof = highestTopUnderRoof - baseToBoxMax;
+        boolean startsInRoof = this.searchDirection == LAND_SEARCH_DIRECTION.FIXED_HEIGHT && targetBaseY > highestTopUnderRoof;
+        if (targetBaseY > highestBaseUnderRoof && !startsInRoof
+                && GeneralUtils.hasRoof(context.chunkGenerator(), context.randomState(), context.heightAccessor(), blockpos.getX(), blockpos.getZ())) {
+            if (this.searchDirection != LAND_SEARCH_DIRECTION.FIXED_HEIGHT) {
+                int highestLandY = highestBaseUnderRoof - this.ledgeOffsetY.orElse(0) - offsetY;
+                targetBaseY = this.allowedBaseY(this.baseY(context, fullBox, blockpos, offsetY, highestLandY), topClipOff, bottomClipOff, baseToBoxMin, baseToBoxMax);
+            }
+            // Last, so not even min_y_allowed takes it into the roof.
+            targetBaseY = Math.min(targetBaseY, highestBaseUnderRoof);
+        }
+
+        int yDiff = targetBaseY - currentBaseY;
+        pieces.forEach(piece -> piece.move(0, yDiff, 0));
+    }
+
+    /**
+     * Where the start piece's base goes before the y allowance: at start_height for FIXED_HEIGHT, otherwise
+     * ledge_offset_y and start_height above the land found under {@code box}'s middle. Only land at or under
+     * {@code highestLandY} counts while the column has some; otherwise the land as found without that limit.
+     */
+    private int baseY(GenerationContext context, BoundingBox box, BlockPos blockpos, int offsetY, int highestLandY) {
+        if (this.searchDirection == LAND_SEARCH_DIRECTION.FIXED_HEIGHT) {
+            // Spawn at a fixed height: place the structure base at the sampled start_height and skip the terrain search.
+            return offsetY + this.ledgeOffsetY.orElse(0);
+        }
+        BlockPos placementPos = this.findLandAtOrUnder(context, box, highestLandY);
+        // With cannot_spawn_in_liquid the structure only spawned because the start piece's column has
+        // land (isInLiquid). If the middle of the whole structure has none, use that land instead of
+        // dropping to the lava sea.
+        if (this.cannotSpawnInLiquid && noLand(context, placementPos)) {
+            placementPos = this.findLandAtOrUnder(context, new BoundingBox(blockpos), highestLandY);
+        }
+        int landY = noLand(context, placementPos) ? context.chunkGenerator().getSeaLevel() : placementPos.getY();
+        // Fold in the start_height offset so the y allowance is evaluated against the final world position.
+        return landY + this.ledgeOffsetY.orElse(0) + offsetY;
+    }
+
+    /** The land at or under {@code highestY} at the middle column of {@code around}, or the land with no limit if there is none. */
+    private BlockPos findLandAtOrUnder(GenerationContext context, BoundingBox around, int highestY) {
+        BlockPos land = this.findLand(context, around, highestY);
+        return highestY == Integer.MAX_VALUE || !noLand(context, land) ? land : this.findLand(context, around, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Enforce the structure's y_allowance on the FINAL placement. topClipOff/bottomClipOff are derived from
+     * max_y_allowed / min_y_allowed (Integer.MAX_VALUE / Integer.MIN_VALUE when unset). For nether structures the
+     * vertical position is decided here (not during assembly), so without this clamp max_y_allowed has no effect.
+     * We clamp the structure's bounding box so no part generates outside the allowed range.
+     */
+    private static int allowedBaseY(int targetBaseY, int topClipOff, int bottomClipOff, int baseToBoxMin, int baseToBoxMax) {
         if (topClipOff != Integer.MAX_VALUE) {
             // Ensure the highest block of the structure does not exceed the cap.
-            int maxAllowedBaseY = topClipOff - structureHeight - baseToBoxMin;
+            int maxAllowedBaseY = topClipOff - baseToBoxMax;
             if (targetBaseY > maxAllowedBaseY) {
                 targetBaseY = maxAllowedBaseY;
             }
@@ -249,9 +270,7 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                 targetBaseY = minAllowedBaseY;
             }
         }
-
-        int yDiff = targetBaseY - currentBaseY;
-        pieces.forEach(piece -> piece.move(0, yDiff, 0));
+        return targetBaseY;
     }
 
     public enum LAND_SEARCH_DIRECTION implements StringRepresentable {

@@ -201,6 +201,7 @@ public class MslGameTests {
         tests.put("mc_versions_gate_biomes", MslGameTests::mcVersionsGateBiomes);
         tests.put("version_gated_set_turned_off", MslGameTests::versionGatedSetTurnedOff);
         tests.put("liquid_check_at_start_piece_centre", MslGameTests::liquidCheckAtStartPieceCentre);
+        tests.put("nether_structures_stay_under_the_roof", MslGameTests::netherStructuresStayUnderTheRoof);
         tests.put("footprint_in_liquid_share", MslGameTests::footprintInLiquidShare);
         tests.put("biome_radius_reads_the_corner_height", MslGameTests::biomeRadiusReadsTheCornerHeight);
         tests.put("disabled_set_skipped_by_searches", MslGameTests::disabledSetSkippedBySearches);
@@ -1197,6 +1198,61 @@ public class MslGameTests {
     }
 
     /**
+     * A Nether structure's top stays at y 122 or under, out of the bedrock roof (y 123 to 127), over terrain shaped like
+     * the Nether's: rock to y 60, a ledge from y 71 to 85, open air to y 117 and the roof from y 118. Each structure is
+     * 14 rows tall: one piece, or a 7-row start with a 7-row piece on its jigsaw. HIGHEST_LAND 30 over the land would
+     * put it on the ledge with its top at y 128, so it goes on the lower land at y 60 instead. Ones that already stay
+     * under the roof don't move: with no offset it fits on the ledge, and with max_y_allowed 110 it is lowered to
+     * that, as before. LOWEST_LAND 50 over the land has nowhere it fits, so it is lowered until its top is at y 122, as
+     * is a FIXED_HEIGHT start at y 115. The same start stays at y 115 where the terrain is open at the top, and one set
+     * at y 130, on top of the roof, stays too.
+     */
+    //? if <1.21.5 {
+    @GameTest(templateNamespace = "moogs_structures", template = ARENA)
+    //?}
+    public static void netherStructuresStayUnderTheRoof(GameTestHelper helper) {
+        List<String> wrong = new ArrayList<>();
+        buildPiece(helper, ROOF + "column", new Vec3i(1, 14, 1));
+        buildPiece(helper, ROOF + "base", new Vec3i(1, 7, 1),
+                new TestJigsaw(new BlockPos(0, 6, 0), FrontAndTop.UP_NORTH, "minecraft:empty", "moogs_structures:" + ROOF + "link", "moogs_structures:" + ROOF + "tops"));
+        buildPiece(helper, ROOF + "top", new Vec3i(1, 7, 1),
+                new TestJigsaw(new BlockPos(0, 0, 0), FrontAndTop.DOWN_NORTH, "moogs_structures:" + ROOF + "link", "minecraft:empty", "minecraft:empty"));
+        ChunkGenerator roofed = netherTerrain(helper, true);
+        ChunkGenerator open = netherTerrain(helper, false);
+
+        for (String start : List.of("column", "base")) {
+            roofStart(helper, roofed, start, "\"land_search_direction\":\"HIGHEST_LAND\",\"start_height\":{\"absolute\":30}", 90, "on a high ledge", wrong);
+            roofStart(helper, roofed, start, "\"land_search_direction\":\"HIGHEST_LAND\",\"start_height\":{\"absolute\":0}", 85, "fitting on the ledge", wrong);
+            roofStart(helper, roofed, start, "\"land_search_direction\":\"HIGHEST_LAND\",\"start_height\":{\"absolute\":30},\"y_allowance\":{\"max_y_allowed\":110}", 97, "under max_y_allowed", wrong);
+            roofStart(helper, roofed, start, "\"land_search_direction\":\"LOWEST_LAND\",\"start_height\":{\"absolute\":50}", 109, "with no land low enough", wrong);
+            roofStart(helper, roofed, start, "\"land_search_direction\":\"FIXED_HEIGHT\",\"start_height\":{\"absolute\":115}", 109, "at a fixed height", wrong);
+            roofStart(helper, open, start, "\"land_search_direction\":\"FIXED_HEIGHT\",\"start_height\":{\"absolute\":115}", 115, "with no roof", wrong);
+            roofStart(helper, roofed, start, "\"land_search_direction\":\"FIXED_HEIGHT\",\"start_height\":{\"absolute\":130}", 130, "on top of the roof", wrong);
+        }
+        finish(helper, wrong);
+    }
+
+    private static final String ROOF = "gametest/roof/";
+
+    /** Lays out a 14-row Nether structure from this start piece with these placement fields, and checks where it lands. */
+    private static void roofStart(GameTestHelper helper, ChunkGenerator terrain, String start, String placement, int wantBase, String what, List<String> wrong) {
+        Structure structure = decode(helper, "{\"type\":\"moogs_structures:moogs_structures_generic_nether_jigsaw_structure\",\"start_pool\":{\"fallback\":\"minecraft:empty\",\"elements\":[{\"weight\":1,\"element\":"
+                + "{\"element_type\":\"minecraft:single_pool_element\",\"location\":\"moogs_structures:" + ROOF + start + "\",\"processors\":\"minecraft:empty\",\"projection\":\"rigid\"}}]},"
+                + "\"size\":1,\"biomes\":\"#minecraft:is_nether\",\"step\":\"surface_structures\",\"spawn_overrides\":{}," + placement + "}");
+        Optional<Structure.GenerationStub> stub = structure.findValidGenerationPoint(context(helper, terrain, new ChunkPos(100, 100)));
+        if (stub.isEmpty()) {
+            wrong.add(start + " " + what + ": didn't spawn");
+            return;
+        }
+        List<StructurePiece> pieces = stub.get().getPiecesBuilder().build().pieces();
+        int base = pieces.get(0).getBoundingBox().minY();
+        int top = pieces.stream().mapToInt(piece -> piece.getBoundingBox().maxY()).max().orElseThrow();
+        if (base != wantBase || top != wantBase + 13) {
+            wrong.add(start + " " + what + ": from y " + base + " to " + top + " in " + pieces.size() + " pieces, not " + wantBase + " to " + (wantBase + 13));
+        }
+    }
+
+    /**
      * max_footprint_in_liquid reads an even grid over the start piece, edges and corners included, at most five
      * columns a side, and turns the spot down when more than that share is over liquid. Here two of the 5x5 piece's
      * five columns of samples are in water: a share of 0.4.
@@ -1492,6 +1548,52 @@ public class MslGameTests {
             throw new IllegalStateException("the game test world isn't flat");
         }
         return new PuddleGenerator(flat.settings(), wet);
+    }
+
+    /** The test world's flat generator made 128 tall like the Nether, with the terrain netherTerrainColumn describes. */
+    private static ChunkGenerator netherTerrain(GameTestHelper helper, boolean roofed) {
+        if (!(helper.getLevel().getChunkSource().getGenerator() instanceof FlatLevelSource flat)) {
+            throw new IllegalStateException("the game test world isn't flat");
+        }
+        return new NetherTerrainGenerator(flat.settings(), roofed);
+    }
+
+    /**
+     * The same column everywhere, y 0 to 127 like the Nether, lava sea at 32: rock to y 60, air to 70, a ledge of rock
+     * to 85, then air, and from y 118 the roof's rock (air when not {@code roofed}).
+     */
+    private static final class NetherTerrainGenerator extends FlatLevelSource {
+        private final boolean roofed;
+
+        private NetherTerrainGenerator(FlatLevelGeneratorSettings settings, boolean roofed) {
+            super(settings);
+            this.roofed = roofed;
+        }
+
+        @Override
+        public int getMinY() {
+            return 0;
+        }
+
+        @Override
+        public int getGenDepth() {
+            return 128;
+        }
+
+        @Override
+        public int getSeaLevel() {
+            return 32;
+        }
+
+        @Override
+        public NoiseColumn getBaseColumn(int x, int z, LevelHeightAccessor level, RandomState random) {
+            BlockState[] states = new BlockState[128];
+            for (int y = 0; y < 128; y++) {
+                boolean rock = y <= 60 || (y >= 71 && y <= 85) || (this.roofed && y >= 118);
+                states[y] = rock ? Blocks.NETHERRACK.defaultBlockState() : Blocks.AIR.defaultBlockState();
+            }
+            return new NoiseColumn(0, states);
+        }
     }
 
     /** What structures are told about a chunk while they choose a spot, here over the given terrain, in any biome. */
