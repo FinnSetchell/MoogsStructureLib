@@ -197,10 +197,29 @@ public final class GeneralUtils {
         return chunkGenerator.getMinY() + chunkGenerator.getGenDepth();
     }
 
+    /**
+     * How far under the top of the terrain a structure stays in a dimension with a roof. The Nether's bedrock roof
+     * fills its top five layers (y 123 to 127), so a structure's top stays at y 122 or lower.
+     */
+    public static final int ROOF_MARGIN = 6;
+
+    /**
+     * Whether the terrain is closed at the top, like the Nether under its bedrock roof. The End and the Overworld are
+     * open. Reads the terrain noise column, so the answer only depends on the seed.
+     */
+    public static boolean hasRoof(ChunkGenerator chunkGenerator, RandomState randomState, LevelHeightAccessor heightLimitView, int x, int z) {
+        NoiseColumn column = chunkGenerator.getBaseColumn(x, z, heightLimitView, randomState);
+        return column.getBlock(getMaxTerrainLimit(chunkGenerator) - 1).canOcclude();
+    }
+
     //////////////////////////////
 
-    public static BlockPos getHighestLand(ChunkGenerator chunkGenerator, RandomState randomState, BoundingBox boundingBox, LevelHeightAccessor heightLimitView, boolean canBeOnLiquid) {
-        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos().set(boundingBox.getCenter().getX(), getMaxTerrainLimit(chunkGenerator) - 40, boundingBox.getCenter().getZ());
+    /**
+     * The highest land at the middle column of {@code boundingBox}, scanning down from 40 under the top of the terrain
+     * or from {@code highestY} when that is lower. Returns sea level or lower when there is no such land.
+     */
+    public static BlockPos getHighestLand(ChunkGenerator chunkGenerator, RandomState randomState, BoundingBox boundingBox, LevelHeightAccessor heightLimitView, boolean canBeOnLiquid, int highestY) {
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos().set(boundingBox.getCenter().getX(), Math.min(getMaxTerrainLimit(chunkGenerator) - 40, highestY), boundingBox.getCenter().getZ());
         NoiseColumn blockView = chunkGenerator.getBaseColumn(mutable.getX(), mutable.getZ(), heightLimitView, randomState);
         BlockState currentBlockstate;
         while (mutable.getY() > chunkGenerator.getSeaLevel()) {
@@ -219,11 +238,17 @@ public final class GeneralUtils {
     }
 
 
-    public static BlockPos getLowestLand(ChunkGenerator chunkGenerator, RandomState randomState, BoundingBox boundingBox, LevelHeightAccessor heightLimitView, boolean canBeOnLiquid) {
+    /**
+     * The spot just above the lowest land over sea level at the middle column of {@code boundingBox}, no higher than
+     * {@code highestY} (nor 39 under the top of the terrain). Returns sea level when there is no such land.
+     */
+    public static BlockPos getLowestLand(ChunkGenerator chunkGenerator, RandomState randomState, BoundingBox boundingBox, LevelHeightAccessor heightLimitView, boolean canBeOnLiquid, int highestY) {
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos().set(boundingBox.getCenter().getX(), chunkGenerator.getSeaLevel() + 1, boundingBox.getCenter().getZ());
         NoiseColumn blockView = chunkGenerator.getBaseColumn(mutable.getX(), mutable.getZ(), heightLimitView, randomState);
         BlockState currentBlockstate = blockView.getBlock(mutable.getY());
-        while (mutable.getY() <= getMaxTerrainLimit(chunkGenerator) - 40) {
+        // The spot returned is one above the land.
+        int highestLandY = Math.min(getMaxTerrainLimit(chunkGenerator) - 40, highestY - 1);
+        while (mutable.getY() <= highestLandY) {
 
             if((canBeOnLiquid ? !currentBlockstate.isAir() : currentBlockstate.canOcclude()) &&
                     blockView.getBlock(mutable.getY() + 1).isAir() &&
