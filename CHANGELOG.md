@@ -16,6 +16,7 @@
 - Mods can now keep buildings from standing half over a lake or the sea
 - Structure mods can write a spawner's mob once, and its armour, weapons, name and health now carry over to every Minecraft version
 - Mods can now have some structures appear only while they replace a vanilla structure, or only while they don't
+- Nether structures can sit on the lowest of their corners, like Overworld ones
 
 ### Fixed
 - The Forge version now loads on Minecraft 1.21.5 to 1.21.8 and 26.1
