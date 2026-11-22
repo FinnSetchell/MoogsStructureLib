@@ -7,6 +7,7 @@ package com.finndog.moogs_structures.world.structures.terrainadaptation.beardifi
 /*import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EncapsulateBackport;
 *///?}
+import com.finndog.moogs_structures.mixins.terrainadaptation.StructureManagerAccessor;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.AdaptationArea;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
@@ -21,6 +22,7 @@ import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 *///?}
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.Beardifier;
@@ -47,6 +49,16 @@ public class EnhancedBeardifierHelper {
     public static Beardifier forStructuresInChunk(StructureManager structureManager, ChunkPos chunkPos, Beardifier original) {
         ObjectList<EnhancedBeardifierRigid> enhancedBeardifierRigidList = new ObjectArrayList<>(10);
         ObjectList<EnhancedJigsawJunction> enhancedJunctionList = new ObjectArrayList<>(10);
+        // The bedrock roof only forms on netherrack, so carving the roof rows would leave a hole to the void.
+        LevelAccessor level = ((StructureManagerAccessor) structureManager).moogs_structures_getLevel();
+        int roofFloorY = Integer.MAX_VALUE;
+        if (level.dimensionType().hasCeiling()) {
+            //? if <1.21.2 {
+            roofFloorY = level.getMinBuildHeight() + level.dimensionType().logicalHeight() - 5;
+            //?} else {
+            /*roofFloorY = level.getMinY() + level.dimensionType().logicalHeight() - 5;
+            *///?}
+        }
         int chunkMinBlockX = chunkPos.getMinBlockX();
         int chunkMinBlockZ = chunkPos.getMinBlockZ();
 
@@ -158,6 +170,7 @@ public class EnhancedBeardifierHelper {
         EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) original;
         enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
         enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
+        enhancedBeardifier.moogs_structures_setRoofFloorY(roofFloorY);
         //?}
         //? if <1.20.6 {
         /*enhancedBeardifier.moogs_structures_setEncapsulated(encapsulatedPieces, encapsulatedJunctions);
@@ -199,7 +212,8 @@ public class EnhancedBeardifierHelper {
         enhancedBeardifier.moogs_structures_setEnhancedJunctions(enhancedJunctionList);
         *///?}
         //? if >=1.21.10 {
-        /*return target;
+        /*enhancedBeardifier.moogs_structures_setRoofFloorY(roofFloorY);
+        return target;
         *///?}
     //? if >=1.21.10 {
     /*}
@@ -250,30 +264,32 @@ public class EnhancedBeardifierHelper {
     *///?}
         // From 26.1.2 the lists are stored and walked with local cursors. Sampling runs on world-gen worker
         // threads, so anything cursor-shaped kept on the Beardifier would be shared mutable state.
+        // MSL's own contributions are summed apart from vanilla's, so the roof rows can be kept from carving.
+        double added = 0;
         //? if <1.20.6 {
         /*ObjectList<BoundingBox> encapsulatedPieces = data.moogs_structures_getEncapsulatedPieces();
         ObjectList<JigsawJunction> encapsulatedJunctions = data.moogs_structures_getEncapsulatedJunctions();
         if (encapsulatedPieces != null && encapsulatedJunctions != null) {
-            density += EncapsulateBackport.density(x, y, z, encapsulatedPieces, encapsulatedJunctions);
+            added += EncapsulateBackport.density(x, y, z, encapsulatedPieces, encapsulatedJunctions);
         }
         *///?}
         //? if <26.1.2 {
         ObjectListIterator<EnhancedBeardifierRigid> pieces = data.moogs_structures_getEnhancedPieceIterator();
         ObjectListIterator<EnhancedJigsawJunction> junctions = data.moogs_structures_getEnhancedJunctionIterator();
         if (pieces == null || junctions == null) {
-            return density;
+            return density + added;
         }
         while (pieces.hasNext()) {
             EnhancedBeardifierRigid rigid = pieces.next();
             if (rigid != null) {
-                density += rigidContribution(rigid, x, y, z);
+                added += rigidContribution(rigid, x, y, z);
             }
         }
         pieces.back(Integer.MAX_VALUE);
         while (junctions.hasNext()) {
             EnhancedJigsawJunction junction = junctions.next();
             if (junction != null) {
-                density += junctionContribution(junction, x, y, z);
+                added += junctionContribution(junction, x, y, z);
             }
         }
         junctions.back(Integer.MAX_VALUE);
@@ -281,17 +297,20 @@ public class EnhancedBeardifierHelper {
         /*ObjectList<EnhancedBeardifierRigid> pieces = data.moogs_structures_getEnhancedPieces();
         if (pieces != null) {
             for (EnhancedBeardifierRigid rigid : pieces) {
-                density += rigidContribution(rigid, x, y, z);
+                added += rigidContribution(rigid, x, y, z);
             }
         }
         ObjectList<EnhancedJigsawJunction> junctions = data.moogs_structures_getEnhancedJunctions();
         if (junctions != null) {
             for (EnhancedJigsawJunction junction : junctions) {
-                density += junctionContribution(junction, x, y, z);
+                added += junctionContribution(junction, x, y, z);
             }
         }
         *///?}
-        return density;
+        if (y >= data.moogs_structures_getRoofFloorY() && added < 0) {
+            added = 0;
+        }
+        return density + added;
     }
 
     /**

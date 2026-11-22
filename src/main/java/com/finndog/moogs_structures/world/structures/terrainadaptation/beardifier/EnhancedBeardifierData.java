@@ -32,6 +32,10 @@ public interface EnhancedBeardifierData {
     void moogs_structures_setEnhancedJunctions(ObjectList<EnhancedJigsawJunction> junctions);
     *///?}
 
+    /** The lowest row the carve must not touch (the Nether roof's rows), or Integer.MAX_VALUE when there is no roof. */
+    int moogs_structures_getRoofFloorY();
+    void moogs_structures_setRoofFloorY(int roofFloorY);
+
     // 1.20 to 1.20.4: pieces and junctions of MSL structures that ask for encapsulate (EncapsulateBackport).
     // Kept as lists and walked with local cursors, so no shared iterator is advanced across threads.
     //? if <1.20.6 {

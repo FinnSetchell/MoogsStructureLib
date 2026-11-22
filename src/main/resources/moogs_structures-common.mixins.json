@@ -31,7 +31,8 @@
         "structures.StructureTemplateManagerAccessor",
         "structures.TemplateAccessor",
         "terrainadaptation.BeardifierAccessor",
-        "terrainadaptation.BeardifierMixin"
+        "terrainadaptation.BeardifierMixin",
+        "terrainadaptation.StructureManagerAccessor"
     ],
     "client": [
         "client.ScreenInvoker"
