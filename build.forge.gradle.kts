@@ -23,7 +23,13 @@ val gametestFiles = listOf(
     "com/finndog/moogs_structures/gametest/**",
     "data/minecraft/structure/moogs_structures.armor_stand_processor_test_empty.nbt",
     "data/moogs_structures/structure/armor_stand_processor_test_empty.nbt",
+    "data/moogs_structures/structure/equiparmorstandprocessortest.armor_stand_processor_test_empty.nbt",
+    "data/moogs_structures/test_instance/**",
+    "$modId-forge-gametest.mixins.json",
 )
+// From 1.21.5 a GameTest runs from a test instance in data, which names a test function registered in code. MSL's
+// Forge GameTest is compiled up to 26.1.2, and a test instance whose function is missing fails the run.
+val hasTestInstances = sc.current.parsed >= "1.21.5" && sc.current.parsed < "26.1.2"
 
 version = property("mod_version").toString()
 base.archivesName = "${property("archives_base_name")}-forge-$mcBuild"
@@ -31,6 +37,22 @@ base.archivesName = "${property("archives_base_name")}-forge-$mcBuild"
 sourceSets.main {
     java.exclude("**/fabric/**", "**/neoforge/**")
     resources.srcDir(rootProject.file("src/forge/resources"))
+}
+
+// Forge's dev launcher makes each folder on the run classpath its own module. With classes and resources in
+// two folders, MSL's classes end up in two modules and runServer, runClient and runGameTestServer fail to
+// start, so each source set gets one output folder, as in Forge's MDK.
+sourceSets.configureEach {
+    val dir = layout.buildDirectory.dir("sourcesSets/$name")
+    output.setResourcesDir(dir)
+    java.destinationDirectory.set(dir)
+}
+
+// Forge 52 (1.21.1) publishes accesstransformers and modlauncher asking for jopt-simple 6.0-alpha-3, which wins
+// the version conflict, but its modlauncher needs 5.0.4 (module jopt.simple), the version Forge's installer
+// ships, so the 1.21.1 dev runs fail to start. Every other node resolves 5.0.4 already.
+configurations.runtimeClasspath {
+    resolutionStrategy.force("net.sf.jopt-simple:jopt-simple:5.0.4")
 }
 
 minecraft {
@@ -41,6 +63,9 @@ minecraft {
         // Per-node game directory, so worlds are never opened by a different Minecraft version.
         configureEach {
             workingDir.set(rootProject.file("run/${project.name}"))
+            // A jar names its mixin configs in its manifest; a dev run loads MSL from a folder, which has none,
+            // so without these MSL's mixins are never applied in dev runs and GameTests.
+            mixinConfigs.split(',').forEach { args("--mixin.config", it) }
         }
         register("client")
         register("server") { args("--nogui") }
@@ -48,6 +73,8 @@ minecraft {
             systemProperty("forge.enabledGameTestNamespaces", modId)
             systemProperty("forge.enableGameTest", "true")
             systemProperty("forge.gameTestServer", "true")
+            // On Forge 55 to 58 this starts the GameTest server the way Forge 59 does; elsewhere the config is empty.
+            args("--mixin.config", "$modId-forge-gametest.mixins.json")
         }
     }
 }
@@ -99,6 +126,7 @@ tasks {
         filesMatching(listOf("META-INF/mods.toml", "*.mixins.json", "pack.mcmeta")) { expand(props) }
         from(awFile) { rename { "$modId.accesswidener" } }
         from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
+        if (!hasTestInstances) exclude("data/moogs_structures/test_instance/**")
     }
 
     jar {
@@ -128,10 +156,6 @@ tasks {
 
     // Forge's Minecraft setup must not run before Stonecutter has written the processed sources.
     withType<JavaCompile>().configureEach { dependsOn("stonecutterGenerate") }
-
-    // Shared classes a Forge node leaves out, e.g. config-screen widgets on a range where Forge's
-    // config is file-only and the GUI API differs from the version the shared code targets.
-    compileJava { exclude(prop("mod.forge_compile_excludes").split(',').filter { it.isNotBlank() }) }
 
     register<Copy>("buildAndCollect") {
         group = "build"

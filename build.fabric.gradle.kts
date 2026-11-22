@@ -26,6 +26,14 @@ sourceSets.main {
     resources.srcDir(rootProject.file("src/fabric/resources"))
 }
 
+// Game tests live in their own source set and dev-only mod (src/gametest/resources/fabric.mod.json), so they never
+// reach the shipped jar. Fabric API registers every fabric-gametest entrypoint, even outside a test run.
+val gametest: SourceSet = sourceSets.create("gametest") {
+    java.exclude("**/forge/**", "**/neoforge/**")
+    compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().runtimeClasspath + sourceSets.main.get().output
+}
+
 repositories {
     maven("https://maven.shedaniel.me") { name = "Shedaniel" }
     maven("https://maven.terraformersmc.com/releases") { name = "TerraformersMC" }
@@ -67,6 +75,19 @@ loom {
             ideConfigGenerated(true)
             runDir("../../run/${project.name}")
         }
+        // ./gradlew :<node>:runGametest runs the game tests on a server and exits; a failed test fails the task.
+        register("gametest") {
+            server()
+            configName = "Fabric GameTest"
+            vmArg("-Dfabric-api.gametest")
+            runDir("../../run/${project.name}-gametest")
+            source(gametest)
+        }
+    }
+
+    mods {
+        register(modId) { sourceSet(sourceSets.main.get()) }
+        register("${modId}_gametest") { sourceSet(gametest) }
     }
 }
 
@@ -97,6 +118,17 @@ tasks {
         }
         from(awFile) { rename { "$modId.accesswidener" } }
         from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
+    }
+
+    // The Fabric tests only need the empty arena and one trial spawner config; the rest of src/gametest/resources is
+    // NeoForge's test datapack. Minecraft before 1.21 reads structure files from `structures`.
+    named<ProcessResources>(gametest.processResourcesTaskName) {
+        include("fabric.mod.json", "data/moogs_structures/structure/msl_arena.nbt",
+            "data/moogs_structures/trial_spawner/gametest_guardian.json")
+        if (sc.current.parsed < "1.21") {
+            eachFile { path = path.replace("/structure/", "/structures/") }
+        }
+        includeEmptyDirs = false
     }
 
     jar {

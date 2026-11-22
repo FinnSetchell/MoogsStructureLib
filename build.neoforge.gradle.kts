@@ -27,6 +27,7 @@ sourceSets.main {
 
 // NeoForge's gametests live in their own source set, so they never reach the shipped jar.
 val gametest: SourceSet = sourceSets.create("gametest") {
+    java.exclude("**/fabric/**", "**/forge/**")
     compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.main.get().output
     runtimeClasspath += sourceSets.main.get().runtimeClasspath + sourceSets.main.get().output
 }
@@ -98,6 +99,14 @@ tasks {
         filesMatching(listOf("META-INF/neoforge.mods.toml", "*.mixins.json", "pack.mcmeta")) { expand(props) }
         from(awFile) { rename { "$modId.accesswidener" } }
         from(atFile) { into("META-INF"); rename { "accesstransformer.cfg" } }
+    }
+
+    // The gametest structure files sit in 1.21's `structure` folder. Minecraft before 1.21 reads `structures`.
+    if (sc.current.parsed < "1.21") {
+        named<ProcessResources>(gametest.processResourcesTaskName) {
+            eachFile { path = path.replace(Regex("^data/([^/]+)/structure/"), "data/\$1/structures/") }
+            includeEmptyDirs = false
+        }
     }
 
     jar {

@@ -2,6 +2,7 @@
 package com.finndog.moogs_structures.neoforge.client;
 
 import com.finndog.moogs_structures.client.ClothRequiredScreen;
+import com.finndog.moogs_structures.client.MoogsStructuresConfigScreen;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -25,7 +26,7 @@ public final class MoogsStructuresNeoforgeClient {
         modContainer.registerExtensionPoint(
                 IConfigScreenFactory.class,
                 (minecraft, parent) -> ModList.get().isLoaded("cloth_config")
-                        ? MoogsStructuresConfigScreenNeoforge.create(parent)
+                        ? MoogsStructuresConfigScreen.create(parent)
                         : new ClothRequiredScreen(parent));
     }
 }

@@ -4,6 +4,9 @@ import com.finndog.moogs_structures.config.MslConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.modinit.MoogsStructuresTags;
 import com.finndog.moogs_structures.replacement.ReplacementAliases;
+import com.finndog.moogs_structures.utils.VersionResolver;
+import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
+import com.finndog.moogs_structures.world.structures.placements.AdvancedRandomSpread;
 import com.google.common.base.Stopwatch;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
@@ -23,6 +26,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 //? if <26.2 {
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -30,9 +35,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.commands.LocateCommand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureSet;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -50,9 +57,11 @@ public class LocateCommandMixin {
     private static DynamicCommandExceptionType ERROR_STRUCTURE_NOT_FOUND;
 
     /**
-     * When a structure has been replaced or disabled via the Moogs Structures config, tell the
-     * player instead of running the vanilla search (which has nothing left to find, and would run
-     * the full - up to 2000 chunk - radius fruitlessly).
+     * When a structure has been replaced or disabled via the Moogs Structures config, doesn't generate
+     * on this Minecraft version (mc_versions), or every set holding it is kept off by its replacement
+     * preset's current state (generates), tell the player instead of running the vanilla
+     * search (which has nothing left to find, and would run the full - up to 2000 chunk - radius
+     * fruitlessly).
      */
     @Inject(
             method = "locateStructure(Lnet/minecraft/commands/CommandSourceStack;Lnet/minecraft/commands/arguments/ResourceOrTagKeyArgument$Result;)I",
@@ -75,6 +84,25 @@ public class LocateCommandMixin {
                 cir.setReturnValue(1);
                 return;
             }
+            //? if <1.21.2 {
+            Structure structure = source.registryAccess().registryOrThrow(Registries.STRUCTURE).get(key);
+            //?} else {
+            /*Structure structure = source.registryAccess().lookupOrThrow(Registries.STRUCTURE).getValue(key);
+            *///?}
+            if (structure instanceof GenericJigsawStructure gated && !gated.generatesOnThisVersion()) {
+                source.sendSuccess(() -> Component.literal(
+                        id + " doesn't generate on Minecraft " + VersionResolver.getCurrentVersionString()
+                                + " (only on " + gated.mcVersions.map(Object::toString).orElse("other versions") + ")."), false);
+                cir.setReturnValue(1);
+                return;
+            }
+            String offForReplacement = moogs_structures_offForReplacement(source, key);
+            if (offForReplacement != null) {
+                source.sendSuccess(() -> Component.literal(id + offForReplacement
+                        + " in the Moogs Structures config (config/moogs_structures.json)."), false);
+                cir.setReturnValue(1);
+                return;
+            }
             List<ReplaceVanillaManager.Replacement> active = ReplaceVanillaManager.getActiveReplacements(id);
             if (active.isEmpty()) return;
             // The generator redirects the search to the replacement, so vanilla finds something.
@@ -91,6 +119,32 @@ public class LocateCommandMixin {
                     ". You can change this in the Moogs Structures config (config/moogs_structures.json)."), false);
             cir.setReturnValue(1);
         });
+    }
+
+    /**
+     * Why the structure can't generate now, when every set holding it is kept off by generates for the current state
+     * of its replacement's preset; null when a set could still place it.
+     */
+    @Unique
+    private static String moogs_structures_offForReplacement(CommandSourceStack source, ResourceKey<Structure> key) {
+        //? if <1.21.2 {
+        Registry<StructureSet> sets = source.registryAccess().registryOrThrow(Registries.STRUCTURE_SET);
+        //?} else {
+        /*Registry<StructureSet> sets = source.registryAccess().lookupOrThrow(Registries.STRUCTURE_SET);
+        *///?}
+        AdvancedRandomSpread first = null;
+        for (StructureSet set : sets) {
+            if (set.structures().stream().noneMatch(entry -> entry.structure().is(key))) continue;
+            if (!(set.placement() instanceof AdvancedRandomSpread spread) || !spread.isOffForReplacement()) return null;
+            if (first == null) first = spread;
+        }
+        if (first == null || first.whenReplacing().isEmpty()) return null;
+        AdvancedRandomSpread.ReplacementSpacing replacement = first.whenReplacing().get();
+        String preset = ReplaceVanillaManager.presetName(replacement.modid(), replacement.vanillaKey())
+                .orElse(replacement.modid() + "/" + replacement.vanillaKey());
+        return first.generates() == AdvancedRandomSpread.Generates.WHEN_REPLACING
+                ? " only generates while " + preset + " is on"
+                : " doesn't generate while " + preset + " is on";
     }
 
     /**

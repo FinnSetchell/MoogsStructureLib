@@ -40,6 +40,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 //?}
+import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.AdaptationArea;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -105,9 +106,33 @@ public class MoogsStructuresCommon {
             StructurePlacement placement = entry.getValue().placement();
             if (placement instanceof AdvancedRandomSpread ars) {
                 ars.setOwningSetId(id);
+                ars.setNoStructureOnThisVersion(noStructureOnThisVersion(entry.getValue()));
+                warnIfReplacementMissing(id, ars);
             } else if (placement instanceof ConditionalConcentricRings ccr) {
                 ccr.setOwningSetId(id);
             }
+        }
+    }
+
+    /**
+     * A set none of whose structures generates on this Minecraft version (mc_versions). The game already skips such
+     * a set itself, as it has no biome; this also stops it pushing other sets away through their exclusion zones.
+     * A concentric rings set needs nothing: the game gives it no ring positions.
+     */
+    private static boolean noStructureOnThisVersion(StructureSet set) {
+        return !set.structures().isEmpty() && set.structures().stream()
+                .allMatch(entry -> entry.structure().value() instanceof GenericJigsawStructure structure && !structure.generatesOnThisVersion());
+    }
+
+    /** A set that generates by its replacement's state when no installed mod declares that replacement. */
+    private static void warnIfReplacementMissing(ResourceLocation id, AdvancedRandomSpread spread) {
+        if (spread.generates() == AdvancedRandomSpread.Generates.ALWAYS || spread.whenReplacing().isEmpty()) {
+            return;
+        }
+        AdvancedRandomSpread.ReplacementSpacing replacement = spread.whenReplacing().get();
+        if (ReplaceVanillaManager.presetName(replacement.modid(), replacement.vanillaKey()).isEmpty()) {
+            LOGGER.warn("Moogs Structures: structure set {} generates {}, but no installed mod declares the replacement {}/{}, so it counts as never replacing",
+                    id, spread.generates().getSerializedName(), replacement.modid(), replacement.vanillaKey());
         }
     }
 

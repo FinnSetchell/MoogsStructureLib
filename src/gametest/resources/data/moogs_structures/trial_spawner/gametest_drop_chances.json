@@ -1,0 +1,21 @@
+{
+  "spawn_potentials": [
+    {
+      "weight": 1,
+      "data": {
+        "entity": {
+          "id": "minecraft:wither_skeleton",
+          "ArmorDropChances": [0.02, 0.02, 0.02, 0.02],
+          "HandDropChances": [0.05, 0.0],
+          "Passengers": [
+            {
+              "id": "minecraft:zombie",
+              "ArmorDropChances": [1.0, 1.0, 0.0, 0.0],
+              "HandDropChances": [0.5, 0.25]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

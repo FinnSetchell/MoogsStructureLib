@@ -2,6 +2,8 @@ package com.finndog.moogs_structures.world.structures;
 
 import com.finndog.moogs_structures.modinit.MoogsStructuresStructures;
 import com.finndog.moogs_structures.utils.GeneralUtils;
+import com.finndog.moogs_structures.utils.StrictOptionalField;
+import com.finndog.moogs_structures.utils.VersionResolver;
 //? if >=1.21.1 {
 import com.finndog.moogs_structures.world.structures.codecs.YRangeAllowance;
 //?}
@@ -10,10 +12,10 @@ import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedT
 //?}
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.util.Either;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
-//? if >=1.20.6 {
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
-//?}
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 //? if <1.21.11 {
 import net.minecraft.Util;
@@ -26,8 +28,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.levelgen.LegacyRandomSource;
-import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.heightproviders.HeightProvider;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
@@ -38,8 +38,7 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 import net.minecraft.world.level.levelgen.structure.structures.JigsawStructure;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 //?} else {
-/*import com.finndog.moogs_structures.utils.StrictOptionalField;
-import com.finndog.moogs_structures.world.structures.codecs.LiquidSettings;
+/*import com.finndog.moogs_structures.world.structures.codecs.LiquidSettings;
 *///?}
 
 import java.util.ArrayList;
@@ -53,7 +52,32 @@ import java.util.Optional;
 /*import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 
 *///?}
+//? if <1.21.1 {
+/*import com.finndog.moogs_structures.world.structures.terrainadaptation.EncapsulateBackport;
+
+*///?}
 public class GenericNetherJigsawStructure extends GenericJigsawStructure {
+
+    /**
+     * {@code land_search_direction}, and {@code burying_type}, which the Nether type takes only as LOWEST_CORNER and
+     * only with a land search: the land is searched for under each corner of the start piece and the lowest is used.
+     * One slot (DFU groups cap at 16 slots); the JSON stays flat. Declared before CODEC, which reads it while it is built.
+     */
+    private static final MapCodec<Pair<LAND_SEARCH_DIRECTION, Optional<BURYING_TYPE>>> LAND_SEARCH = Codec.mapPair(
+                    StringRepresentable.fromEnum(LAND_SEARCH_DIRECTION::values).fieldOf("land_search_direction"),
+                    StrictOptionalField.of(StringRepresentable.fromEnum(BURYING_TYPE::values), "burying_type"))
+            .flatXmap(GenericNetherJigsawStructure::checkBurying, DataResult::success);
+
+    private static DataResult<Pair<LAND_SEARCH_DIRECTION, Optional<BURYING_TYPE>>> checkBurying(Pair<LAND_SEARCH_DIRECTION, Optional<BURYING_TYPE>> landSearch) {
+        Optional<BURYING_TYPE> burying = landSearch.getSecond();
+        if (burying.isPresent() && burying.get() != BURYING_TYPE.LOWEST_CORNER) {
+            return DataResult.error(() -> "Nether structures only take burying_type LOWEST_CORNER, not " + burying.get().getSerializedName());
+        }
+        if (burying.isPresent() && (landSearch.getFirst() == LAND_SEARCH_DIRECTION.FIXED_HEIGHT || landSearch.getFirst() == LAND_SEARCH_DIRECTION.CEILING)) {
+            return DataResult.error(() -> "burying_type needs a land search: a " + landSearch.getFirst().getSerializedName() + " structure doesn't use the land");
+        }
+        return DataResult.success(landSearch);
+    }
 
     //? if >=1.20.6 {
     public static final MapCodec<GenericNetherJigsawStructure> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
@@ -76,15 +100,26 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             ResourceLocation.CODEC.listOf().fieldOf("pools_that_ignore_boundaries").orElse(new ArrayList<>()).xmap(HashSet::new, ArrayList::new).forGetter(structure -> structure.poolsThatIgnoreBoundaries),
             Codec.intRange(1, 128).optionalFieldOf("max_distance_from_center").forGetter(structure -> structure.maxDistanceFromCenter),
             Codec.intRange(0, 100).optionalFieldOf("ledge_offset_y").forGetter(structure -> structure.ledgeOffsetY),
-            StringRepresentable.fromEnum(LAND_SEARCH_DIRECTION::values).fieldOf("land_search_direction").forGetter(structure -> structure.searchDirection),
+            LAND_SEARCH.forGetter(structure -> Pair.of(structure.searchDirection, structure.buryingType)),
             Codec.BOOL.fieldOf("use_bounding_box_hack").orElse(false).forGetter(structure -> structure.useBoundingBoxHack),
+            // DFU groups cap at 16 slots, so before 1.21.1 the last fields share one; the JSON stays flat.
             //? if >=1.21.1 {
             LiquidSettings.CODEC.optionalFieldOf("liquid_settings", JigsawStructure.DEFAULT_LIQUID_SETTINGS).forGetter(structure -> structure.liquidSettings),
+            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation),
+            GenericJigsawStructure.MC_VERSIONS.forGetter(structure -> structure.mcVersions)
+    ).apply(instance, (config, startPool, size, yAllowance, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, landSearch, useBoundingBoxHack, liquidSettings, enhancedTerrainAdaptation, mcVersions) -> new GenericNetherJigsawStructure(
+            config, startPool, size, yAllowance, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, landSearch.getFirst(), landSearch.getSecond(), useBoundingBoxHack,
+            liquidSettings, enhancedTerrainAdaptation, mcVersions)));
             //?} else {
-            /*StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING).forGetter(structure -> structure.liquidSettings),
+            /*Codec.mapPair(StrictOptionalField.of(LiquidSettings.CODEC, "liquid_settings", LiquidSettings.APPLY_WATERLOGGING),
+                    Codec.mapPair(EncapsulateBackport.FIELD,
+                            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE)))
+                    .forGetter(structure -> Pair.of(structure.liquidSettings, Pair.of(structure.encapsulateBackport, structure.enhancedTerrainAdaptation))),
+            GenericJigsawStructure.MC_VERSIONS.forGetter(structure -> structure.mcVersions)
+    ).apply(instance, (config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, landSearch, useBoundingBoxHack, liquidEncapsulateAndAdaptation, mcVersions) -> new GenericNetherJigsawStructure(
+            config, startPool, size, minYAllowed, maxYAllowed, allowedYRangeFromStart, startHeight, cannotSpawnInLiquid, biomeRadius, poolsThatIgnoreBoundaries, maxDistanceFromCenter, ledgeOffsetY, landSearch.getFirst(), landSearch.getSecond(), useBoundingBoxHack,
+            liquidEncapsulateAndAdaptation.getFirst(), liquidEncapsulateAndAdaptation.getSecond().getFirst(), liquidEncapsulateAndAdaptation.getSecond().getSecond(), mcVersions)));
             *///?}
-            EnhancedTerrainAdaptation.CODEC.optionalFieldOf("enhanced_terrain_adaptation", EnhancedTerrainAdaptation.NONE).forGetter(structure -> structure.enhancedTerrainAdaptation)
-    ).apply(instance, GenericNetherJigsawStructure::new));
 
     public final Optional<Integer> ledgeOffsetY;
     public final LAND_SEARCH_DIRECTION searchDirection;
@@ -106,9 +141,14 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                                         Optional<Integer> maxDistanceFromCenter,
                                         Optional<Integer> ledgeOffsetY,
                                         LAND_SEARCH_DIRECTION searchDirection,
+                                        Optional<BURYING_TYPE> buryingType,
                                         boolean useBoundingBoxHack,
                                         LiquidSettings liquidSettings,
-                                        EnhancedTerrainAdaptation enhancedTerrainAdaptation) {
+                                        //? if <1.21.1 {
+                                        /*boolean encapsulateBackport,
+                                        *///?}
+                                        EnhancedTerrainAdaptation enhancedTerrainAdaptation,
+                                        Optional<VersionResolver.VersionRange> mcVersions) {
         super(config,
             startPool,
             size,
@@ -123,15 +163,21 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             Optional.empty(),
             cannotSpawnInLiquid,
             false,
+            // max_footprint_in_liquid reads the top of each terrain column, which in the Nether is the bedrock roof.
+            Optional.empty(),
             Optional.empty(),
             Optional.empty(),
             biomeRadius,
             poolsThatIgnoreBoundaries,
             maxDistanceFromCenter,
-            Optional.empty(),
+            buryingType,
             useBoundingBoxHack,
             liquidSettings,
-            enhancedTerrainAdaptation);
+            //? if <1.21.1 {
+            /*encapsulateBackport,
+            *///?}
+            enhancedTerrainAdaptation,
+            mcVersions);
 
         this.ledgeOffsetY = ledgeOffsetY;
         this.searchDirection = searchDirection;
@@ -154,15 +200,15 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             NoiseColumn column = chunkGenerator.getBaseColumn(blockPos.getX(), blockPos.getZ(), context.heightAccessor(), context.randomState());
             return !column.getBlock(blockPos.getY() + this.ledgeOffsetY.orElse(0)).getFluidState().isEmpty();
         }
-        return noLand(context, this.findLand(context, new BoundingBox(blockPos)));
+        return noLand(context, this.findLand(context, new BoundingBox(blockPos), Integer.MAX_VALUE));
     }
 
-    /** The land the placement searches for, at the middle column of {@code around}. */
-    private BlockPos findLand(GenerationContext context, BoundingBox around) {
+    /** The land the placement searches for, at the middle column of {@code around}, at or under {@code highestY}. */
+    private BlockPos findLand(GenerationContext context, BoundingBox around, int highestY) {
         if (this.searchDirection == LAND_SEARCH_DIRECTION.HIGHEST_LAND) {
-            return GeneralUtils.getHighestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid);
+            return GeneralUtils.getHighestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid, highestY);
         }
-        return GeneralUtils.getLowestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid);
+        return GeneralUtils.getLowestLand(context.chunkGenerator(), context.randomState(), around, context.heightAccessor(), !this.cannotSpawnInLiquid, highestY);
     }
 
     /** The land search found nothing usable, so placement falls back to sea level (in the Nether, on the lava sea). */
@@ -261,50 +307,95 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
             return;
         }
 
+        BoundingBox fullBox = structurePiecesBuilder.getBoundingBox();
+        BoundingBox startBox = pieces.get(0).getBoundingBox();
+        int currentBaseY = startBox.minY();
+        int baseToBoxMin = fullBox.minY() - currentBaseY; // usually <= 0 (other pieces may sit below the start piece)
+        int baseToBoxMax = fullBox.maxY() - currentBaseY;
+
         // Decide the target base (Y of the lowest point of the start piece).
-        int targetBaseY;
+        int targetBaseY = this.allowedBaseY(this.baseY(context, fullBox, startBox, blockpos, offsetY, Integer.MAX_VALUE), topClipOff, bottomClipOff, baseToBoxMin, baseToBoxMax);
+
+        // Under a roof (the Nether's bedrock, y 123 to 127) no part of the structure, every jigsaw piece included, goes
+        // higher than y 122. Only a structure that would is moved: one on land goes on the highest land in its column
+        // low enough for it, or is lowered into its land when there's none. A fixed-height structure set to start
+        // above y 122 was put in or on the roof on purpose and stays.
+        int highestTopUnderRoof = GeneralUtils.getMaxTerrainLimit(context.chunkGenerator()) - GeneralUtils.ROOF_MARGIN;
+        int highestBaseUnderRoof = highestTopUnderRoof - baseToBoxMax;
+        boolean startsInRoof = this.searchDirection == LAND_SEARCH_DIRECTION.FIXED_HEIGHT && targetBaseY > highestTopUnderRoof;
+        if (targetBaseY > highestBaseUnderRoof && !startsInRoof
+                && GeneralUtils.hasRoof(context.chunkGenerator(), context.randomState(), context.heightAccessor(), blockpos.getX(), blockpos.getZ())) {
+            if (this.searchDirection != LAND_SEARCH_DIRECTION.FIXED_HEIGHT) {
+                int highestLandY = highestBaseUnderRoof - this.ledgeOffsetY.orElse(0) - offsetY;
+                targetBaseY = this.allowedBaseY(this.baseY(context, fullBox, startBox, blockpos, offsetY, highestLandY), topClipOff, bottomClipOff, baseToBoxMin, baseToBoxMax);
+            }
+            // Last, so not even min_y_allowed takes it into the roof.
+            targetBaseY = Math.min(targetBaseY, highestBaseUnderRoof);
+        }
+
+        int yDiff = targetBaseY - currentBaseY;
+        pieces.forEach(piece -> piece.move(0, yDiff, 0));
+    }
+
+    /**
+     * Where the start piece's base goes before the y allowance: at start_height for FIXED_HEIGHT, otherwise
+     * ledge_offset_y and start_height above the land found under {@code box}'s middle, or with LOWEST_CORNER the
+     * lowest land under {@code startBox}'s corners. Only land at or under {@code highestLandY} counts while a column
+     * has some; otherwise the land as found without that limit.
+     */
+    private int baseY(GenerationContext context, BoundingBox box, BoundingBox startBox, BlockPos blockpos, int offsetY, int highestLandY) {
         if (this.searchDirection == LAND_SEARCH_DIRECTION.FIXED_HEIGHT) {
             // Spawn at a fixed height: place the structure base at the sampled start_height and skip the terrain search.
-            targetBaseY = offsetY + this.ledgeOffsetY.orElse(0);
+            return offsetY + this.ledgeOffsetY.orElse(0);
         }
-        else {
-            WorldgenRandom random = new WorldgenRandom(new LegacyRandomSource(0L));
-            //? if <26.1.2 {
-            random.setLargeFeatureSeed(context.seed(), context.chunkPos().x, context.chunkPos().z);
-            //?} else {
-            /*random.setLargeFeatureSeed(context.seed(), context.chunkPos().x(), context.chunkPos().z());
-            *///?}
-            BlockPos placementPos = this.findLand(context, structurePiecesBuilder.getBoundingBox());
-            // With cannot_spawn_in_liquid the structure only spawned because the start piece's column has
-            // land (isInLiquid). If the middle of the whole structure has none, use that land instead of
-            // dropping to the lava sea.
-            if (this.cannotSpawnInLiquid && noLand(context, placementPos)) {
-                placementPos = this.findLand(context, new BoundingBox(blockpos));
-            }
-
-            if (noLand(context, placementPos)) {
-                targetBaseY = context.chunkGenerator().getSeaLevel() + this.ledgeOffsetY.orElse(0);
-            }
-            else {
-                targetBaseY = placementPos.getY() + this.ledgeOffsetY.orElse(0);
-            }
-
-            // Fold in the start_height offset so the y allowance is evaluated against the final world position.
-            targetBaseY += offsetY;
+        // The codec only lets LOWEST_CORNER through for this type.
+        BlockPos placementPos = this.buryingType.isPresent()
+                ? this.lowestCornerLand(context, box, startBox, highestLandY)
+                : this.findLandAtOrUnder(context, box, highestLandY);
+        // With cannot_spawn_in_liquid the structure only spawned because the start piece's column has
+        // land (isInLiquid). If the middle of the whole structure has none, use that land instead of
+        // dropping to the lava sea.
+        if (this.cannotSpawnInLiquid && noLand(context, placementPos)) {
+            placementPos = this.findLandAtOrUnder(context, new BoundingBox(blockpos), highestLandY);
         }
+        int landY = noLand(context, placementPos) ? context.chunkGenerator().getSeaLevel() : placementPos.getY();
+        // Fold in the start_height offset so the y allowance is evaluated against the final world position.
+        return landY + this.ledgeOffsetY.orElse(0) + offsetY;
+    }
 
-        // Enforce the structure's y_allowance on the FINAL placement. topClipOff/bottomClipOff are derived from
-        // max_y_allowed / min_y_allowed (Integer.MAX_VALUE / Integer.MIN_VALUE when unset). For nether structures the
-        // vertical position is decided here (not during assembly), so without this clamp max_y_allowed has no effect.
-        // We clamp the structure's bounding box so no part generates outside the allowed range.
-        BoundingBox fullBox = structurePiecesBuilder.getBoundingBox();
-        int currentBaseY = pieces.get(0).getBoundingBox().minY();
-        int structureHeight = fullBox.maxY() - fullBox.minY();
-        int baseToBoxMin = fullBox.minY() - currentBaseY; // usually <= 0 (other pieces may sit below the start piece)
+    /**
+     * LOWEST_CORNER: the lowest of the land found under the start piece's four corners, so no corner of it is left
+     * over the air. A corner with no land is left out; with none at any corner, the land under {@code box}'s middle.
+     */
+    private BlockPos lowestCornerLand(GenerationContext context, BoundingBox box, BoundingBox startBox, int highestLandY) {
+        BlockPos lowest = null;
+        for (int x : new int[]{startBox.minX(), startBox.maxX()}) {
+            for (int z : new int[]{startBox.minZ(), startBox.maxZ()}) {
+                BlockPos land = this.findLandAtOrUnder(context, new BoundingBox(new BlockPos(x, 0, z)), highestLandY);
+                if (!noLand(context, land) && (lowest == null || land.getY() < lowest.getY())) {
+                    lowest = land.immutable();
+                }
+            }
+        }
+        return lowest != null ? lowest : this.findLandAtOrUnder(context, box, highestLandY);
+    }
 
+    /** The land at or under {@code highestY} at the middle column of {@code around}, or the land with no limit if there is none. */
+    private BlockPos findLandAtOrUnder(GenerationContext context, BoundingBox around, int highestY) {
+        BlockPos land = this.findLand(context, around, highestY);
+        return highestY == Integer.MAX_VALUE || !noLand(context, land) ? land : this.findLand(context, around, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Enforce the structure's y_allowance on the FINAL placement. topClipOff/bottomClipOff are derived from
+     * max_y_allowed / min_y_allowed (Integer.MAX_VALUE / Integer.MIN_VALUE when unset). For nether structures the
+     * vertical position is decided here (not during assembly), so without this clamp max_y_allowed has no effect.
+     * We clamp the structure's bounding box so no part generates outside the allowed range.
+     */
+    private static int allowedBaseY(int targetBaseY, int topClipOff, int bottomClipOff, int baseToBoxMin, int baseToBoxMax) {
         if (topClipOff != Integer.MAX_VALUE) {
             // Ensure the highest block of the structure does not exceed the cap.
-            int maxAllowedBaseY = topClipOff - structureHeight - baseToBoxMin;
+            int maxAllowedBaseY = topClipOff - baseToBoxMax;
             if (targetBaseY > maxAllowedBaseY) {
                 targetBaseY = maxAllowedBaseY;
             }
@@ -316,9 +407,7 @@ public class GenericNetherJigsawStructure extends GenericJigsawStructure {
                 targetBaseY = minAllowedBaseY;
             }
         }
-
-        int yDiff = targetBaseY - currentBaseY;
-        pieces.forEach(piece -> piece.move(0, yDiff, 0));
+        return targetBaseY;
     }
 
     public enum LAND_SEARCH_DIRECTION implements StringRepresentable {

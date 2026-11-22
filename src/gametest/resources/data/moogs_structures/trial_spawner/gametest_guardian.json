@@ -1,0 +1,92 @@
+{
+  "spawn_potentials": [
+    {
+      "weight": 1,
+      "data": {
+        "entity": {
+          "CustomName": "{\"text\": \"Desert Temple Guardian\", \"italic\": false}",
+          "PersistenceRequired": 1,
+          "CanPickUpLoot": 0,
+          "Health": 35.0,
+          "attributes": [
+            {
+              "id": "minecraft:generic.armor",
+              "base": 2.0
+            },
+            {
+              "id": "minecraft:generic.attack_damage",
+              "base": 3.0
+            },
+            {
+              "id": "minecraft:generic.max_health",
+              "base": 35.0
+            },
+            {
+              "id": "minecraft:generic.movement_speed",
+              "base": 0.23
+            }
+          ],
+          "ArmorItems": [
+            {},
+            {},
+            {
+              "id": "minecraft:golden_chestplate",
+              "count": 1,
+              "components": {
+                "minecraft:enchantments": {
+                  "levels": {
+                    "minecraft:thorns": 1,
+                    "minecraft:protection": 3
+                  }
+                }
+              }
+            },
+            {
+              "id": "minecraft:golden_helmet",
+              "count": 1,
+              "components": {
+                "minecraft:enchantments": {
+                  "levels": {
+                    "minecraft:power": 4,
+                    "minecraft:thorns": 1,
+                    "minecraft:protection": 3
+                  }
+                },
+                "minecraft:trim": {
+                  "material": "minecraft:gold",
+                  "pattern": "minecraft:dune"
+                }
+              }
+            }
+          ],
+          "HandItems": [
+            {
+              "id": "minecraft:golden_sword",
+              "count": 1,
+              "components": {
+                "minecraft:enchantments": {
+                  "levels": {
+                    "minecraft:sharpness": 4,
+                    "minecraft:fire_aspect": 1
+                  }
+                }
+              }
+            },
+            {}
+          ],
+          "ArmorDropChances": [
+            0.001,
+            0.001,
+            0.001,
+            0.001
+          ],
+          "HandDropChances": [
+            0.001,
+            0.001
+          ],
+          "id": "minecraft:husk"
+        }
+      }
+    }
+  ]
+}

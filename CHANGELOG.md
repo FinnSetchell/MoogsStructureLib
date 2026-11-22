@@ -19,6 +19,13 @@
 - Structures can now shape the ground around just their main part, such as a house or a tree's trunk, so the ground under gardens, paths, and treetops stays natural, and loose parts around a building can follow the slope
 - Rails in structures can now slope up and down with the ground
 - Sea structures can now be kept fully underwater, so they never stick out
+- Mods can give their strongholds a different spacing while they replace the vanilla ones
+- Now works on Minecraft 1.21.9, with Fabric, Forge, and NeoForge
+- Mods can now keep a structure to the Minecraft versions that have its blocks, so it simply doesn't appear on older ones
+- Mods can now keep buildings from standing half over a lake or the sea
+- Structure mods can write a spawner's mob once, and its armour, weapons, name and health now carry over to every Minecraft version
+- Mods can now have some structures appear only while they replace a vanilla structure, or only while they don't
+- Nether structures can sit on the lowest of their corners, like Overworld ones
 
 ### Fixed
 - The Forge version now loads on Minecraft 1.21.5 to 1.21.8 and 26.1
@@ -30,8 +37,26 @@
 - Ships and other structures in the sea no longer sometimes fail to generate or get swapped for a different one (Minecraft 1.21 to 1.21.3 and 1.21.5 to 1.21.11)
 - The world no longer freezes while generating some small structures
 - When two mods replace the same vanilla structure, /locate, eyes of ender, explorer maps, advancements, and mob spawns now lead to a replacement that actually generates, whatever order the mods load in
+- Eyes of ender now lead to the nearest stronghold when Integrated Stronghold is installed, even while Moog's Temples Reimagined isn't replacing the vanilla strongholds
 - Structures that are meant to stay dry no longer fill with waterlogged stairs, slabs, and walls where they meet water on Minecraft 1.20 to 1.20.6, such as the stronghold from Moog's Temples Reimagined
+- Underground structures that ask to be sealed off from the terrain now are on Minecraft 1.20 to 1.20.4 too, so they no longer fill with water from nearby caves, such as the stronghold from Moog's Temples Reimagined
 - Basalt deltas and basalt columns next to Nether structures that keep them out no longer eat into the structure's edges with lava, magma, or basalt
+- Armour and weapons on mobs from structure spawners now drop as rarely as the structure says on Minecraft 1.20 to 1.21.4, instead of 8.5% of the time
+- A settings file with a mistake in it is no longer replaced with the default settings; it's left alone and a copy is kept beside it
+- The settings file can no longer be left empty or cut short if the game closes while saving it
+- Leaving a world no longer keeps that world's data in memory for the rest of the game
+- Small structures that stay out of water now check the ground under their middle, so they no longer skip dry spots beside water or end up standing in it (in newly generated chunks)
+- Explorer maps, eyes of ender, dolphins, and /locate no longer hang while searching for structures turned off in the settings
+- Parts that sit on top of or hang under another part, such as roofs, upper floors, and the mobs placed in structures, now turn every way again on Minecraft 26.1 and 26.2 instead of always facing the same way
+- Structures from datapacks that must include certain rooms now get up to 100 tries on every version, and the start room they place is the one their other rooms join onto, sitting on the ground beneath it
+- Mirrored structure pieces no longer have other pieces attached to them backwards
+- Structures that need the right biome all around them now check it at the height of the ground under the structure, the same on every Minecraft version, so a few near biome edges come out differently on 1.21 to 1.21.3 and 1.21.5 to 1.21.11
+- Tooltips on this mod's settings screen are now shorter and no longer stretch across the whole screen
+- The datapack list no longer shows this mod's datapack as incompatible on Minecraft 1.20.2 and newer
+- The Structures tab of this mod's settings now says when changes take effect with Forge and NeoForge too, as it already did with Fabric
+- Paintings in structures no longer end up one block too high or one block to the side, where they could overlap the painting next to them
+- Armour stands and mobs in turned parts of structures now face the right way with Fabric, instead of the opposite way
+- Tall Nether structures no longer break through the bedrock roof
 
 ---
 

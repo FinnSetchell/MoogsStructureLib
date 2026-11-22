@@ -1,0 +1,7 @@
+{
+  "fallback": "minecraft:empty",
+  "elements": [
+    {"weight":30,"element":{"element_type":"minecraft:single_pool_element","location":"moogs_structures:gametest/reroll/dead_end_small","processors":"minecraft:empty","projection":"rigid"}},
+    {"weight":1,"element":{"element_type":"minecraft:single_pool_element","location":"moogs_structures:gametest/reroll/start","processors":"minecraft:empty","projection":"rigid"}}
+  ]
+}

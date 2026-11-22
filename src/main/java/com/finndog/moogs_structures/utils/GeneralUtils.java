@@ -1,6 +1,7 @@
 package com.finndog.moogs_structures.utils;
 
 import com.finndog.moogs_structures.MoogsStructuresCommon;
+import com.google.common.collect.MapMaker;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
@@ -9,10 +10,8 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
 //?}
-//? if >=1.21.1 <26.1.2 {
 import net.minecraft.nbt.CompoundTag;
-//?}
-//? if >=1.21.1 <1.21.5 {
+//? if <1.21.5 {
 import net.minecraft.nbt.StringTag;
 //?}
 //? if <1.21.1 {
@@ -22,7 +21,7 @@ import net.minecraft.core.FrontAndTop;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 *///?}
-//? if >=1.21.11 <26.1.2 {
+//? if >=1.21.11 {
 /*import net.minecraft.nbt.StringTag;
 *///?}
 import net.minecraft.resources.ResourceLocation;
@@ -76,6 +75,7 @@ import java.util.Map;
 /*import java.util.*;
 *///?}
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public final class GeneralUtils {
     private GeneralUtils() {}
@@ -197,10 +197,29 @@ public final class GeneralUtils {
         return chunkGenerator.getMinY() + chunkGenerator.getGenDepth();
     }
 
+    /**
+     * How far under the top of the terrain a structure stays in a dimension with a roof. The Nether's bedrock roof
+     * fills its top five layers (y 123 to 127), so a structure's top stays at y 122 or lower.
+     */
+    public static final int ROOF_MARGIN = 6;
+
+    /**
+     * Whether the terrain is closed at the top, like the Nether under its bedrock roof. The End and the Overworld are
+     * open. Reads the terrain noise column, so the answer only depends on the seed.
+     */
+    public static boolean hasRoof(ChunkGenerator chunkGenerator, RandomState randomState, LevelHeightAccessor heightLimitView, int x, int z) {
+        NoiseColumn column = chunkGenerator.getBaseColumn(x, z, heightLimitView, randomState);
+        return column.getBlock(getMaxTerrainLimit(chunkGenerator) - 1).canOcclude();
+    }
+
     //////////////////////////////
 
-    public static BlockPos getHighestLand(ChunkGenerator chunkGenerator, RandomState randomState, BoundingBox boundingBox, LevelHeightAccessor heightLimitView, boolean canBeOnLiquid) {
-        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos().set(boundingBox.getCenter().getX(), getMaxTerrainLimit(chunkGenerator) - 40, boundingBox.getCenter().getZ());
+    /**
+     * The highest land at the middle column of {@code boundingBox}, scanning down from 40 under the top of the terrain
+     * or from {@code highestY} when that is lower. Returns sea level or lower when there is no such land.
+     */
+    public static BlockPos getHighestLand(ChunkGenerator chunkGenerator, RandomState randomState, BoundingBox boundingBox, LevelHeightAccessor heightLimitView, boolean canBeOnLiquid, int highestY) {
+        BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos().set(boundingBox.getCenter().getX(), Math.min(getMaxTerrainLimit(chunkGenerator) - 40, highestY), boundingBox.getCenter().getZ());
         NoiseColumn blockView = chunkGenerator.getBaseColumn(mutable.getX(), mutable.getZ(), heightLimitView, randomState);
         BlockState currentBlockstate;
         while (mutable.getY() > chunkGenerator.getSeaLevel()) {
@@ -219,11 +238,17 @@ public final class GeneralUtils {
     }
 
 
-    public static BlockPos getLowestLand(ChunkGenerator chunkGenerator, RandomState randomState, BoundingBox boundingBox, LevelHeightAccessor heightLimitView, boolean canBeOnLiquid) {
+    /**
+     * The spot just above the lowest land over sea level at the middle column of {@code boundingBox}, no higher than
+     * {@code highestY} (nor 39 under the top of the terrain). Returns sea level when there is no such land.
+     */
+    public static BlockPos getLowestLand(ChunkGenerator chunkGenerator, RandomState randomState, BoundingBox boundingBox, LevelHeightAccessor heightLimitView, boolean canBeOnLiquid, int highestY) {
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos().set(boundingBox.getCenter().getX(), chunkGenerator.getSeaLevel() + 1, boundingBox.getCenter().getZ());
         NoiseColumn blockView = chunkGenerator.getBaseColumn(mutable.getX(), mutable.getZ(), heightLimitView, randomState);
         BlockState currentBlockstate = blockView.getBlock(mutable.getY());
-        while (mutable.getY() <= getMaxTerrainLimit(chunkGenerator) - 40) {
+        // The spot returned is one above the land.
+        int highestLandY = Math.min(getMaxTerrainLimit(chunkGenerator) - 40, highestY - 1);
+        while (mutable.getY() <= highestLandY) {
 
             if((canBeOnLiquid ? !currentBlockstate.isAir() : currentBlockstate.canOcclude()) &&
                     blockView.getBlock(mutable.getY() + 1).isAir() &&
@@ -439,73 +464,39 @@ public final class GeneralUtils {
 
     //////////////////////////////////////////////
 
-    // More optimized with checking if the jigsaw blocks can connect
+    // More optimized with checking if the jigsaw blocks can connect. Same rule as vanilla's JigsawBlock.canAttach.
     //? if <1.21.2 {
     public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
+        CompoundTag nbt1 = jigsaw1.nbt();
+        CompoundTag nbt2 = jigsaw2.nbt();
         FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
     //?}
     //? if >=1.21.2 <1.21.5 {
     /*public static boolean canJigsawsAttach(StructureTemplate.JigsawBlockInfo jigsaw1, StructureTemplate.JigsawBlockInfo jigsaw2) {
+        CompoundTag nbt1 = jigsaw1.info().nbt();
+        CompoundTag nbt2 = jigsaw2.info().nbt();
         FrontAndTop prop1 = jigsaw1.info().state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.info().state().getValue(JigsawBlock.ORIENTATION);
     *///?}
     //? if >=1.21.5 {
     /*public static boolean canJigsawsAttach(StructureTemplate.StructureBlockInfo jigsaw1, StructureTemplate.StructureBlockInfo jigsaw2) {
+        CompoundTag nbt1 = jigsaw1.nbt();
+        CompoundTag nbt2 = jigsaw2.nbt();
         FrontAndTop prop1 = jigsaw1.state().getValue(JigsawBlock.ORIENTATION);
         FrontAndTop prop2 = jigsaw2.state().getValue(JigsawBlock.ORIENTATION);
     *///?}
-        //? if >=26.1.2 {
-        /*String joint = String.valueOf(jigsaw1.nbt().getString("joint"));
-        if(joint.isEmpty()) {
-            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
-        }
-        *///?}
-        //? if <1.21.1 {
-        /*String joint = jigsaw1.nbt().getString("joint");
-        if(joint.isEmpty()) {
-            joint = prop1.front().getAxis().isHorizontal() ? "aligned" : "rollable";
-        }
-        *///?}
-
-        //? if >=26.1.2 {
-        /*boolean isRollable = joint.equals("rollable");
-        *///?}
-        //? if <1.21.1 {
-        /*boolean isRollable = joint.equals("rollable");
-        *///?}
         return prop1.front() == prop2.front().getOpposite() &&
-                //? if >=1.21.1 <26.1.2 {
-                (prop1.top() == prop2.top() || isRollableJoint(jigsaw1, prop1)) &&
-                //?}
-                //? if >=1.21.1 <1.21.2 {
-                getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
-                //?}
-                //? if >=1.21.2 <1.21.5 {
-                /*getStringMicroOptimised(jigsaw1.info().nbt(), "target").equals(getStringMicroOptimised(jigsaw2.info().nbt(), "name"));
-                *///?}
-                //? if >=1.21.5 <26.1.2 {
-                /*getStringMicroOptimised(jigsaw1.nbt(), "target").equals(getStringMicroOptimised(jigsaw2.nbt(), "name"));
-                *///?}
-    //? if >=1.21.1 <26.1.2 {
+                (prop1.top() == prop2.top() || isRollableJoint(nbt1, prop1)) &&
+                getStringMicroOptimised(nbt1, "target").equals(getStringMicroOptimised(nbt2, "name"));
     }
 
-    //?}
-    //? if >=1.21.1 <1.21.2 {
-    private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
-        String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
-    //?}
-    //? if >=1.21.2 <1.21.5 {
-    /*private static boolean isRollableJoint(StructureTemplate.JigsawBlockInfo jigsaw1, FrontAndTop prop1) {
-        String joint = getStringMicroOptimised(jigsaw1.info().nbt(), "joint");
-    *///?}
-    //? if >=1.21.5 <26.1.2 {
-    /*private static boolean isRollableJoint(StructureTemplate.StructureBlockInfo jigsaw1, FrontAndTop prop1) {
-        String joint = getStringMicroOptimised(jigsaw1.nbt(), "joint");
-    *///?}
-        //? if >=1.21.1 <26.1.2 {
+    // A joint written as "rollable" or "aligned" is used as written. Any other value, or none, rolls when the
+    // jigsaw faces up or down and stays aligned when it faces sideways, as vanilla reads it.
+    private static boolean isRollableJoint(CompoundTag nbt, FrontAndTop orientation) {
+        String joint = getStringMicroOptimised(nbt, "joint");
         if(!joint.equals("rollable") && !joint.equals("aligned")) {
-            return !prop1.front().getAxis().isHorizontal();
+            return !orientation.front().getAxis().isHorizontal();
         }
         else {
             return joint.equals("rollable");
@@ -513,24 +504,15 @@ public final class GeneralUtils {
     }
 
     public static String getStringMicroOptimised(CompoundTag tag, String key) {
-        //?}
-        //? if >=1.21.1 <1.21.5 {
+        //? if <1.21.5 {
         return tag.get(key) instanceof StringTag stringTag ? stringTag.getAsString() : "";
         //?}
-                //? if <1.21.1 {
-                /*(isRollable || prop1.top() == prop2.top()) &&
-                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
-                *///?}
         //? if >=1.21.5 <1.21.11 {
         /*return tag.getString(key).orElse("");
         *///?}
-        //? if >=1.21.11 <26.1.2 {
+        //? if >=1.21.11 {
         /*return tag.get(key) instanceof StringTag stringTag ? stringTag.value() : "";
         *///?}
-                //? if >=26.1.2 {
-                /*(isRollable || prop1.top() == prop2.top()) &&
-                jigsaw1.nbt().getString("target").equals(jigsaw2.nbt().getString("name"));
-                *///?}
     }
 
     //////////////////////////////////////////////
@@ -596,19 +578,29 @@ public final class GeneralUtils {
 
     ///////////////////////////////////////////
 
-    private static final ConcurrentHashMap<HeightKey, Integer> CACHED_HEIGHT = new ConcurrentHashMap<>(2048);
-    private record HeightKey(ChunkGenerator chunkGenerator, int x, int z, Heightmap.Types types) {}
+    /**
+     * Heights read from the chunk generator's noise, kept per level. A level's {@link RandomState} is made from
+     * its generator and seed, so it stands for the terrain the heights come from. It is held weakly: once a
+     * world closes, its heights go with it rather than keeping its generator and registries for the rest of
+     * the game (GitHub issue #30). Each level keeps at most {@link #CACHED_HEIGHTS_PER_LEVEL}, starting afresh
+     * when full.
+     */
+    private static final ConcurrentMap<RandomState, Map<HeightKey, Integer>> CACHED_HEIGHT = new MapMaker().weakKeys().makeMap();
+    private static final int CACHED_HEIGHTS_PER_LEVEL = 2048;
+    private record HeightKey(int x, int z, Heightmap.Types types) {}
 
+    /** {@link ChunkGenerator#getFirstFreeHeight}, remembered per level. One below it is the first occupied height. */
     public static int getCachedFreeHeight(ChunkGenerator chunkGenerator, int x, int z, Heightmap.Types types, LevelHeightAccessor levelHeightAccessor, RandomState randomState) {
-        HeightKey key = new HeightKey(chunkGenerator, x, z, types);
-        Integer y = CACHED_HEIGHT.get(key);
+        Map<HeightKey, Integer> heights = CACHED_HEIGHT.computeIfAbsent(randomState, state -> new ConcurrentHashMap<>(CACHED_HEIGHTS_PER_LEVEL));
+        HeightKey key = new HeightKey(x, z, types);
+        Integer y = heights.get(key);
 
         if (y == null) {
-            if (CACHED_HEIGHT.size() >= 2048) {
-                CACHED_HEIGHT.clear();
+            if (heights.size() >= CACHED_HEIGHTS_PER_LEVEL) {
+                heights.clear();
             }
             y = chunkGenerator.getFirstFreeHeight(x, z, types, levelHeightAccessor, randomState);
-            CACHED_HEIGHT.put(key, y);
+            heights.put(key, y);
         }
 
         return y;

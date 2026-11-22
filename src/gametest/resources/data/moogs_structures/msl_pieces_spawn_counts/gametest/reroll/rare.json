@@ -1,0 +1,5 @@
+{
+  "pieces_spawn_counts": [
+    {"nbt_piece_name": "moogs_structures:gametest/reroll/required", "always_spawn_this_many": 1}
+  ]
+}

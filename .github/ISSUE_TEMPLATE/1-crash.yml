@@ -1,0 +1,83 @@
+name: Game crash
+description: The game or server crashed, or won't start, with Moog's Structure Lib installed.
+title: "[Crash]: "
+labels: ["bug", "crash"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this! The crash report or log is the most useful part, so please don't skip it.
+
+  - type: input
+    id: mc-version
+    attributes:
+      label: Minecraft version
+      placeholder: "1.21.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: loader
+    attributes:
+      label: Mod loader
+      options:
+        - Fabric
+        - Forge
+        - NeoForge
+        - Other (say which below)
+    validations:
+      required: true
+
+  - type: input
+    id: loader-version
+    attributes:
+      label: Mod loader version
+      description: Shown in the launcher, or at the top of the log.
+      placeholder: "0.16.14"
+    validations:
+      required: false
+
+  - type: input
+    id: msl-version
+    attributes:
+      label: Moog's Structure Lib version
+      description: It's in the jar's file name, or in the mod list.
+      placeholder: "4.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: log-link
+    attributes:
+      label: Link to the crash report or log
+      description: |
+        Upload the crash report (in the `crash-reports` folder) or `logs/latest.log` to https://mclo.gs and paste the link here.
+      placeholder: "https://mclo.gs/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: Other mods
+      description: The modpack name and version, or the list of mods you have installed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What were you doing when it crashed?
+      description: For example starting the game, creating a world, exploring, or using a command.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I've searched the existing issues for this crash.
+          required: true
+        - label: I'm on the newest Moog's Structure Lib for my Minecraft version and mod loader.
+          required: true

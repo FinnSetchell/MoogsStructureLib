@@ -116,46 +116,13 @@ public class EntityProcessorMixin {
         moogs_structures$context.remove();
     }
 
-    @Inject(
-            //? if <1.21.5 {
-            method = "placeEntities",
-            //?}
-            //? if >=1.21.5 <1.21.11 {
-            /*method = "placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Z)V",
-            *///?}
-            //? if >=1.21.11 {
-            /*method = "placeEntities",
-            *///?}
-            at = @At(value = "HEAD"),
-            //? if <1.21.5 {
-            cancellable = true)
+    // Each node builds against one Minecraft range, so it has one placeEntities: 1.21.6 added a ProblemReporter.
+    @Inject(method = "placeEntities", at = @At(value = "HEAD"), cancellable = true)
+    //? if <1.21.6 {
     private void moogs_structures$processAndPlaceEntities(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, CallbackInfo ci) {
-            //?}
-            //? if >=1.21.5 <1.21.11 {
-            /*cancellable = true,
-            require = 0)
-    private void moogs_structures$processAndPlaceEntities_legacy(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, CallbackInfo ci) {
-        moogs_structures$processAndPlaceEntitiesImpl(serverLevelAccessor, ci);
-    }
-
-    // Handler for MC 1.21.6 and later (vanilla placeEntities has a trailing ProblemReporter param).
-    // require = 0 so this silently skips on MC versions where the signature does not match.
-    @Inject(
-            method = "placeEntities(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Mirror;Lnet/minecraft/world/level/block/Rotation;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;ZLnet/minecraft/util/ProblemReporter;)V",
-            at = @At(value = "HEAD"),
-            cancellable = true,
-            require = 0)
-    private void moogs_structures$processAndPlaceEntities_modern(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, ProblemReporter problemReporter, CallbackInfo ci) {
-        moogs_structures$processAndPlaceEntitiesImpl(serverLevelAccessor, ci);
-    }
-
-    @Unique
-    private void moogs_structures$processAndPlaceEntitiesImpl(ServerLevelAccessor serverLevelAccessor, CallbackInfo ci) {
-            *///?}
-            //? if >=1.21.11 {
-            /*cancellable = true)
-    private void moogs_structures$processAndPlaceEntities(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, ProblemReporter problemReporter, CallbackInfo ci) {
-            *///?}
+    //?} else {
+    /*private void moogs_structures$processAndPlaceEntities(ServerLevelAccessor serverLevelAccessor, BlockPos structurePiecePos, Mirror mirror, Rotation rotation, BlockPos pivot, BoundingBox boundingBox, boolean bl, ProblemReporter problemReporter, CallbackInfo ci) {
+    *///?}
         StructureProcessingContext ctx = moogs_structures$context.get();
         if (ctx == null) {
             return;
@@ -180,8 +147,10 @@ public class EntityProcessorMixin {
                 entityNbt.put("Pos", listTag);
                 entityNbt.remove("UUID");
                 moogs_structures$tryCreateEntity(serverLevelAccessor, entityNbt).ifPresent((entity) -> {
+                    // The game's yaw, mirror(yaw) + turn. Mirrored first, so a hanging entity turns its facing the
+                    // way its wall's blocks turn (see HangingEntityAnchorProcessor).
                     float f = entity.mirror(ctx.structurePlaceSettings().getMirror());
-                    f += entity.getYRot() - entity.rotate(ctx.structurePlaceSettings().getRotation());
+                    f += entity.rotate(ctx.structurePlaceSettings().getRotation()) - entity.getYRot();
                     //? if <1.21.5 {
                     entity.moveTo(entityPos.x, entityPos.y, entityPos.z, f, entity.getXRot());
                     //?} else {

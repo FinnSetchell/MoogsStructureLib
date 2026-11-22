@@ -3,6 +3,10 @@ package com.finndog.moogs_structures.world.structures.terrainadaptation.beardifi
 //? if >=1.21.10 {
 /*import com.finndog.moogs_structures.mixins.terrainadaptation.BeardifierAccessor;
 *///?}
+//? if <1.20.6 {
+/*import com.finndog.moogs_structures.world.structures.GenericJigsawStructure;
+import com.finndog.moogs_structures.world.structures.terrainadaptation.EncapsulateBackport;
+*///?}
 import com.finndog.moogs_structures.world.structures.terrainadaptation.AdaptationArea;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptation;
 import com.finndog.moogs_structures.world.structures.terrainadaptation.EnhancedTerrainAdaptationStructure;
@@ -53,7 +57,17 @@ public class EnhancedBeardifierHelper {
         *///?}
                 structure -> structure instanceof EnhancedTerrainAdaptationStructure);
 
+        //? if <1.20.6 {
+        /*ObjectList<BoundingBox> encapsulatedPieces = new ObjectArrayList<>(10);
+        ObjectList<JigsawJunction> encapsulatedJunctions = new ObjectArrayList<>(32);
+        *///?}
+
         for (StructureStart structureStart : structureStarts) {
+            //? if <1.20.6 {
+            /*if (structureStart.getStructure() instanceof GenericJigsawStructure structure && structure.encapsulateBackport) {
+                EncapsulateBackport.collect(structureStart, chunkPos, encapsulatedPieces, encapsulatedJunctions);
+            }
+            *///?}
             EnhancedTerrainAdaptation structureAdaptation =
                     ((EnhancedTerrainAdaptationStructure) structureStart.getStructure()).getEnhancedTerrainAdaptation();
 
@@ -144,6 +158,11 @@ public class EnhancedBeardifierHelper {
         EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) original;
         enhancedBeardifier.moogs_structures_setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
         enhancedBeardifier.moogs_structures_setEnhancedJunctionIterator(enhancedJunctionList.iterator());
+        //?}
+        //? if <1.20.6 {
+        /*enhancedBeardifier.moogs_structures_setEncapsulated(encapsulatedPieces, encapsulatedJunctions);
+        *///?}
+        //? if <1.21.10 {
         return original;
         //?}
         // Vanilla returns its shared static Beardifier.EMPTY whenever no *vanilla* terrain-adapting
@@ -231,6 +250,13 @@ public class EnhancedBeardifierHelper {
     *///?}
         // From 26.1.2 the lists are stored and walked with local cursors. Sampling runs on world-gen worker
         // threads, so anything cursor-shaped kept on the Beardifier would be shared mutable state.
+        //? if <1.20.6 {
+        /*ObjectList<BoundingBox> encapsulatedPieces = data.moogs_structures_getEncapsulatedPieces();
+        ObjectList<JigsawJunction> encapsulatedJunctions = data.moogs_structures_getEncapsulatedJunctions();
+        if (encapsulatedPieces != null && encapsulatedJunctions != null) {
+            density += EncapsulateBackport.density(x, y, z, encapsulatedPieces, encapsulatedJunctions);
+        }
+        *///?}
         //? if <26.1.2 {
         ObjectListIterator<EnhancedBeardifierRigid> pieces = data.moogs_structures_getEnhancedPieceIterator();
         ObjectListIterator<EnhancedJigsawJunction> junctions = data.moogs_structures_getEnhancedJunctionIterator();

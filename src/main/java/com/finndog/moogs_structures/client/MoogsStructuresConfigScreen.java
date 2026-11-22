@@ -1,10 +1,7 @@
-//? if >=1.20.6 {
-package com.finndog.moogs_structures.neoforge.client;
+package com.finndog.moogs_structures.client;
 
-import com.finndog.moogs_structures.client.SpacingPreviewSliderEntry;
-import com.finndog.moogs_structures.client.StructureActionsEntry;
-import com.finndog.moogs_structures.client.SupportLinks;
 import com.finndog.moogs_structures.config.MslConfig;
+import com.finndog.moogs_structures.config.PlatformConfig;
 import com.finndog.moogs_structures.config.ReplaceVanillaManager;
 import com.finndog.moogs_structures.config.StructureListManager;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
@@ -20,10 +17,12 @@ import java.util.List;
 
 /**
  * Builds the Cloth Config screen from the presets and structures discovered across all mods.
- * Only loaded on the client when Cloth Config is present (see {@link MoogsStructuresNeoforgeClient}).
+ * Shared by every loader. Each loader's client hook (Mod Menu on Fabric, the config-screen extension
+ * point on Forge and NeoForge) opens it only when Cloth Config is present, so nothing loads this
+ * class without Cloth. Client-only.
  */
-public final class MoogsStructuresConfigScreenNeoforge {
-    private MoogsStructuresConfigScreenNeoforge() {}
+public final class MoogsStructuresConfigScreen {
+    private MoogsStructuresConfigScreen() {}
 
     public static Screen create(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
@@ -47,10 +46,11 @@ public final class MoogsStructuresConfigScreenNeoforge {
         ConfigCategory category = builder.getOrCreateCategory(Component.translatable("moogs_structures.config.category.replace_vanilla"));
         reloadNotice(category, eb);
         for (ReplaceVanillaManager.PresetInfo preset : ReplaceVanillaManager.getPresets()) {
-            String tooltip = preset.description().isEmpty() ? preset.modid() : preset.description();
+            String modName = PlatformConfig.INSTANCE.getModName(preset.modid());
+            String tooltip = !preset.description().isEmpty() ? preset.description() : modName != null ? modName : preset.modid();
             category.addEntry(eb.startBooleanToggle(Component.literal(preset.name()), ReplaceVanillaManager.isPresetEnabled(preset))
                     .setDefaultValue(preset.defaultEnabled())
-                    .setTooltip(Component.literal(tooltip))
+                    .setTooltip(ConfigTooltips.wrap(Component.literal(tooltip)))
                     .setSaveConsumer(value -> ReplaceVanillaManager.setPresetEnabled(preset, value))
                     .build());
         }
@@ -58,10 +58,11 @@ public final class MoogsStructuresConfigScreenNeoforge {
 
     private static void buildStructures(ConfigBuilder builder, ConfigEntryBuilder eb) {
         ConfigCategory category = builder.getOrCreateCategory(Component.translatable("moogs_structures.config.category.structures"));
+        reloadNotice(category, eb);
         category.addEntry(eb.startIntSlider(Component.translatable("moogs_structures.config.universal_frequency"), toPercent(MslConfig.get().getUniversalFrequency()), 25, 400)
                 .setDefaultValue(100)
-                .setTextGetter(MoogsStructuresConfigScreenNeoforge::multiplierLabel)
-                .setTooltip(Component.translatable("moogs_structures.config.universal_frequency.tooltip"))
+                .setTextGetter(MoogsStructuresConfigScreen::multiplierLabel)
+                .setTooltip(ConfigTooltips.wrap(Component.translatable("moogs_structures.config.universal_frequency.tooltip")))
                 .setSaveConsumer(v -> { if (v != toPercent(MslConfig.get().getUniversalFrequency())) MslConfig.get().setUniversalFrequencyAndSave(v / 100.0); })
                 .build());
 
@@ -69,8 +70,8 @@ public final class MoogsStructuresConfigScreenNeoforge {
             List<AbstractConfigListEntry> entries = new ArrayList<>();
             entries.add(eb.startIntSlider(Component.translatable("moogs_structures.config.all_of_mod", group.modName()), toPercent(MslConfig.get().getModFrequency(group.modid())), 25, 400)
                     .setDefaultValue(100)
-                    .setTextGetter(MoogsStructuresConfigScreenNeoforge::multiplierLabel)
-                    .setTooltip(Component.translatable("moogs_structures.config.mod_frequency.tooltip", group.modName()))
+                    .setTextGetter(MoogsStructuresConfigScreen::multiplierLabel)
+                    .setTooltip(ConfigTooltips.wrap(Component.translatable("moogs_structures.config.mod_frequency.tooltip", group.modName())))
                     .setSaveConsumer(v -> { if (v != toPercent(MslConfig.get().getModFrequency(group.modid()))) MslConfig.get().setModFrequencyAndSave(group.modid(), v / 100.0); })
                     .build());
             for (StructureListManager.StructureEntry s : group.structures()) {
@@ -84,7 +85,7 @@ public final class MoogsStructuresConfigScreenNeoforge {
         if (s.spacingKey() != null) {
             int value = toPercent(MslConfig.get().getStructureFrequency(s.spacingKey()));
             return new SpacingPreviewSliderEntry(Component.literal(s.name()), 25, 400, value, 100,
-                    MoogsStructuresConfigScreenNeoforge::multiplierLabel,
+                    MoogsStructuresConfigScreen::multiplierLabel,
                     v -> { if (v != value) MslConfig.get().setStructureFrequencyAndSave(s.spacingKey(), v / 100.0); },
                     s.previewUrl(), s.structureId());
         }
@@ -99,5 +100,3 @@ public final class MoogsStructuresConfigScreenNeoforge {
         return Component.literal(String.format("%.2fx", percent / 100.0));
     }
 }
-
-//?}

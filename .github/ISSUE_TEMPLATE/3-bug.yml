@@ -1,0 +1,74 @@
+name: Something else is wrong
+description: A structure is missing or looks wrong, a setting doesn't work, or something else is broken.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this! If a structure from one of Moog's structure mods looks wrong, its own issue page may be the better place, but here is fine too.
+
+  - type: input
+    id: mc-version
+    attributes:
+      label: Minecraft version
+      placeholder: "1.21.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: loader
+    attributes:
+      label: Mod loader
+      options:
+        - Fabric
+        - Forge
+        - NeoForge
+        - Other (say which below)
+    validations:
+      required: true
+
+  - type: input
+    id: msl-version
+    attributes:
+      label: Moog's Structure Lib version
+      description: It's in the jar's file name, or in the mod list.
+      placeholder: "4.0.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened, and what did you expect?
+      description: Screenshots, a world seed, and coordinates help if it's about a structure.
+    validations:
+      required: true
+
+  - type: input
+    id: log-link
+    attributes:
+      label: Link to the log
+      description: |
+        Upload `logs/latest.log` to https://mclo.gs and paste the link here.
+      placeholder: "https://mclo.gs/..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: Other mods
+      description: The modpack name and version, or the list of mods you have installed.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I've searched the existing issues for this problem.
+          required: true
+        - label: I'm on the newest Moog's Structure Lib for my Minecraft version and mod loader.
+          required: true

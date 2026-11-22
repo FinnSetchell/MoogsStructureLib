@@ -23,6 +23,8 @@ val gametestFiles = listOf(
     "data/minecraft/structure/moogs_structures.armor_stand_processor_test_empty.nbt",
     "data/moogs_structures/structure/armor_stand_processor_test_empty.nbt",
     "data/moogs_structures/structure/equiparmorstandprocessortest.armor_stand_processor_test_empty.nbt",
+    "data/moogs_structures/test_instance/**",
+    "$modId-forge-gametest.mixins.json",
 )
 
 version = property("mod_version").toString()
@@ -151,7 +153,6 @@ tasks {
 
     named("createMinecraftArtifacts") { dependsOn("stonecutterGenerate") }
     withType<JavaCompile>().configureEach { dependsOn("stonecutterGenerate") }
-    compileJava { exclude(prop("mod.forge_compile_excludes").split(',').filter { it.isNotBlank() }) }
 
     register<Copy>("buildAndCollect") {
         group = "build"

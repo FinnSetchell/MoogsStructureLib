@@ -20,9 +20,7 @@ import net.minecraft.core.Registry;
 *///?}
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.worldgen.Pools;
-//? if >=1.21.5 {
-/*import net.minecraft.resources.ResourceKey;
-*///?}
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -69,6 +67,9 @@ import java.util.function.Predicate;
  * Source: https://github.com/yungnickyoung/YUNGs-Better-Strongholds/blob/fabric-1.16/src/main/java/com/yungnickyoung/minecraft/betterstrongholds/world/jigsaw/JigsawManager.java
  */
 public class PieceLimitedJigsawManager {
+
+    // Tries a structure with required pieces gets before it settles for what the last try made.
+    private static final int MAX_ATTEMPTS = 100;
 
     // Record for entries
     public record Entry(PoolElementStructurePiece piece, MutableObject<BoxOctree> boxOctreeMutableObject, int topYLimit, int depth) { }
@@ -143,19 +144,11 @@ public class PieceLimitedJigsawManager {
         }
 
         // Instantiate a piece using the "blueprint" we just got.
-        PoolElementStructurePiece startPiece = new PoolElementStructurePiece(
-                context.structureTemplateManager(),
-                startPieceBlueprint,
-                startPos,
-                startPieceBlueprint.getGroundLevelDelta(),
-                rotation,
-                //? if >=1.21.1 {
-                startPieceBlueprint.getBoundingBox(context.structureTemplateManager(), startPos, rotation),
-                liquidSettings
-                //?} else {
-                /*startPieceBlueprint.getBoundingBox(context.structureTemplateManager(), startPos, rotation)
-                *///?}
-        );
+        //? if >=1.21.1 {
+        PoolElementStructurePiece startPiece = newStartPiece(context, startPieceBlueprint, startPos, rotation, liquidSettings);
+        //?} else {
+        /*PoolElementStructurePiece startPiece = newStartPiece(context, startPieceBlueprint, startPos, rotation);
+        *///?}
 
         // Store center position of starting piece's bounding box
         BoundingBox pieceBoundingBox = startPiece.getBoundingBox();
@@ -165,21 +158,13 @@ public class PieceLimitedJigsawManager {
         }
         int pieceCenterX = (pieceBoundingBox.maxX() + pieceBoundingBox.minX()) / 2;
         int pieceCenterZ = (pieceBoundingBox.maxZ() + pieceBoundingBox.minZ()) / 2;
-        int pieceCenterY = heightmapType
-                //? if <26.1.2 {
-                .map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
-                //?} else {
-                /*.map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(
-                        context.chunkGenerator(), pieceCenterX, pieceCenterZ, types, context.heightAccessor(), context.randomState()))
-                *///?}
-                .orElseGet(startPos::getY);
+        int pieceCenterY = groundLevel(context, startPiece, startPos, heightmapType);
 
         if (heightmapType.isPresent() && (pieceCenterY > maxY || pieceCenterY < minY)) {
             return Optional.empty();
         }
 
-        int yAdjustment = pieceBoundingBox.minY() + startPiece.getGroundLevelDelta();
-        startPiece.move(0, pieceCenterY - yAdjustment, 0);
+        moveToGroundLevel(startPiece, pieceCenterY);
         //? if <1.21.5 {
         if (!context.validBiome().test(context.chunkGenerator().getBiomeSource().getNoiseBiome(QuartPos.fromBlock(pieceCenterX), QuartPos.fromBlock(pieceCenterY), QuartPos.fromBlock(pieceCenterZ), context.randomState().sampler()))) {
         //?}
@@ -203,7 +188,6 @@ public class PieceLimitedJigsawManager {
             return Optional.empty();
         }
 
-        //? if <1.21.5 {
         return Optional.of(new Structure.GenerationStub(new BlockPos(pieceCenterX, pieceCenterY, pieceCenterZ), (structurePiecesBuilder) -> {
             List<PoolElementStructurePiece> components = new ArrayList<>();
             components.add(startPiece);
@@ -211,159 +195,67 @@ public class PieceLimitedJigsawManager {
             boolean runOnce = requiredPieces == null || requiredPieces.isEmpty();
             Map<ResourceLocation, Integer> currentPieceCounter = new HashMap<>();
             for (int attempts = 0; runOnce || doesNotHaveAllRequiredPieces(components, requiredPieces, currentPieceCounter); attempts++) {
-        //?}
-                //? if >=1.21.1 <1.21.4 {
-                if (attempts == 40) {
-                //?}
-                //? if <1.21.1 {
-                /*if (attempts == 100) {
-                *///?}
-                //? if >=1.21.4 <1.21.5 {
-                /*if (attempts == 100) {
-                *///?}
-                    //? if <1.21.5 {
+                if (attempts == MAX_ATTEMPTS) {
+                    //? if <1.21.11 {
+                    ResourceLocation startKey = startPoolHolder.unwrapKey().map(ResourceKey::location).orElse(structureID);
+                    //?} else {
+                    /*ResourceLocation startKey = startPoolHolder.unwrapKey().map(ResourceKey::identifier).orElse(structureID);
+                    *///?}
                     MoogsStructuresCommon.LOGGER.error(
                             """
-                                            
+
                                     -------------------------------------------------------------------
                                     Moog's Structure Lib: Failed to create valid structure with all required pieces starting from this pool file: {}. Required pieces failed to generate the required amount are: {}
                                       This can happen if a structure has a required piece but the structure size is set too low.
                                       However, this is most likely caused by a structure unable to spawn properly due to hitting the world's min y or max y build thresholds or a broken MoogsStructures datapack.
                                       Try teleporting to: {} and see if the structure generated fine with the required structure piece or if it is indeed missing it.
                                       Please report the issue to Moog's Structure Lib's dev with latest.log file if the structure is not cut off by world min/max y build thresholds.
-                                            
+
                                     """,
-                            jigsawPoolRegistry.getKey(startPool), Arrays.toString(currentPieceCounter.entrySet().stream().filter(entry -> entry.getValue() > 0).toArray()), new BlockPos(pieceCenterX, pieceCenterY, pieceCenterZ));
+                            startKey, Arrays.toString(currentPieceCounter.entrySet().stream().filter(entry -> entry.getValue() > 0).toArray()), new BlockPos(pieceCenterX, pieceCenterY, pieceCenterZ));
                     break;
                 }
-                    //?} else {
-        /*return Optional.of(new Structure.GenerationStub(
-                new BlockPos(pieceCenterX, pieceCenterY, pieceCenterZ),
-                (structurePiecesBuilder) -> {
-                    List<PoolElementStructurePiece> components = new ArrayList<>();
-                    components.add(startPiece);
-                    *///?}
 
-                //reroll start piece
-                //? if >=1.21.1 <1.21.5 {
-                PoolElementStructurePiece startPieceToUse = startPiece;
+                // Every attempt after the first starts over from a fresh pick of the start pool, at the same spot and
+                // turn as the first and on the ground under its own middle, and that piece is the start everywhere:
+                // in the pieces, under the children and in the octree.
+                PoolElementStructurePiece attemptStartPiece = startPiece;
                 if (attempts > 0) {
-                    StructurePoolElement startPieceBlueprintNew = startPool.getRandomTemplate(random);
-                    startPieceToUse = new PoolElementStructurePiece(
-                            context.structureTemplateManager(),
-                            startPieceBlueprintNew,
-                            startPiece.getPosition(),
-                            startPieceBlueprintNew.getGroundLevelDelta(),
-                            startPiece.getRotation(),
-                            startPieceBlueprintNew.getBoundingBox(context.structureTemplateManager(), startPiece.getPosition(), startPiece.getRotation()),
-                            liquidSettings
-                    );
+                    StructurePoolElement attemptStartBlueprint = startPool.getRandomTemplate(random);
+                    // An empty element has nothing to build on, so this attempt fails and the next one picks again.
+                    if (attemptStartBlueprint == EmptyPoolElement.INSTANCE) {
+                        continue;
+                    }
+                    //? if >=1.21.1 {
+                    attemptStartPiece = newStartPiece(context, attemptStartBlueprint, startPos, rotation, liquidSettings);
+                    //?} else {
+                    /*attemptStartPiece = newStartPiece(context, attemptStartBlueprint, startPos, rotation);
+                    *///?}
+                    int attemptGroundY = groundLevel(context, attemptStartPiece, startPos, heightmapType);
+                    // Like the first pick, a start whose ground is outside the structure's heights can't be used.
+                    if (heightmapType.isPresent() && (attemptGroundY > maxY || attemptGroundY < minY)) {
+                        continue;
+                    }
+                    moveToGroundLevel(attemptStartPiece, attemptGroundY);
                 }
-                //?}
-                    //? if >=1.21.5 {
-                    /*Map<ResourceLocation, StructurePieceCountsManager.RequiredPieceNeeds> requiredPieces =
-                            StructurePieceCountsManager.STRUCTURE_PIECE_COUNTS_MANAGER.getRequirePieces(structureID);
-                    boolean runOnce = requiredPieces == null || requiredPieces.isEmpty();
-                    Map<ResourceLocation, Integer> currentPieceCounter = new HashMap<>();
-                    *///?}
 
-                //? if <1.21.5 {
                 components.clear();
-                //?}
-                //? if >=1.21.1 <1.21.4 {
-                components.add(startPieceToUse); // Add start piece to list of pieces
-                //?}
-                //? if <1.21.1 {
-                /*components.add(startPiece); // Add start piece to list of pieces
-                *///?}
-                //? if >=1.21.4 <1.21.5 {
-                /*components.add(startPiece); // Add start piece to list of pieces
-                *///?}
-                    //? if >=1.21.5 {
-                    /*for (int attempts = 0; runOnce || doesNotHaveAllRequiredPieces(components, requiredPieces, currentPieceCounter); attempts++) {
-                    *///?}
-                        //? if >=1.21.5 <1.21.11 {
-                        /*if (attempts == 100) {
-                            ResourceLocation startKey = startPoolHolder.unwrapKey().map(ResourceKey::location).orElse(structureID);
-                        *///?}
-                        //? if >=1.21.11 <26.1.2 {
-                        /*if (attempts == 40) {
-                        *///?}
-                        //? if >=26.1.2 {
-                        /*if (attempts == 100) {
-                        *///?}
-                            //? if >=1.21.11 {
-                            /*ResourceLocation startKey = startPoolHolder.unwrapKey().map(ResourceKey::identifier).orElse(structureID);
-                            *///?}
-                            //? if >=1.21.5 <26.1.2 {
-                            /*MoogsStructuresCommon.LOGGER.error("""
+                components.add(attemptStartPiece); // Add start piece to list of pieces
 
-                                    -------------------------------------------------------------------
-                                    Moog's Structure Lib: Failed to create valid structure with all required pieces starting from this pool file: {}. Required pieces failed to generate the required amount are: {}
-                                      This can happen if a structure has a required piece but the structure size is set too low.
-                                      However, this is most likely caused by a structure unable to spawn properly due to hitting the world's min y or max y build thresholds or a broken MoogsStructures datapack.
-                                      Try teleporting to: {} and see if the structure generated fine with the required structure piece or if it is indeed missing it.
-                                      Please report the issue to Moog's Structure Lib's dev with latest.log file if the structure is not cut off by world min/max y build thresholds.
-                                    
-                                    """,
-                            *///?}
-                            //? if >=26.1.2 {
-                            /*MoogsStructuresCommon.LOGGER.error("""
-                                    
-                                    -------------------------------------------------------------------
-                                    Moog's Structure Lib: Failed to create valid structure with all required pieces starting from this pool file: {}. Required pieces failed to generate the required amount are: {}
-                                      This can happen if a structure has a required piece but the structure size is set too low.
-                                      However, this is most likely caused by a structure unable to spawn properly due to hitting the world's min y or max y build thresholds or a broken MoogsStructures datapack.
-                                      Try teleporting to: {} and see if the structure generated fine with the required structure piece or if it is indeed missing it.
-                                      Please report the issue to Moog's Structure Lib's dev with latest.log file if the structure is not cut off by world min/max y build thresholds.
-                                    
-                                    """,
-                            *///?}
-                                    //? if >=1.21.5 {
-                                    /*startKey,
-                                    Arrays.toString(currentPieceCounter.entrySet().stream().filter(e -> e.getValue() > 0).toArray()),
-                                    new BlockPos(pieceCenterX, pieceCenterY, pieceCenterZ));
-                            break;
-                        }
-                                    *///?}
-
-                //? if <1.21.5 {
                 if (size > 0) {
                     int boxRange = maxDistanceFromCenter.orElse(80);
                     AABB axisAlignedBB = new AABB(pieceCenterX - boxRange, pieceCenterY - 120, pieceCenterZ - boxRange, pieceCenterX + boxRange + 1, pieceCenterY + 180 + 1, pieceCenterZ + boxRange + 1);
                     BoxOctree boxOctree = new BoxOctree(axisAlignedBB); // The maximum boundary of the entire structure
-                    boxOctree.addBox(AABB.of(pieceBoundingBox));
-                //?}
-                    //? if >=1.21.1 <1.21.4 {
-                    Entry startPieceEntry = new Entry(startPieceToUse, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
-                    //?}
-                    //? if <1.21.1 {
-                    /*Entry startPieceEntry = new Entry(startPiece, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
-                    *///?}
-                    //? if >=1.21.4 <1.21.5 {
-                    /*Entry startPieceEntry = new Entry(startPiece, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
-                    *///?}
-                        // Reroll start piece if needed
-                        //? if >=1.21.5 {
-                        /*PoolElementStructurePiece startPieceToUse = startPiece;
-                        if (attempts > 0) {
-                            StructurePoolElement startPieceBlueprintNew = startPool.getRandomTemplate(random);
-                            startPieceToUse = new PoolElementStructurePiece(
-                                    context.structureTemplateManager(),
-                                    startPieceBlueprintNew,
-                                    startPiece.getPosition(),
-                                    startPieceBlueprintNew.getGroundLevelDelta(),
-                                    startPiece.getRotation(),
-                                    startPieceBlueprintNew.getBoundingBox(context.structureTemplateManager(), startPiece.getPosition(), startPiece.getRotation()),
-                                    liquidSettings
-                            );
-                        }
-                        *///?}
+                    boxOctree.addBox(AABB.of(attemptStartPiece.getBoundingBox()));
+                    Entry startPieceEntry = new Entry(attemptStartPiece, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
 
-                    //? if <1.21.5 {
                     Assembler assembler = new Assembler(
                             structureID,
+                            //? if <1.21.5 {
                             jigsawPoolRegistry,
+                            //?} else {
+                            /*poolLookup,
+                            *///?}
                             size,
                             context,
                             components,
@@ -371,76 +263,20 @@ public class PieceLimitedJigsawManager {
                             requiredPieces,
                             buryingType.isEmpty() ? maxY : Integer.MAX_VALUE,
                             buryingType.isEmpty() ? minY : Integer.MIN_VALUE,
-                    //?}
-                            //? if >=1.21.1 <1.21.5 {
+                            //? if >=1.21.1 {
                             poolsThatIgnoreBounds,
                             liquidSettings);
-                            //?}
-                            //? if <1.21.1 {
+                            //?} else {
                             /*poolsThatIgnoreBounds);
                             *///?}
-                    //? if <1.21.5 {
                     assembler.availablePieces.addLast(startPieceEntry);
-                    //?} else {
-                        /*components.clear();
-                    *///?}
-                        //? if >=1.21.5 <26.1.2 {
-                        /*components.add(startPieceToUse); // Add start piece to list of pieces
-                        *///?}
-                        //? if >=26.1.2 {
-                        /*components.add(startPiece); // start stays
-                        *///?}
 
-                    //? if <1.21.5 {
                     while (!assembler.availablePieces.isEmpty()) {
                         Entry entry = assembler.availablePieces.removeFirst();
                         assembler.generatePiece(entry.piece, entry.boxOctreeMutableObject, entry.topYLimit, entry.depth, doBoundaryAdjustments, context.heightAccessor());
-                    //?} else {
-                        /*if (size > 0) {
-                            int boxRange = maxDistanceFromCenter.orElse(80);
-                            AABB axisAlignedBB = new AABB(
-                                    pieceCenterX - boxRange, pieceCenterY - 120, pieceCenterZ - boxRange,
-                                    pieceCenterX + boxRange + 1, pieceCenterY + 180 + 1, pieceCenterZ + boxRange + 1
-                            );
-                            BoxOctree boxOctree = new BoxOctree(axisAlignedBB);
-                            boxOctree.addBox(AABB.of(pieceBoundingBox));
-                            Entry startPieceEntry = new Entry(startPieceToUse, new MutableObject<>(boxOctree), pieceCenterY + 80, 0);
-
-                            Assembler assembler = new Assembler(
-                                    structureID,
-                                    poolLookup, // 1.21.5 holder lookup
-                                    size,
-                                    context,
-                                    components,
-                                    random,
-                                    requiredPieces,
-                                    buryingType.isEmpty() ? maxY : Integer.MAX_VALUE,
-                                    buryingType.isEmpty() ? minY : Integer.MIN_VALUE,
-                                    poolsThatIgnoreBounds,
-                                    liquidSettings
-                            );
-                            assembler.availablePieces.addLast(startPieceEntry);
-
-                            while (!assembler.availablePieces.isEmpty()) {
-                                Entry entry = assembler.availablePieces.removeFirst();
-                                assembler.generatePiece(entry.piece, entry.boxOctreeMutableObject, entry.topYLimit, entry.depth, doBoundaryAdjustments, context.heightAccessor());
-                            }
-                        }
-
-                        if (runOnce) break;
-                    }
-
-                    components.forEach(structurePiecesBuilder::addPiece);
-                    structureBoundsAdjuster.accept(structurePiecesBuilder, components);
-
-                    // Do not generate if out of bounds (the adjuster may already have emptied it)
-                    if (!structurePiecesBuilder.isEmpty() && structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxY()) {
-                        structurePiecesBuilder.clear();
-                    *///?}
                     }
                 }
 
-                //? if <1.21.5 {
                 if (runOnce) break;
             }
 
@@ -448,20 +284,51 @@ public class PieceLimitedJigsawManager {
             structureBoundsAdjuster.accept(structurePiecesBuilder, components);
 
             // Do not generate if out of bounds (the adjuster may already have emptied it)
-                //?}
             //? if <1.21.2 {
             if(!structurePiecesBuilder.isEmpty() && structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxBuildHeight()) {
-            //?}
-            //? if >=1.21.2 <1.21.5 {
+            //?} else {
             /*if(!structurePiecesBuilder.isEmpty() && structurePiecesBuilder.getBoundingBox().maxY() > context.heightAccessor().getMaxY()) {
             *///?}
-                //? if <1.21.5 {
                 structurePiecesBuilder.clear();
             }
         }));
+    }
+
+    // A start piece from this blueprint, at the structure's start position and turn.
+    private static PoolElementStructurePiece newStartPiece(Structure.GenerationContext context, StructurePoolElement blueprint, BlockPos startPos, Rotation rotation
+                                                           //? if >=1.21.1 {
+                                                           , LiquidSettings liquidSettings
+                                                           //?}
+    ) {
+        return new PoolElementStructurePiece(
+                context.structureTemplateManager(),
+                blueprint,
+                startPos,
+                blueprint.getGroundLevelDelta(),
+                rotation,
+                //? if >=1.21.1 {
+                blueprint.getBoundingBox(context.structureTemplateManager(), startPos, rotation),
+                liquidSettings
                 //?} else {
-        /*));
+                /*blueprint.getBoundingBox(context.structureTemplateManager(), startPos, rotation)
                 *///?}
+        );
+    }
+
+    // The height a start piece's ground level goes to: the start position's y, raised by the heightmap's height under
+    // the middle of the piece when the structure has a heightmap.
+    private static int groundLevel(Structure.GenerationContext context, PoolElementStructurePiece piece, BlockPos startPos, Optional<Heightmap.Types> heightmapType) {
+        BoundingBox box = piece.getBoundingBox();
+        int centerX = (box.maxX() + box.minX()) / 2;
+        int centerZ = (box.maxZ() + box.minZ()) / 2;
+        return heightmapType
+                .map(types -> startPos.getY() + GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), centerX, centerZ, types, context.heightAccessor(), context.randomState()))
+                .orElseGet(startPos::getY);
+    }
+
+    // Moves a start piece up or down so its ground level (its bottom plus its ground level delta) is at groundY.
+    private static void moveToGroundLevel(PoolElementStructurePiece piece, int groundY) {
+        piece.move(0, groundY - (piece.getBoundingBox().minY() + piece.getGroundLevelDelta()), 0);
     }
 
     //? if <1.21.5 {
@@ -1114,27 +981,8 @@ public class PieceLimitedJigsawManager {
                             /*} else {
                             *///?}
                                 if (surfaceHeight == -1) {
-                                    //? if >=1.21.1 <1.21.4 {
-                                    surfaceHeight = context.chunkGenerator().getFirstFreeHeight(jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                    //?}
-                                    //? if <1.21.1 {
-                                    /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                    *///?}
-                                    //? if >=1.21.4 <1.21.5 {
-                                    /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                    *///?}
-                                    //? if >=1.21.5 <26.1.2 {
-                                    /*surfaceHeight = context.chunkGenerator().getFirstFreeHeight(
-                                            jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
-                                    *///?}
-                                    //? if >=26.1.2 {
-                                    /*surfaceHeight = GeneralUtils.getCachedFreeHeight(
-                                            context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
-                                    *///?}
-                                            //? if >=1.21.5 {
-                                            /*(isCandidatePieceOceanFloor || isPieceOceanFloor) ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG,
-                                            heightLimitView, context.randomState());
-                                            *///?}
+                                    surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
+                                            isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
                                 }
 
                                 adjustedCandidatePieceMinY = surfaceHeight - candidateJigsawBlockRelativeY;
@@ -1167,22 +1015,7 @@ public class PieceLimitedJigsawManager {
                             boolean validBounds = false;
 
                             // Make sure new piece fits within the chosen octree without intersecting any other piece.
-                            //? if >=1.21.1 <1.21.4 {
                             if (ignoreBounds || (boxOctreeMutableObject.getValue().withinBoundsButNotIntersectingChildren(axisAlignedBBDeflated))) {
-                            //?}
-                            //? if <1.21.1 {
-                            /*if (ignoreBounds || (boxOctreeMutableObject.getValue().boundaryContains(axisAlignedBBDeflated) && !boxOctreeMutableObject.getValue().intersectsAnyBox(axisAlignedBBDeflated))) {
-                            *///?}
-                            //? if >=1.21.4 <1.21.5 {
-                            /*if (ignoreBounds || (boxOctreeMutableObject.getValue().boundaryContains(axisAlignedBBDeflated) && !boxOctreeMutableObject.getValue().intersectsAnyBox(axisAlignedBBDeflated))) {
-                            *///?}
-                            //? if >=1.21.5 <26.1.2 {
-                            /*if (ignoreBounds || (boxOctreeMutableObject.getValue().withinBoundsButNotIntersectingChildren(axisAlignedBBDeflated))) {
-                            *///?}
-                            //? if >=26.1.2 {
-                            /*if (ignoreBounds || (boxOctreeMutableObject.getValue().boundaryContains(axisAlignedBBDeflated)
-                                    && !boxOctreeMutableObject.getValue().intersectsAnyBox(axisAlignedBBDeflated))) {
-                            *///?}
                                 boxOctreeMutableObject.getValue().addBox(axisAlignedBB);
                                 validBounds = true;
                             }
@@ -1236,69 +1069,26 @@ public class PieceLimitedJigsawManager {
                                 /*} else {
                                 *///?}
                                     if (surfaceHeight == -1) {
-                                        //? if >=1.21.1 <1.21.4 {
-                                        surfaceHeight = context.chunkGenerator().getFirstFreeHeight(jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                        //?}
-                                        //? if <1.21.1 {
-                                        /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                        *///?}
-                                        //? if >=1.21.4 <1.21.5 {
-                                        /*surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(), isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
-                                        *///?}
-                                        //? if >=1.21.5 <26.1.2 {
-                                        /*surfaceHeight = context.chunkGenerator().getFirstFreeHeight(
-                                                jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
-                                        *///?}
-                                        //? if >=26.1.2 {
-                                        /*surfaceHeight = GeneralUtils.getCachedFreeHeight(
-                                                context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
-                                        *///?}
-                                                //? if >=1.21.5 {
-                                                /*(isCandidatePieceOceanFloor || isPieceOceanFloor) ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG,
-                                                heightLimitView, context.randomState());
-                                                *///?}
+                                        surfaceHeight = GeneralUtils.getCachedFreeHeight(context.chunkGenerator(), jigsawBlockPos.getX(), jigsawBlockPos.getZ(),
+                                                isCandidatePieceOceanFloor || isPieceOceanFloor ? Heightmap.Types.OCEAN_FLOOR_WG : Heightmap.Types.WORLD_SURFACE_WG, heightLimitView, context.randomState());
                                     }
 
                                     candidateJigsawBlockY = surfaceHeight + candidateJigsawYOffsetNeeded / 2;
                                 }
 
-                                // Add the junction to the existing piece
-                                //? if <1.21.5 {
-                                piece.addJunction(
-                                        new JigsawJunction(
-                                                jigsawBlockTargetPos.getX(),
-                                                candidateJigsawBlockY - jigsawBlockRelativeY + newPieceGroundLevelDelta,
-                                                jigsawBlockTargetPos.getZ(),
-                                                candidateJigsawYOffsetNeeded,
-                                                candidatePlacementBehavior)
-                                );
-                                //?} else {
-                                /*piece.addJunction(new JigsawJunction(
+                                // Add a junction to each piece, naming the projection of the piece at its other end, as vanilla does
+                                piece.addJunction(new JigsawJunction(
                                         jigsawBlockTargetPos.getX(),
                                         candidateJigsawBlockY - jigsawBlockRelativeY + newPieceGroundLevelDelta,
                                         jigsawBlockTargetPos.getZ(),
                                         candidateJigsawYOffsetNeeded,
-                                        piecePlacementBehavior));
-                                *///?}
-
-                                // Add the junction to the new piece
-                                //? if <1.21.5 {
-                                newPiece.addJunction(
-                                        new JigsawJunction(
-                                                jigsawBlockPos.getX(),
-                                                candidateJigsawBlockY - candidateJigsawBlockRelativeY + groundLevelDelta,
-                                                jigsawBlockPos.getZ(),
-                                                -candidateJigsawYOffsetNeeded,
-                                                piecePlacementBehavior)
-                                );
-                                //?} else {
-                                /*newPiece.addJunction(new JigsawJunction(
+                                        candidatePlacementBehavior));
+                                newPiece.addJunction(new JigsawJunction(
                                         jigsawBlockPos.getX(),
                                         candidateJigsawBlockY - candidateJigsawBlockRelativeY + groundLevelDelta,
                                         jigsawBlockPos.getZ(),
                                         -candidateJigsawYOffsetNeeded,
                                         piecePlacementBehavior));
-                                *///?}
 
                                 // Add the piece
                                 this.structurePieces.add(newPiece);
