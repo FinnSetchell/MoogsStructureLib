@@ -61,6 +61,22 @@ public class BeardifierMixin implements EnhancedBeardifierData {
     }
     *///?}
 
+    // Set once when the beardifier is built; sampling on worker threads only reads it.
+    @Unique
+    private int moogs_structures_roofFloorY = Integer.MAX_VALUE;
+
+    @Unique
+    @Override
+    public int moogs_structures_getRoofFloorY() {
+        return this.moogs_structures_roofFloorY;
+    }
+
+    @Unique
+    @Override
+    public void moogs_structures_setRoofFloorY(int roofFloorY) {
+        this.moogs_structures_roofFloorY = roofFloorY;
+    }
+
     @Unique
     //? if <26.1.2 {
     private ObjectListIterator<EnhancedJigsawJunction> moogs_structures_enhancedJunctionIterator;
